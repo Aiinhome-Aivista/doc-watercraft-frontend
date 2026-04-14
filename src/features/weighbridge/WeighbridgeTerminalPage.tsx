@@ -203,6 +203,8 @@ const WeighbridgeTerminalPage: React.FC = () => {
             )}
           </tbody>
         </table>
+
+        
       </div>
 
       {modal === 'wbin' && selected && (
