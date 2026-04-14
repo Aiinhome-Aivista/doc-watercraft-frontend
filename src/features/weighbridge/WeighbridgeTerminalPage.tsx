@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { updateGateStatus, recordWbinThunk, recordWboutThunk } from '@/store/slices/vehicleSlice';
+import { fetchGateEntries, recordWbinThunk, recordWboutThunk } from '@/store/slices/vehicleSlice';
+import { fetchVessels } from '@/store/slices/vesselSlice';
 import { GateEntry } from '@/types/vehicle';
 import { Modal, Input, Button, StatusBadge } from '@/components/ui';
 
 const WeighbridgeTerminalPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.vehicles.entries);
+
+  useEffect(() => {
+    dispatch(fetchGateEntries());
+    dispatch(fetchVessels());
+  }, [dispatch]);
 
   const [modal, setModal] = useState<'wbin' | 'wbout' | null>(null);
   const [selected, setSelected] = useState<GateEntry | null>(null);
@@ -179,7 +185,8 @@ const WeighbridgeTerminalPage: React.FC = () => {
                     {e.status === 'PENDING_WBIN' && (
                       <Button variant="amber" size="sm" onClick={() => openModal('wbin', e)}>WBIN</Button>
                     )}
-                    {(e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT') && (
+                    {e.status === 'UNLOADING' && <span className="tag">Unloading</span>}
+                    {e.status === 'PENDING_WBOUT' && (
                       <Button variant="green" size="sm" onClick={() => openModal('wbout', e)}>WBOUT</Button>
                     )}
                   </div>
