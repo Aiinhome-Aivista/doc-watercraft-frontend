@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addGateEntry, updateGateStatus } from '@/store/slices/vehicleSlice';
+import { addGateEntry, updateGateStatus, fetchGateEntries, createGateEntryThunk } from '@/store/slices/vehicleSlice';
 import { GateEntry, GateStatus } from '@/types/vehicle';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
 
@@ -8,6 +8,10 @@ const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.vehicles.entries);
   const vessels = useAppSelector((state) => state.vessels.items);
+
+  useEffect(() => {
+    dispatch(fetchGateEntries());
+  }, [dispatch]);
 
   const [filter, setFilter] = useState<GateStatus | 'ALL'>('ALL');
   const [modal, setModal] = useState<'create' | 'operation' | null>(null);
@@ -38,33 +42,30 @@ const GatePage: React.FC = () => {
     setForm({});
   };
 
-  const handleCreate = () => {
-    const vessel = vessels.find((v) => v.id === parseInt(form.vessel_id));
-    if (!vessel) {
+  const handleCreate = async () => {
+    if (!form.vessel_id) {
         showAlert('Please select a vessel', 'error');
         return;
     }
     const ownWb = parseInt(form.own_weighbridge || '0') as 0 | 1;
-    const newEntry: GateEntry = {
-      id: entries.length + 1,
-      gate_in_no: `GIN-2026-${String(entries.length + 1).padStart(5, '0')}`,
-      vessel_id: vessel.id,
-      vessel_name: vessel.vessel_name,
-      party_name: vessel.party_name,
-      direction: vessel.direction,
-      consignor_name: form.consignor_name,
-      challan_invoice_no: form.challan_invoice_no,
-      vehicle_no: form.vehicle_no,
-      transporter_name: form.transporter_name,
-      weighment_slip_no: form.weighment_slip_no,
+    const payload = {
+      vessel_id: parseInt(form.vessel_id),
+      consignor_name: form.consignor_name || '',
+      challan_invoice_no: form.challan_invoice_no || '',
+      vehicle_no: form.vehicle_no || '',
+      transporter_name: form.transporter_name || '',
+      weighment_slip_no: form.weighment_slip_no || '',
       own_weighbridge: ownWb,
-      status: ownWb === 1 ? 'PENDING_WBOUT' : 'PENDING_WBIN',
       gate_in_datetime: form.gate_in_datetime + ':00',
-      gate_out_datetime: null,
     };
-    dispatch(addGateEntry(newEntry));
-    closeModal();
-    showAlert(`Gate-In recorded: ${newEntry.gate_in_no}`);
+
+    try {
+      await dispatch(createGateEntryThunk(payload)).unwrap();
+      closeModal();
+      showAlert('Gate-In recorded successfully');
+    } catch (err: any) {
+      showAlert(err || 'Failed to record Gate-In', 'error');
+    }
   };
 
   const handleAction = (status: GateStatus) => {

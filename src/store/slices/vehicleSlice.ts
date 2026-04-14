@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { GateEntry, GateStatus } from '@/types/vehicle';
-import { mockGateEntries } from '@/services/mockData';
+import { VehicleService, CreateGateEntryPayload } from '@/services/vehicleService';
 
 interface VehicleState {
   entries: GateEntry[];
@@ -9,10 +9,34 @@ interface VehicleState {
 }
 
 const initialState: VehicleState = {
-  entries: mockGateEntries,
+  entries: [],
   loading: false,
   error: null,
 };
+
+export const fetchGateEntries = createAsyncThunk(
+  'vehicles/fetchGateEntries',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await VehicleService.getAllGateEntries();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch gate entries');
+    }
+  }
+);
+
+export const createGateEntryThunk = createAsyncThunk(
+  'vehicles/createGateEntry',
+  async (payload: CreateGateEntryPayload, { rejectWithValue }) => {
+    try {
+      const data = await VehicleService.createGateEntry(payload);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create gate entry');
+    }
+  }
+);
 
 const vehicleSlice = createSlice({
   name: 'vehicles',
@@ -63,6 +87,33 @@ const vehicleSlice = createSlice({
     setGateEntries: (state, action: PayloadAction<GateEntry[]>) => {
       state.entries = action.payload;
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchGateEntries.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchGateEntries.fulfilled, (state, action) => {
+        state.loading = false;
+        state.entries = action.payload;
+      })
+      .addCase(fetchGateEntries.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(createGateEntryThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createGateEntryThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.entries.push(action.payload);
+      })
+      .addCase(createGateEntryThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 

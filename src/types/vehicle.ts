@@ -27,4 +27,6 @@ export interface GateEntry {
   gross_weight?: number;
   tare_weight?: number;
   net_weight?: number;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -15,6 +15,6 @@ export const ENDPOINTS = {
   },
   VEHICLE: {
     BASE: '/vehicles',
-    GATE_ENTRY: '/vehicles/gate-entry',
+    GATE_ENTRIES: '/gate-entries',
   },
 } as const;
