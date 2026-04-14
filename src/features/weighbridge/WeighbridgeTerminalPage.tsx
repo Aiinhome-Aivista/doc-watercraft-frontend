@@ -21,9 +21,8 @@ const WeighbridgeTerminalPage: React.FC = () => {
     weighment_slip_no?: string;
     gross_weight?: string;
     tare_weight?: string;
-    wbin_date?: string;
-    wbin_time?: string;
-    wbout_weight?: string;
+    wbout_gross_weight?: string;
+    wbout_tare_weight?: string;
   }>({});
   const [alert, setAlert] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
@@ -35,19 +34,14 @@ const WeighbridgeTerminalPage: React.FC = () => {
   };
 
   const openModal = (type: 'wbin' | 'wbout', entry: GateEntry) => {
-    const wbinDateObj = entry.wbin_datetime ? new Date(entry.wbin_datetime) : null;
-    const datePart = wbinDateObj ? wbinDateObj.toISOString().slice(0, 10) : '';
-    const timePart = wbinDateObj ? wbinDateObj.toISOString().slice(11, 16) : '';
-
     setSelected(entry);
     setForm({
       datetime: nowDt(),
       weighment_slip_no: entry.weighment_slip_no || '',
       gross_weight: entry.gross_weight?.toString() || '',
       tare_weight: entry.tare_weight?.toString() || '',
-      wbin_date: datePart,
-      wbin_time: timePart,
-      wbout_weight: '',
+      wbout_gross_weight: '',
+      wbout_tare_weight: '',
     });
     setModal(type);
   };
@@ -61,7 +55,6 @@ const WeighbridgeTerminalPage: React.FC = () => {
   const grossWeight = Number(form.gross_weight || 0);
   const tareWeight = Number(form.tare_weight || 0);
   const netWeight = grossWeight - tareWeight;
-  const wboutWeight = Number(form.wbout_weight || 0);
 
   const handleAction = async (status: 'WBIN_DONE' | 'COMPLETED') => {
     if (!selected || !form.datetime) {
@@ -96,23 +89,25 @@ const WeighbridgeTerminalPage: React.FC = () => {
       }
 
       if (status === 'COMPLETED') {
-        if (!form.wbout_weight || wboutWeight <= 0) {
-          showAlert(
-            selected.direction === 'IMPORT' ? 'Please provide Tare Wt for WBOUT' : 'Please provide Gross Wt for WBOUT',
-            'error'
-          );
+
+        const wboutGross = Number(form.wbout_gross_weight || 0);
+        const wboutTare = Number(form.wbout_tare_weight || 0);
+
+        if (!form.wbout_gross_weight || wboutGross <= 0) {
+          showAlert('Please provide Gross Weight for WBOUT', 'error');
           return;
         }
-
-        const mergedGross = selected.direction === 'EXPORT' ? wboutWeight : (selected.gross_weight || 0);
-        const mergedTare = selected.direction === 'IMPORT' ? wboutWeight : (selected.tare_weight || 0);
+        if (!form.wbout_tare_weight || wboutTare <= 0) {
+          showAlert('Please provide Tare Weight for WBOUT', 'error');
+          return;
+        }
 
         const payload = {
           gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || '',
           wbout_datetime: form.datetime + ':00',
-          gross_weight: mergedGross,
-          tare_weight: mergedTare
+          gross_weight: wboutGross,
+          tare_weight: wboutTare
         };
 
         await dispatch(recordWboutThunk(payload)).unwrap();
@@ -264,29 +259,24 @@ const WeighbridgeTerminalPage: React.FC = () => {
               onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })}
             />
             <Input
-              label="Date of WBIN"
-              type="date"
-              value={form.wbin_date || ''}
-              onChange={(e) => setForm({ ...form, wbin_date: e.target.value })}
-            />
-            <Input
-              label="Time of WBIN"
-              type="time"
-              value={form.wbin_time || ''}
-              onChange={(e) => setForm({ ...form, wbin_time: e.target.value })}
-            />
-            <Input
               label="WBOUT Date & Time"
               type="datetime-local"
               value={form.datetime || ''}
               onChange={(e) => setForm({ ...form, datetime: e.target.value })}
             />
             <Input
-              label={selected.direction === 'IMPORT' ? 'Tare Wt' : 'Gross Wt'}
+              label="Gross Weight (kg)"
               type="number"
               min={0}
-              value={form.wbout_weight || ''}
-              onChange={(e) => setForm({ ...form, wbout_weight: e.target.value })}
+              value={form.wbout_gross_weight || ''}
+              onChange={(e) => setForm({ ...form, wbout_gross_weight: e.target.value })}
+            />
+            <Input
+              label="Tare Weight (kg)"
+              type="number"
+              min={0}
+              value={form.wbout_tare_weight || ''}
+              onChange={(e) => setForm({ ...form, wbout_tare_weight: e.target.value })}
             />
           </div>
         </Modal>
