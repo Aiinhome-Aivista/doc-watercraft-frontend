@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addVessel, updateVesselStatus, updateSurveyReport, fetchVessels, createVesselThunk, berthVesselThunk, moorVesselThunk, surveyVesselThunk, unberthVesselThunk } from '@/store/slices/vesselSlice';
 import { Vessel, VesselStatus } from '@/types/vessel';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
+import { formatDateTimeIST, getCurrentISTDateTimeLocalValue, getCurrentISTDateValue } from '@/utils/dateTime';
 
 const VesselsPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -21,7 +22,7 @@ const VesselsPage: React.FC = () => {
 
   const filtered = filter === 'ALL' ? vessels : vessels.filter((v) => v.status === filter);
 
-  const nowDt = () => new Date().toISOString().slice(0, 16);
+  const nowDt = () => getCurrentISTDateTimeLocalValue();
 
   const showAlert = (msg: string, type: 'success' | 'error' = 'success') => {
     setAlert({ msg, type });
@@ -53,7 +54,7 @@ const VesselsPage: React.FC = () => {
       cargo_type: form.cargo_type || 'FLYASH',
       quantity: parseFloat(form.quantity) || 0,
       direction: form.direction as any || 'IMPORT',
-      expected_date: form.expected_date || new Date().toISOString().slice(0, 10),
+      expected_date: form.expected_date || getCurrentISTDateValue(),
     };
 
     try {
@@ -94,9 +95,7 @@ const VesselsPage: React.FC = () => {
     }
   };
 
-  const fmt = (v: string | null | undefined) => v ? new Date(v).toLocaleString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  }) : '—';
+  const fmt = (v: string | null | undefined) => (v ? formatDateTimeIST(v) : '—');
   
   const fmtNum = (n: number | string | null | undefined) => n != null ? Number(n).toLocaleString('en-IN') : '—';
 

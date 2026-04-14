@@ -4,6 +4,7 @@ import { addGateEntry, updateGateStatus, fetchGateEntries, createGateEntryThunk,
 import { fetchVessels } from '@/store/slices/vesselSlice';
 import { GateEntry, GateStatus } from '@/types/vehicle';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
+import { formatDateTimeIST, getCurrentISTDateTimeLocalValue } from '@/utils/dateTime';
 
 const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -24,7 +25,7 @@ const GatePage: React.FC = () => {
   const filtered = filter === 'ALL' ? entries : entries.filter((e) => e.status === filter);
   const mooredVessels = vessels.filter((v) => ['MOORED', 'BERTHED'].includes(v.status));
 
-  const nowDt = () => new Date().toISOString().slice(0, 16);
+  const nowDt = () => getCurrentISTDateTimeLocalValue();
 
   const showAlert = (msg: string, type: 'success' | 'error' = 'success') => {
     setAlert({ msg, type });
@@ -93,7 +94,7 @@ const GatePage: React.FC = () => {
     }
   };
 
-  const fmt = (v: string | null) => v ? new Date(v).toLocaleString('en-IN') : '—';
+  const fmt = (v: string | null) => (v ? formatDateTimeIST(v) : '—');
 
   return (
     <>

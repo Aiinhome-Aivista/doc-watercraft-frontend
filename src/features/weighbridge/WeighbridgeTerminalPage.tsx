@@ -4,6 +4,7 @@ import { fetchGateEntries, recordWbinThunk, recordWboutThunk } from '@/store/sli
 import { fetchVessels } from '@/store/slices/vesselSlice';
 import { GateEntry } from '@/types/vehicle';
 import { Modal, Input, Button, StatusBadge } from '@/components/ui';
+import { formatDateTimeIST, getCurrentISTDateTimeLocalValue } from '@/utils/dateTime';
 
 const WeighbridgeTerminalPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -26,7 +27,7 @@ const WeighbridgeTerminalPage: React.FC = () => {
   }>({});
   const [alert, setAlert] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  const nowDt = () => new Date().toISOString().slice(0, 16);
+  const nowDt = () => getCurrentISTDateTimeLocalValue();
 
   const showAlert = (msg: string, type: 'success' | 'error' = 'success') => {
     setAlert({ msg, type });
@@ -123,7 +124,7 @@ const WeighbridgeTerminalPage: React.FC = () => {
   const wbinQueue = entries.filter((e) => e.status === 'PENDING_WBIN');
   const wboutQueue = entries.filter((e) => e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT');
 
-  const fmt = (v: string | null) => (v ? new Date(v).toLocaleString('en-IN') : '-');
+  const fmt = (v: string | null) => (v ? formatDateTimeIST(v) : '-');
 
   return (
     <>

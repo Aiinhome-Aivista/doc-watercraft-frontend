@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { StatusBadge } from '@/components/ui';
 import { fetchVessels } from '@/store/slices/vesselSlice';
+import { formatDateTimeIST } from '@/utils/dateTime';
 
 const DashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -23,14 +24,7 @@ const DashboardPage: React.FC = () => {
     ),
   };
 
-  const fmt = (v: string | null) =>
-    v ? new Date(v).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }) : '—';
+  const fmt = (v: string | null) => (v ? formatDateTimeIST(v) : '—');
 
   const fmtNum = (n: number | string | null | undefined) => 
     n != null ? Number(n).toLocaleString('en-IN') : '—';
