@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { GateEntry, GateStatus } from '@/types/vehicle';
-import { VehicleService, CreateGateEntryPayload, CreateWbinPayload } from '@/services/vehicleService';
+import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload } from '@/services/vehicleService';
 
 interface VehicleState {
   entries: GateEntry[];
@@ -46,6 +46,18 @@ export const recordWbinThunk = createAsyncThunk(
       return payload;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to record WBIN');
+    }
+  }
+);
+
+export const recordCargoOpThunk = createAsyncThunk(
+  'vehicles/recordCargoOp',
+  async (payload: RecordCargoOpPayload, { rejectWithValue }) => {
+    try {
+      await VehicleService.recordCargoOperation(payload);
+      return payload;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to record cargo operation');
     }
   }
 );
@@ -143,6 +155,21 @@ const vehicleSlice = createSlice({
         }
       })
       .addCase(recordWbinThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(recordCargoOpThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(recordCargoOpThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const entry = state.entries.find((e) => e.id === action.payload.gate_entry_id);
+        if (entry) {
+          entry.status = 'PENDING_WBOUT';
+        }
+      })
+      .addCase(recordCargoOpThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

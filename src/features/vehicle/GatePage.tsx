@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addGateEntry, updateGateStatus, fetchGateEntries, createGateEntryThunk } from '@/store/slices/vehicleSlice';
+import { addGateEntry, updateGateStatus, fetchGateEntries, createGateEntryThunk, recordCargoOpThunk } from '@/store/slices/vehicleSlice';
 import { fetchVessels } from '@/store/slices/vesselSlice';
 import { GateEntry, GateStatus } from '@/types/vehicle';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
@@ -70,11 +70,27 @@ const GatePage: React.FC = () => {
     }
   };
 
-  const handleAction = (status: GateStatus) => {
+  const handleAction = async (status: GateStatus) => {
     if (!selected) return;
-    dispatch(updateGateStatus({ id: selected.id, status, datetime: form.datetime + ':00' }));
-    closeModal();
-    showAlert('Status updated successfully');
+    
+    try {
+      if (status === 'UNLOADING' || status === 'PENDING_WBOUT') {
+        const payload = {
+          gate_entry_id: selected.id,
+          operation_type: form.op_type || 'UNLOADING',
+          start_datetime: form.datetime ? form.datetime + ':00' : '',
+          end_datetime: form.end_datetime ? form.end_datetime + ':00' : '',
+          compressor_no: form.compressor_no || '',
+          remarks: form.remarks || ''
+        };
+        await dispatch(recordCargoOpThunk(payload)).unwrap();
+        closeModal();
+        showAlert('Cargo operation recorded successfully');
+        return;
+      }
+    } catch (err: any) {
+      showAlert(err || 'Failed to record operation', 'error');
+    }
   };
 
   const fmt = (v: string | null) => v ? new Date(v).toLocaleString('en-IN') : '—';
@@ -142,7 +158,7 @@ const GatePage: React.FC = () => {
                   <td>
                     <div className="action-group">
                       {e.status === 'WBIN_DONE' && (
-                        <Button variant="primary" size="sm" onClick={() => openModal('operation', e)}>START OP</Button>
+                        <Button variant="primary" size="sm" onClick={() => openModal('operation', e)}>RECORD OP</Button>
                       )}
                       {e.status === 'PENDING_WBIN' && <span className="tag">Awaiting WBIN</span>}
                       {(e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT') && <span className="tag">Awaiting WBOUT</span>}
@@ -183,11 +199,13 @@ const GatePage: React.FC = () => {
       )}
 
       {modal === 'operation' && selected && (
-        <Modal title={`CARGO OPERATION — ${selected.vehicle_no}`} onClose={closeModal} footer={<Button variant="primary" onClick={() => handleAction('UNLOADING')}>START OPERATION</Button>}>
+        <Modal title={`CARGO OPERATION — ${selected.vehicle_no}`} onClose={closeModal} footer={<Button variant="primary" onClick={() => handleAction('PENDING_WBOUT')}>RECORD OPERATION</Button>}>
           <div className="form-grid">
             <Select label="Operation Type" value={form.op_type || 'UNLOADING'} onChange={(e) => setForm({ ...form, op_type: e.target.value })} options={[{ value: 'UNLOADING', label: 'Unloading' }, { value: 'LOADING', label: 'Loading' }]} />
             <Input label="Start Date & Time" type="datetime-local" value={form.datetime || ''} onChange={(e) => setForm({ ...form, datetime: e.target.value })} />
+            <Input label="End Date & Time" type="datetime-local" value={form.end_datetime || ''} onChange={(e) => setForm({ ...form, end_datetime: e.target.value })} />
             <Input label="Compressor No" value={form.compressor_no || ''} onChange={(e) => setForm({ ...form, compressor_no: e.target.value })} />
+            <Input label="Remarks" value={form.remarks || ''} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
           </div>
         </Modal>
       )}
