@@ -23,14 +23,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
   });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen((prev) => !prev);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
   };
   const navItems = [
     { label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/' },
@@ -47,7 +60,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar} />}
+
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-mark">DOCK SYS</div>
           <div className="logo-sub">Vessel & Logistics</div>
@@ -60,6 +75,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               key={item.path} 
               to={item.path} 
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              onClick={closeSidebar}
             >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
@@ -67,7 +83,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           ))}
           
           <div className="nav-section-label" style={{ marginTop: 20 }}>System</div>
-          <Link to="/settings" className="nav-item">
+          <Link to="/settings" className="nav-item" onClick={closeSidebar}>
             <span className="nav-icon"><Settings size={18} /></span>
             SETTINGS
           </Link>
@@ -76,7 +92,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       <main className="main">
         <header className="topbar">
-          <div className="topbar-title">{getPageTitle()}</div>
+          <div className="topbar-left">
+            <button className="btn btn-ghost btn-sm mobile-menu-btn" onClick={toggleSidebar} title="Toggle Navigation" aria-label="Toggle Navigation Menu">
+              <Menu size={16} />
+            </button>
+            <div className="topbar-title">{getPageTitle()}</div>
+          </div>
           <div className="topbar-right">
              <button className="btn btn-ghost btn-sm" onClick={toggleTheme} title="Toggle Theme">
                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
