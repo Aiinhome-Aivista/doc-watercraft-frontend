@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { updateGateStatus, recordWbinThunk } from '@/store/slices/vehicleSlice';
+import { updateGateStatus, recordWbinThunk, recordWboutThunk } from '@/store/slices/vehicleSlice';
 import { GateEntry } from '@/types/vehicle';
 import { Modal, Input, Button, StatusBadge } from '@/components/ui';
 
@@ -90,10 +90,6 @@ const WeighbridgeTerminalPage: React.FC = () => {
       }
 
       if (status === 'COMPLETED') {
-        if (!form.wbin_date || !form.wbin_time) {
-          showAlert('Please provide Date and Time of WBIN', 'error');
-          return;
-        }
         if (!form.wbout_weight || wboutWeight <= 0) {
           showAlert(
             selected.direction === 'IMPORT' ? 'Please provide Tare Wt for WBOUT' : 'Please provide Gross Wt for WBOUT',
@@ -101,41 +97,23 @@ const WeighbridgeTerminalPage: React.FC = () => {
           );
           return;
         }
-      }
 
-      const mergedGross =
-        status === 'COMPLETED' && selected.direction === 'EXPORT'
-          ? wboutWeight
-          : selected.gross_weight;
-      const mergedTare =
-        status === 'COMPLETED' && selected.direction === 'IMPORT'
-          ? wboutWeight
-          : selected.tare_weight;
-      const mergedNet =
-        mergedGross !== undefined && mergedTare !== undefined
-          ? mergedGross - mergedTare
-          : undefined;
+        const mergedGross = selected.direction === 'EXPORT' ? wboutWeight : (selected.gross_weight || 0);
+        const mergedTare = selected.direction === 'IMPORT' ? wboutWeight : (selected.tare_weight || 0);
 
-      const wbinDatetimeFromForm =
-        status === 'COMPLETED' && form.wbin_date && form.wbin_time
-          ? `${form.wbin_date}T${form.wbin_time}:00`
-          : undefined;
-
-      dispatch(
-        updateGateStatus({
-          id: selected.id,
-          status,
-          datetime: `${form.datetime}:00`,
-          wbin_datetime: wbinDatetimeFromForm,
+        const payload = {
+          gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || '',
+          wbout_datetime: form.datetime + ':00',
           gross_weight: mergedGross,
-          tare_weight: mergedTare,
-          net_weight: mergedNet,
-        })
-      );
-      closeModal();
-      showAlert('WBOUT recorded and gate-out completed');
+          tare_weight: mergedTare
+        };
 
+        await dispatch(recordWboutThunk(payload)).unwrap();
+        closeModal();
+        showAlert('WBOUT recorded and gate-out completed');
+        return;
+      }
     } catch (err: any) {
       showAlert(err || 'Failed to record operation', 'error');
     }

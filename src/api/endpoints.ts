@@ -20,5 +20,6 @@ export const ENDPOINTS = {
   },
   WEIGHBRIDGE: {
     WBIN: '/wbin',
+    WBOUT: '/wbout',
   },
 } as const;

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { GateEntry, GateStatus } from '@/types/vehicle';
-import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload } from '@/services/vehicleService';
+import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload, CreateWboutPayload } from '@/services/vehicleService';
 
 interface VehicleState {
   entries: GateEntry[];
@@ -58,6 +58,18 @@ export const recordCargoOpThunk = createAsyncThunk(
       return payload;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to record cargo operation');
+    }
+  }
+);
+
+export const recordWboutThunk = createAsyncThunk(
+  'vehicles/recordWbout',
+  async (payload: CreateWboutPayload, { rejectWithValue }) => {
+    try {
+      await VehicleService.recordWbout(payload);
+      return payload;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to record WBOUT');
     }
   }
 );
@@ -170,6 +182,26 @@ const vehicleSlice = createSlice({
         }
       })
       .addCase(recordCargoOpThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(recordWboutThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(recordWboutThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const entry = state.entries.find((e) => e.id === action.payload.gate_entry_id);
+        if (entry) {
+          entry.status = 'COMPLETED';
+          entry.gate_out_datetime = action.payload.wbout_datetime;
+          entry.weighment_slip_no = action.payload.weighment_slip_no;
+          entry.gross_weight = action.payload.gross_weight;
+          entry.tare_weight = action.payload.tare_weight;
+          entry.net_weight = action.payload.gross_weight - action.payload.tare_weight;
+        }
+      })
+      .addCase(recordWboutThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

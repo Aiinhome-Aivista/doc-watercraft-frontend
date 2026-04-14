@@ -32,6 +32,14 @@ export interface CreateWbinPayload {
   tare_weight: number;
 }
 
+export interface CreateWboutPayload {
+  gate_entry_id: number;
+  weighment_slip_no: string;
+  wbout_datetime: string;
+  gross_weight: number;
+  tare_weight: number;
+}
+
 export interface RecordCargoOpPayload {
   gate_entry_id: number;
   operation_type: string;
@@ -76,6 +84,14 @@ export const VehicleService = {
    */
   recordCargoOperation: async (payload: RecordCargoOpPayload): Promise<GenericStatusResponse> => {
     const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.VEHICLE.CARGO_OPS, payload);
+    return response.data;
+  },
+
+  /**
+   * Record WBOUT
+   */
+  recordWbout: async (payload: CreateWboutPayload): Promise<GenericStatusResponse> => {
+    const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.WEIGHBRIDGE.WBOUT, payload);
     return response.data;
   },
 };
