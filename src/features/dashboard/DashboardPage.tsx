@@ -1,9 +1,16 @@
-import React from 'react';
-import { useAppSelector } from '@/store/hooks';
+import React, { useEffect } from 'react';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { StatusBadge } from '@/components/ui';
+import { fetchVessels } from '@/store/slices/vesselSlice';
 
 const DashboardPage: React.FC = () => {
+  const dispatch = useAppDispatch();
   const vessels = useAppSelector((state) => state.vessels.items);
+  const loading = useAppSelector((state) => state.vessels.loading);
+
+  useEffect(() => {
+    dispatch(fetchVessels());
+  }, [dispatch]);
 
   const stats = {
     total: vessels.length,
@@ -11,7 +18,7 @@ const DashboardPage: React.FC = () => {
     active: vessels.filter((v) => ['BERTHED', 'MOORED'].includes(v.status)).length,
     completed: vessels.filter((v) => v.status === 'COMPLETED').length,
     totalQty: vessels.reduce(
-      (s, v) => s + (v.survey_quantity || v.quantity || 0),
+      (s, v) => s + parseFloat((v.survey_quantity || v.quantity || 0).toString()),
       0
     ),
   };
@@ -25,7 +32,7 @@ const DashboardPage: React.FC = () => {
       minute: '2-digit',
     }) : '—';
 
-  const fmtNum = (n: number | null | undefined) => 
+  const fmtNum = (n: number | string | null | undefined) => 
     n != null ? Number(n).toLocaleString('en-IN') : '—';
 
   return (

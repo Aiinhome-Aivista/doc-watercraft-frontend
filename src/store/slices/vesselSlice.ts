@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Vessel, VesselStatus } from '@/types/vessel';
-import { mockVessels } from '@/services/mockData';
+import { VesselService } from '@/services/vesselService';
 
 interface VesselState {
   items: Vessel[];
@@ -9,10 +9,22 @@ interface VesselState {
 }
 
 const initialState: VesselState = {
-  items: mockVessels,
+  items: [],
   loading: false,
   error: null,
 };
+
+export const fetchVessels = createAsyncThunk(
+  'vessels/fetchVessels',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await VesselService.getAllVessels();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch vessels');
+    }
+  }
+);
 
 const vesselSlice = createSlice({
   name: 'vessels',
@@ -50,6 +62,21 @@ const vesselSlice = createSlice({
     setVessels: (state, action: PayloadAction<Vessel[]>) => {
       state.items = action.payload;
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchVessels.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchVessels.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+      })
+      .addCase(fetchVessels.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 

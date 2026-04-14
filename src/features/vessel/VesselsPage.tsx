@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addVessel, updateVesselStatus, updateSurveyReport } from '@/store/slices/vesselSlice';
+import { addVessel, updateVesselStatus, updateSurveyReport, fetchVessels } from '@/store/slices/vesselSlice';
 import { Vessel, VesselStatus } from '@/types/vessel';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
 
 const VesselsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const vessels = useAppSelector((state) => state.vessels.items);
+  const loading = useAppSelector((state) => state.vessels.loading);
+
+  useEffect(() => {
+    dispatch(fetchVessels());
+  }, [dispatch]);
 
   const [filter, setFilter] = useState<VesselStatus | 'ALL'>('ALL');
   const [modal, setModal] = useState<'create' | 'berth' | 'moor' | 'survey' | 'unberth' | 'detail' | null>(null);
@@ -81,7 +86,7 @@ const VesselsPage: React.FC = () => {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   }) : '—';
   
-  const fmtNum = (n: number | null | undefined) => n != null ? Number(n).toLocaleString('en-IN') : '—';
+  const fmtNum = (n: number | string | null | undefined) => n != null ? Number(n).toLocaleString('en-IN') : '—';
 
   return (
     <>
