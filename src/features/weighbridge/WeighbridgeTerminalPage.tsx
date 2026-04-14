@@ -128,34 +128,44 @@ const WeighbridgeTerminalPage: React.FC = () => {
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
+      {alert && (
+        <div
+          className={`mb-4 border-l-4 px-4 py-2.5 text-sm ${
+            alert.type === 'success'
+              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-300'
+              : 'border-rose-400 bg-rose-500/10 text-rose-300'
+          }`}
+        >
+          {alert.msg}
+        </div>
+      )}
 
-      <div className="section-head">
-        <span className="section-title">WEIGHBRIDGE TERMINAL</span>
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-lg font-bold tracking-[0.08em] text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">WEIGHBRIDGE TERMINAL</span>
       </div>
 
-      <div className="stat-grid">
-        <div className="stat-card" style={{ '--accent-color': 'var(--amber)' } as React.CSSProperties}>
-          <div className="stat-val">{wbinQueue.length}</div>
-          <div className="stat-label">Pending WBIN</div>
-          <div className="stat-badge">
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="relative overflow-hidden border border-slate-800 bg-slate-950 p-4 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-amber-400">
+          <div className="text-[32px] font-bold leading-none text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">{wbinQueue.length}</div>
+          <div className="mt-1.5 text-[10px] uppercase tracking-[0.15em] text-slate-500 [font-family:'IBM_Plex_Mono',monospace]">Pending WBIN</div>
+          <div className="absolute right-3 top-3 text-xl opacity-20">
             <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>scale</span>
           </div>
         </div>
-        <div className="stat-card" style={{ '--accent-color': 'var(--accent)' } as React.CSSProperties}>
-          <div className="stat-val">{wboutQueue.length}</div>
-          <div className="stat-label">Pending WBOUT</div>
-          <div className="stat-badge">
+        <div className="relative overflow-hidden border border-slate-800 bg-slate-950 p-4 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-cyan-400">
+          <div className="text-[32px] font-bold leading-none text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">{wboutQueue.length}</div>
+          <div className="mt-1.5 text-[10px] uppercase tracking-[0.15em] text-slate-500 [font-family:'IBM_Plex_Mono',monospace]">Pending WBOUT</div>
+          <div className="absolute right-3 top-3 text-xl opacity-20">
             <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>logout</span>
           </div>
         </div>
       </div>
 
-      <div className="table-wrap" style={{ marginTop: 16 }}>
-        <div className="table-header">
-          <span className="table-title">WEIGHBRIDGE QUEUE</span>
+      <div className="mt-4 overflow-x-auto border border-slate-800 bg-slate-950">
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-3.5">
+          <span className="text-base font-bold tracking-[0.08em] text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">WEIGHBRIDGE QUEUE</span>
         </div>
-        <table>
+        <table className="w-full min-w-[840px] border-collapse [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:text-[10px] [&_th]:font-normal [&_th]:uppercase [&_th]:tracking-[0.15em] [&_th]:text-slate-500 [&_th]:[font-family:'IBM_Plex_Mono',monospace] [&_thead_tr]:border-b [&_thead_tr]:border-slate-800 [&_td]:border-b [&_td]:border-slate-800 [&_td]:px-4 [&_td]:py-2.5 [&_td]:text-[13px] [&_td]:text-slate-300 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover_td]:bg-white/[0.02]">
           <thead>
             <tr>
               <th>Gate-In No</th>
@@ -170,18 +180,18 @@ const WeighbridgeTerminalPage: React.FC = () => {
           <tbody>
             {[...wbinQueue, ...wboutQueue].map((e) => (
               <tr key={e.id}>
-                <td className="td-mono">{e.gate_in_no}</td>
-                <td className="td-primary">{e.vehicle_no}</td>
-                <td style={{ fontSize: 12 }}>{e.vessel_name}</td>
-                <td className="font-mono" style={{ fontSize: 12 }}>{e.weighment_slip_no || '-'}</td>
-                <td className="font-mono" style={{ fontSize: 11 }}>{fmt(e.gate_in_datetime)}</td>
+                <td className="text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">{e.gate_in_no}</td>
+                <td className="font-medium text-slate-100">{e.vehicle_no}</td>
+                <td className="text-xs">{e.vessel_name}</td>
+                <td className="text-xs [font-family:'IBM_Plex_Mono',monospace]">{e.weighment_slip_no || '-'}</td>
+                <td className="text-[11px] [font-family:'IBM_Plex_Mono',monospace]">{fmt(e.gate_in_datetime)}</td>
                 <td><StatusBadge status={e.status} /></td>
                 <td>
-                  <div className="action-group">
+                  <div className="flex flex-wrap gap-1.5">
                     {e.status === 'PENDING_WBIN' && (
                       <Button variant="amber" size="sm" onClick={() => openModal('wbin', e)}>WBIN</Button>
                     )}
-                    {e.status === 'UNLOADING' && <span className="tag">Unloading</span>}
+                    {e.status === 'UNLOADING' && <span className="inline-block border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] tracking-[0.05em] text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">Unloading</span>}
                     {e.status === 'PENDING_WBOUT' && (
                       <Button variant="green" size="sm" onClick={() => openModal('wbout', e)}>WBOUT</Button>
                     )}
@@ -192,11 +202,11 @@ const WeighbridgeTerminalPage: React.FC = () => {
             {[...wbinQueue, ...wboutQueue].length === 0 && (
               <tr>
                 <td colSpan={7}>
-                  <div className="empty">
-                    <div className="empty-icon">
+                  <div className="px-5 py-14 text-center text-slate-500">
+                    <div className="mb-3 text-[40px] opacity-30">
                       <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>balance</span>
                     </div>
-                    <div className="empty-text">No weighbridge tasks pending</div>
+                    <div className="text-xs uppercase tracking-[0.1em] [font-family:'IBM_Plex_Mono',monospace]">No weighbridge tasks pending</div>
                   </div>
                 </td>
               </tr>
@@ -213,7 +223,7 @@ const WeighbridgeTerminalPage: React.FC = () => {
           onClose={closeModal}
           footer={<Button variant="amber" onClick={() => handleAction('WBIN_DONE')}>RECORD WBIN</Button>}
         >
-          <div className="form-grid">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Input
               label="Weighment Slip No"
               value={form.weighment_slip_no || ''}
@@ -255,7 +265,7 @@ const WeighbridgeTerminalPage: React.FC = () => {
           onClose={closeModal}
           footer={<Button variant="green" onClick={() => handleAction('COMPLETED')}>RECORD WBOUT</Button>}
         >
-          <div className="form-grid">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Input
               label="Weighment Slip No"
               value={form.weighment_slip_no || ''}

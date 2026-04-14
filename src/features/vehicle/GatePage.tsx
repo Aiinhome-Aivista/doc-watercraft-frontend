@@ -98,21 +98,39 @@ const GatePage: React.FC = () => {
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
-      <div className="section-head">
-        <span className="section-title">VEHICLE GATE MANAGEMENT</span>
+      {alert && (
+        <div
+          className={`mb-4 border-l-4 px-4 py-2.5 text-sm ${
+            alert.type === 'success'
+              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-300'
+              : 'border-rose-400 bg-rose-500/10 text-rose-300'
+          }`}
+        >
+          {alert.msg}
+        </div>
+      )}
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-lg font-bold tracking-[0.08em] text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">VEHICLE GATE MANAGEMENT</span>
         <Button variant="light" onClick={() => openModal('create')}>+ GATE IN</Button>
       </div>
 
-      <div className="stat-card" style={{ marginBottom: 16, "--accent-color": "var(--accent)" } as React.CSSProperties}>
-        <div className="stat-label">Weighbridge operations are managed in the dedicated Weighbridge Terminal page.</div>
+      <div
+        className="relative mb-4 overflow-hidden border border-slate-800 bg-slate-950 p-4 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-cyan-400"
+      >
+        <div className="text-[10px] uppercase tracking-[0.15em] text-slate-500 [font-family:'IBM_Plex_Mono',monospace]">
+          Weighbridge operations are managed in the dedicated Weighbridge Terminal page.
+        </div>
       </div>
 
-      <div className="filter-bar">
+      <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap pb-1">
         {['ALL', 'PENDING_WBIN', 'WBIN_DONE', 'UNLOADING', 'PENDING_WBOUT', 'COMPLETED'].map((s) => (
           <button
             key={s}
-            className={`filter-tab ${filter === s ? 'active' : ''}`}
+            className={`border px-3.5 py-1.5 text-[11px] uppercase tracking-[0.1em] transition-colors [font-family:'IBM_Plex_Mono',monospace] ${
+              filter === s
+                ? 'border-cyan-600 bg-cyan-500/10 text-cyan-300'
+                : 'border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+            }`}
             onClick={() => setFilter(s as any)}
           >
             {s.replace(/_/g, ' ')}
@@ -120,8 +138,8 @@ const GatePage: React.FC = () => {
         ))}
       </div>
 
-      <div className="table-wrap">
-        <table>
+      <div className="overflow-x-auto border border-slate-800 bg-slate-950">
+        <table className="w-full min-w-[980px] border-collapse [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:text-[10px] [&_th]:font-normal [&_th]:uppercase [&_th]:tracking-[0.15em] [&_th]:text-slate-500 [&_th]:[font-family:'IBM_Plex_Mono',monospace] [&_thead_tr]:border-b [&_thead_tr]:border-slate-800 [&_td]:border-b [&_td]:border-slate-800 [&_td]:px-4 [&_td]:py-2.5 [&_td]:text-[13px] [&_td]:text-slate-300 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover_td]:bg-white/[0.02]">
           <thead>
             <tr>
               <th>Gate-In No</th>
@@ -139,31 +157,31 @@ const GatePage: React.FC = () => {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={9}>
-                  <div className="empty">
-                    <div className="empty-icon"><span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>local_shipping</span></div>
-                    <div className="empty-text">No entries found</div>
+                  <div className="px-5 py-14 text-center text-slate-500">
+                    <div className="mb-3 text-[40px] opacity-30"><span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>local_shipping</span></div>
+                    <div className="text-xs uppercase tracking-[0.1em] [font-family:'IBM_Plex_Mono',monospace]">No entries found</div>
                   </div>
                 </td>
               </tr>
             ) : (
               filtered.map((e) => (
                 <tr key={e.id}>
-                  <td className="td-mono">{e.gate_in_no}</td>
-                  <td className="td-primary">{e.vehicle_no}</td>
-                  <td style={{ fontSize: 12 }}>{e.vessel_name}</td>
-                  <td style={{ fontSize: 12 }}>{e.consignor_name}</td>
-                  <td className="font-mono" style={{ fontSize: 12 }}>{e.challan_invoice_no}</td>
-                  <td style={{ fontSize: 12 }}>{e.transporter_name || '—'}</td>
-                  <td className="font-mono" style={{ fontSize: 11 }}>{fmt(e.gate_in_datetime)}</td>
+                  <td className="text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">{e.gate_in_no}</td>
+                  <td className="font-medium text-slate-100">{e.vehicle_no}</td>
+                  <td className="text-xs">{e.vessel_name}</td>
+                  <td className="text-xs">{e.consignor_name}</td>
+                  <td className="text-xs [font-family:'IBM_Plex_Mono',monospace]">{e.challan_invoice_no}</td>
+                  <td className="text-xs">{e.transporter_name || '—'}</td>
+                  <td className="text-[11px] [font-family:'IBM_Plex_Mono',monospace]">{fmt(e.gate_in_datetime)}</td>
                   <td><StatusBadge status={e.status} /></td>
                   <td>
-                    <div className="action-group">
+                    <div className="flex flex-wrap gap-1.5">
                       {e.status === 'WBIN_DONE' && (
                         <Button variant="primary" size="sm" onClick={() => openModal('operation', e)}>RECORD OP</Button>
                       )}
-                      {e.status === 'PENDING_WBIN' && <span className="tag">Awaiting WBIN</span>}
-                      {(e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT') && <span className="tag">Awaiting WBOUT</span>}
-                      {e.status === 'COMPLETED' && <span style={{ fontSize: 11, color: 'var(--green)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="material-symbols-outlined" style={{ fontSize: 14 }}>check_circle</span> Done</span>}
+                      {e.status === 'PENDING_WBIN' && <span className="inline-block border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] tracking-[0.05em] text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">Awaiting WBIN</span>}
+                      {(e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT') && <span className="inline-block border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] tracking-[0.05em] text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">Awaiting WBOUT</span>}
+                      {e.status === 'COMPLETED' && <span className="inline-flex items-center gap-1 text-[11px] text-emerald-300"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>check_circle</span> Done</span>}
                     </div>
                   </td>
                 </tr>
@@ -184,7 +202,7 @@ const GatePage: React.FC = () => {
             </>
           }
         >
-          <div className="form-grid">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Select label="Vessel (Moored/Berthed)" value={form.vessel_id || ''} onChange={(e) => setForm({ ...form, vessel_id: e.target.value })} 
               options={[{ value: '', label: 'Select Vessel' }, ...mooredVessels.map(v => ({ value: v.id, label: v.vessel_name }))]} />
             <Input label="Gate-In Date & Time" type="datetime-local" value={form.gate_in_datetime || ''} onChange={(e) => setForm({ ...form, gate_in_datetime: e.target.value })} />
@@ -201,7 +219,7 @@ const GatePage: React.FC = () => {
 
       {modal === 'operation' && selected && (
         <Modal title={`CARGO OPERATION — ${selected.vehicle_no}`} onClose={closeModal} footer={<Button variant="primary" onClick={() => handleAction('PENDING_WBOUT')}>RECORD OPERATION</Button>}>
-          <div className="form-grid">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Select label="Operation Type" value={form.op_type || 'UNLOADING'} onChange={(e) => setForm({ ...form, op_type: e.target.value })} options={[{ value: 'UNLOADING', label: 'Unloading' }, { value: 'LOADING', label: 'Loading' }]} />
             <Input label="Start Date & Time" type="datetime-local" value={form.datetime || ''} onChange={(e) => setForm({ ...form, datetime: e.target.value })} />
             <Input label="End Date & Time" type="datetime-local" value={form.end_datetime || ''} onChange={(e) => setForm({ ...form, end_datetime: e.target.value })} />

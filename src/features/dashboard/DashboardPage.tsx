@@ -31,27 +31,33 @@ const DashboardPage: React.FC = () => {
 
   return (
     <>
-      <div className="stat-grid">
+      <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         {[
-          { label: 'Total Vessels', val: stats.total, color: 'var(--accent)', icon: 'directions_boat' },
-          { label: 'Planned', val: stats.planned, color: 'var(--text2)', icon: 'assignment' },
-          { label: 'Active (Berthed/Moored)', val: stats.active, color: 'var(--amber)', icon: 'sailing' },
-          { label: 'Completed', val: stats.completed, color: 'var(--green)', icon: 'check_circle' },
-          { label: 'Total Cargo (MT)', val: fmtNum(Math.round(stats.totalQty)), color: 'var(--purple)', icon: 'scale' },
+          { label: 'Total Vessels', val: stats.total, color: '#00c2ff', icon: 'directions_boat' },
+          { label: 'Planned', val: stats.planned, color: '#6b8090', icon: 'assignment' },
+          { label: 'Active (Berthed/Moored)', val: stats.active, color: '#ffb020', icon: 'sailing' },
+          { label: 'Completed', val: stats.completed, color: '#00e09e', icon: 'check_circle' },
+          { label: 'Total Cargo (MT)', val: fmtNum(Math.round(stats.totalQty)), color: '#9b6dff', icon: 'scale' },
         ].map((s) => (
-          <div className="stat-card" key={s.label} style={{ "--accent-color": s.color } as React.CSSProperties}>
-            <div className="stat-val">{s.val}</div>
-            <div className="stat-label">{s.label}</div>
-            <div className="stat-badge"><span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>{s.icon}</span></div>
+          <div
+            className="relative overflow-hidden border border-slate-800 bg-slate-950 p-4 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-[var(--accent-color)]"
+            key={s.label}
+            style={{ '--accent-color': s.color } as React.CSSProperties}
+          >
+            <div className="text-[32px] font-bold leading-none text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">{s.val}</div>
+            <div className="mt-1.5 text-[10px] uppercase tracking-[0.15em] text-slate-500 [font-family:'IBM_Plex_Mono',monospace]">{s.label}</div>
+            <div className="absolute right-3 top-3 text-xl opacity-20">
+              <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>{s.icon}</span>
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="table-wrap">
-        <div className="table-header">
-          <span className="table-title">VESSEL STATUS OVERVIEW</span>
+      <div className="overflow-x-auto border border-slate-800 bg-slate-950">
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-3.5">
+          <span className="text-base font-bold tracking-[0.08em] text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">VESSEL STATUS OVERVIEW</span>
         </div>
-        <table>
+        <table className="w-full min-w-[860px] border-collapse [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:text-[10px] [&_th]:font-normal [&_th]:uppercase [&_th]:tracking-[0.15em] [&_th]:text-slate-500 [&_th]:[font-family:'IBM_Plex_Mono',monospace] [&_thead_tr]:border-b [&_thead_tr]:border-slate-800 [&_td]:border-b [&_td]:border-slate-800 [&_td]:px-4 [&_td]:py-2.5 [&_td]:text-[13px] [&_td]:text-slate-300 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover_td]:bg-white/[0.02]">
           <thead>
             <tr>
               <th>Vessel ID</th>
@@ -67,13 +73,13 @@ const DashboardPage: React.FC = () => {
           <tbody>
             {vessels.map((v) => (
               <tr key={v.id}>
-                <td className="td-mono">{v.vessel_auto_id}</td>
-                <td className="td-primary">{v.vessel_name}</td>
-                <td><span className="tag">{v.cargo_type}</span></td>
+                <td className="text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">{v.vessel_auto_id}</td>
+                <td className="font-medium text-slate-100">{v.vessel_name}</td>
+                <td><span className="inline-block border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] tracking-[0.05em] text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">{v.cargo_type}</span></td>
                 <td>{v.direction}</td>
-                <td className="font-mono">{fmtNum(v.survey_quantity || v.quantity)}</td>
-                <td style={{ fontSize: 12 }}>{fmt(v.berthing_datetime)}</td>
-                <td style={{ fontSize: 12 }}>{fmt(v.sailing_datetime)}</td>
+                <td className="[font-family:'IBM_Plex_Mono',monospace]">{fmtNum(v.survey_quantity || v.quantity)}</td>
+                <td className="text-xs">{fmt(v.berthing_datetime)}</td>
+                <td className="text-xs">{fmt(v.sailing_datetime)}</td>
                 <td><StatusBadge status={v.status} /></td>
               </tr>
             ))}

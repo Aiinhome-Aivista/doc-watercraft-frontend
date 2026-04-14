@@ -101,18 +101,32 @@ const VesselsPage: React.FC = () => {
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
+      {alert && (
+        <div
+          className={`mb-4 border-l-4 px-4 py-2.5 text-sm ${
+            alert.type === 'success'
+              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-300'
+              : 'border-rose-400 bg-rose-500/10 text-rose-300'
+          }`}
+        >
+          {alert.msg}
+        </div>
+      )}
 
-      <div className="section-head">
-        <span className="section-title">VESSEL MANAGEMENT</span>
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-lg font-bold tracking-[0.08em] text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">VESSEL MANAGEMENT</span>
         <Button variant="light" onClick={() => openModal('create')}>+ NEW VESSEL</Button>
       </div>
 
-      <div className="filter-bar">
+      <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap pb-1">
         {['ALL', 'PLANNED', 'BERTHED', 'MOORED', 'COMPLETED'].map((s) => (
           <button
             key={s}
-            className={`filter-tab ${filter === s ? 'active' : ''}`}
+            className={`border px-3.5 py-1.5 text-[11px] uppercase tracking-[0.1em] transition-colors [font-family:'IBM_Plex_Mono',monospace] ${
+              filter === s
+                ? 'border-cyan-600 bg-cyan-500/10 text-cyan-300'
+                : 'border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+            }`}
             onClick={() => setFilter(s as any)}
           >
             {s}
@@ -120,8 +134,8 @@ const VesselsPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="table-wrap">
-        <table>
+      <div className="overflow-x-auto border border-slate-800 bg-slate-950">
+        <table className="w-full min-w-[900px] border-collapse [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:text-[10px] [&_th]:font-normal [&_th]:uppercase [&_th]:tracking-[0.15em] [&_th]:text-slate-500 [&_th]:[font-family:'IBM_Plex_Mono',monospace] [&_thead_tr]:border-b [&_thead_tr]:border-slate-800 [&_td]:border-b [&_td]:border-slate-800 [&_td]:px-4 [&_td]:py-2.5 [&_td]:text-[13px] [&_td]:text-slate-300 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover_td]:bg-white/[0.02]">
           <thead>
             <tr>
               <th>Auto ID</th>
@@ -139,25 +153,25 @@ const VesselsPage: React.FC = () => {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={9}>
-                  <div className="empty">
-                    <div className="empty-icon"><span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>anchor</span></div>
-                    <div className="empty-text">No vessels found</div>
+                  <div className="px-5 py-14 text-center text-slate-500">
+                    <div className="mb-3 text-[40px] opacity-30"><span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>anchor</span></div>
+                    <div className="text-xs uppercase tracking-[0.1em] [font-family:'IBM_Plex_Mono',monospace]">No vessels found</div>
                   </div>
                 </td>
               </tr>
             ) : (
               filtered.map((v) => (
                 <tr key={v.id}>
-                  <td className="td-mono">{v.vessel_auto_id}</td>
-                  <td className="td-primary">{v.vessel_name}</td>
-                  <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.party_name}</td>
-                  <td><span className="tag">{v.cargo_type}</span></td>
-                  <td className="font-mono">{fmtNum(v.survey_quantity || v.quantity)}</td>
+                  <td className="text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">{v.vessel_auto_id}</td>
+                  <td className="font-medium text-slate-100">{v.vessel_name}</td>
+                  <td className="max-w-[150px] truncate">{v.party_name}</td>
+                  <td><span className="inline-block border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] tracking-[0.05em] text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]">{v.cargo_type}</span></td>
+                  <td className="[font-family:'IBM_Plex_Mono',monospace]">{fmtNum(v.survey_quantity || v.quantity)}</td>
                   <td>{v.direction}</td>
-                  <td className="font-mono" style={{ fontSize: 12 }}>{v.expected_date}</td>
+                  <td className="text-xs [font-family:'IBM_Plex_Mono',monospace]">{v.expected_date}</td>
                   <td><StatusBadge status={v.status} /></td>
                   <td>
-                    <div className="action-group">
+                    <div className="flex flex-wrap gap-1.5">
                       <Button variant="ghost" size="sm" onClick={() => openModal('detail', v)}>VIEW</Button>
                       {v.status === 'PLANNED' && (
                         <Button variant="amber" size="sm" onClick={() => openModal('berth', v)}>BERTH</Button>
@@ -191,7 +205,7 @@ const VesselsPage: React.FC = () => {
             </>
           }
         >
-          <div className="form-grid">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Input label="Vessel Name" placeholder="M.V. Example" value={form.vessel_name || ''} onChange={(e) => setForm({ ...form, vessel_name: e.target.value })} />
             <Input label="Party Name" placeholder="Party / Client Name" value={form.party_name || ''} onChange={(e) => setForm({ ...form, party_name: e.target.value })} />
             <Input label="Cargo Type" placeholder="FLYASH / COAL / etc." value={form.cargo_type || ''} onChange={(e) => setForm({ ...form, cargo_type: e.target.value })} />
@@ -243,7 +257,7 @@ const VesselsPage: React.FC = () => {
             </>
           }
         >
-          <div className="form-grid">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Input label="Survey Quantity (MT)" type="number" step="0.01" placeholder="0.00" value={form.survey_quantity || ''} onChange={(e) => setForm({ ...form, survey_quantity: e.target.value })} />
             <Input label="Survey Date & Time" type="datetime-local" value={form.datetime || ''} onChange={(e) => setForm({ ...form, datetime: e.target.value })} />
           </div>
@@ -271,7 +285,7 @@ const VesselsPage: React.FC = () => {
           onClose={closeModal}
           footer={<Button variant="ghost" onClick={closeModal}>CLOSE</Button>}
         >
-          <div className="detail-grid">
+          <div className="mb-5 grid grid-cols-1 gap-px bg-slate-800 md:grid-cols-2">
             {[
               ['Vessel Name', selected.vessel_name],
               ['Auto ID', selected.vessel_auto_id, true],
@@ -286,15 +300,19 @@ const VesselsPage: React.FC = () => {
               ['Mooring', fmt(selected.mooring_datetime), true],
               ['Sailing', fmt(selected.sailing_datetime), true],
             ].map(([k, v, mono, status]: any) => (
-              <div className="detail-cell" key={k}>
-                <div className="detail-key">{k}</div>
-                {status ? <StatusBadge status={status} /> : <div className={`detail-val ${mono ? 'mono' : ''}`}>{v}</div>}
+              <div className="bg-slate-950 px-4 py-3" key={k}>
+                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-slate-500 [font-family:'IBM_Plex_Mono',monospace]">{k}</div>
+                {status ? (
+                  <StatusBadge status={status} />
+                ) : (
+                  <div className={`text-[13px] font-medium ${mono ? "text-cyan-300 [font-family:'IBM_Plex_Mono',monospace]" : 'text-slate-100'}`}>{v}</div>
+                )}
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 20 }}>
-            <div className="detail-key" style={{ marginBottom: 10 }}>WORKFLOW TIMELINE</div>
-            <div className="timeline">
+          <div className="mt-5">
+            <div className="mb-2.5 text-[10px] uppercase tracking-[0.1em] text-slate-500 [font-family:'IBM_Plex_Mono',monospace]">WORKFLOW TIMELINE</div>
+            <div className="flex flex-col">
               {[
                 { label: 'Vessel Planned', time: selected.expected_date, done: true, icon: 'assignment' },
                 { label: 'Berthed', time: fmt(selected.berthing_datetime), done: !!selected.berthing_datetime, active: selected.status === 'BERTHED', icon: 'anchor' },
@@ -302,13 +320,21 @@ const VesselsPage: React.FC = () => {
                 { label: 'Survey Complete', time: fmt(selected.survey_datetime), done: !!selected.survey_datetime, icon: 'analytics' },
                 { label: 'Unberthed / Completed', time: fmt(selected.sailing_datetime), done: !!selected.sailing_datetime, icon: 'sailing' },
               ].map((step) => (
-                <div className="timeline-step" key={step.label}>
-                  <div className={`timeline-dot ${step.done ? 'dot-done' : step.active ? 'dot-active' : 'dot-pending'}`}>
+                <div className="flex items-start gap-3.5 border-b border-slate-800 py-3.5 last:border-b-0" key={step.label}>
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm ${
+                      step.done
+                        ? 'border-emerald-400 bg-emerald-500/10 text-emerald-300'
+                        : step.active
+                          ? 'border-cyan-400 bg-cyan-500/10 text-cyan-300 animate-pulse'
+                          : 'border-slate-700 bg-slate-900 text-slate-500'
+                    }`}
+                  >
                     <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>{step.icon}</span>
                   </div>
-                  <div className="timeline-info">
-                    <div className="timeline-label">{step.label}</div>
-                    <div className="timeline-time">{step.time || 'Pending'}</div>
+                  <div className="flex-1">
+                    <div className="text-[15px] font-semibold tracking-[0.03em] text-slate-100 [font-family:'Barlow_Condensed',sans-serif]">{step.label}</div>
+                    <div className="mt-0.5 text-[11px] text-slate-500 [font-family:'IBM_Plex_Mono',monospace]">{step.time || 'Pending'}</div>
                   </div>
                 </div>
               ))}
