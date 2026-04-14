@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addVessel, updateVesselStatus, updateSurveyReport, fetchVessels } from '@/store/slices/vesselSlice';
+import { addVessel, updateVesselStatus, updateSurveyReport, fetchVessels, createVesselThunk, berthVesselThunk, moorVesselThunk } from '@/store/slices/vesselSlice';
 import { Vessel, VesselStatus } from '@/types/vessel';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
 
@@ -41,45 +41,54 @@ const VesselsPage: React.FC = () => {
     setForm({});
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!form.vessel_name || !form.party_name) {
       showAlert('Vessel name and Party name are required', 'error');
       return;
     }
-    const newVessel: Vessel = {
-      id: vessels.length + 1,
-      vessel_auto_id: `VSL-2026-${String(vessels.length + 1).padStart(4, '0')}`,
+    
+    const payload = {
       vessel_name: form.vessel_name,
       party_name: form.party_name,
       cargo_type: form.cargo_type || 'FLYASH',
       quantity: parseFloat(form.quantity) || 0,
       direction: form.direction as any || 'IMPORT',
-      status: 'PLANNED',
       expected_date: form.expected_date || new Date().toISOString().slice(0, 10),
-      berthing_datetime: null,
-      mooring_datetime: null,
-      sailing_datetime: null,
     };
-    dispatch(addVessel(newVessel));
-    closeModal();
-    showAlert(`Vessel ${newVessel.vessel_name} created successfully`);
+
+    try {
+      await dispatch(createVesselThunk(payload)).unwrap();
+      closeModal();
+      showAlert(`Vessel ${payload.vessel_name} created successfully`);
+    } catch (err: any) {
+      showAlert(err || 'Failed to create vessel', 'error');
+    }
   };
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
     if (!selected) return;
 
-    if (action === 'berth') {
-      dispatch(updateVesselStatus({ id: selected.id, status: 'BERTHED', datetime: form.datetime + ':00' }));
-    } else if (action === 'moor') {
-      dispatch(updateVesselStatus({ id: selected.id, status: 'MOORED', datetime: form.datetime + ':00' }));
-    } else if (action === 'survey') {
-      dispatch(updateSurveyReport({ id: selected.id, surveyQty: parseFloat(form.survey_quantity), datetime: form.datetime + ':00' }));
-    } else if (action === 'unberth') {
-      dispatch(updateVesselStatus({ id: selected.id, status: 'COMPLETED', datetime: form.datetime + ':00' }));
-    }
+    try {
+      if (action === 'berth') {
+        const datetime = form.datetime + ':00';
+        await dispatch(berthVesselThunk({ id: selected.id, payload: { berthing_datetime: datetime } })).unwrap();
+        showAlert('Berthing operation recorded successfully');
+      } else if (action === 'moor') {
+        const datetime = form.datetime + ':00';
+        await dispatch(moorVesselThunk({ id: selected.id, payload: { mooring_datetime: datetime } })).unwrap();
+        showAlert('Mooring operation recorded successfully');
+      } else if (action === 'survey') {
+        dispatch(updateSurveyReport({ id: selected.id, surveyQty: parseFloat(form.survey_quantity), datetime: form.datetime + ':00' }));
+        showAlert('Survey operation recorded successfully');
+      } else if (action === 'unberth') {
+        dispatch(updateVesselStatus({ id: selected.id, status: 'COMPLETED', datetime: form.datetime + ':00' }));
+        showAlert('Unberthing operation recorded successfully');
+      }
 
-    closeModal();
-    showAlert(`${action.charAt(0).toUpperCase() + action.slice(1)} operation recorded`);
+      closeModal();
+    } catch (err: any) {
+      showAlert(err || 'Operation failed', 'error');
+    }
   };
 
   const fmt = (v: string | null | undefined) => v ? new Date(v).toLocaleString('en-IN', {

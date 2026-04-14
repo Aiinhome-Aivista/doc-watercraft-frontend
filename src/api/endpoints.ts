@@ -8,6 +8,8 @@ export const ENDPOINTS = {
   VESSEL: {
     BASE: '/vessels',
     DETAIL: (id: string | number) => `/vessels/${id}`,
+    BERTH: (id: string | number) => `/vessels/${id}/berth`,
+    MOOR: (id: string | number) => `/vessels/${id}/moor`,
   },
   VEHICLE: {
     BASE: '/vehicles',

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Vessel, VesselStatus } from '@/types/vessel';
-import { VesselService } from '@/services/vesselService';
+import { VesselService, CreateVesselPayload, BerthVesselPayload, MoorVesselPayload } from '@/services/vesselService';
 
 interface VesselState {
   items: Vessel[];
@@ -22,6 +22,42 @@ export const fetchVessels = createAsyncThunk(
       return data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch vessels');
+    }
+  }
+);
+
+export const createVesselThunk = createAsyncThunk(
+  'vessels/createVessel',
+  async (payload: CreateVesselPayload, { rejectWithValue }) => {
+    try {
+      const data = await VesselService.createVessel(payload);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create vessel');
+    }
+  }
+);
+
+export const berthVesselThunk = createAsyncThunk(
+  'vessels/berthVessel',
+  async ({ id, payload }: { id: number | string; payload: BerthVesselPayload }, { rejectWithValue }) => {
+    try {
+      await VesselService.berthVessel(id, payload);
+      return { id, datetime: payload.berthing_datetime };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to berth vessel');
+    }
+  }
+);
+
+export const moorVesselThunk = createAsyncThunk(
+  'vessels/moorVessel',
+  async ({ id, payload }: { id: number | string; payload: MoorVesselPayload }, { rejectWithValue }) => {
+    try {
+      await VesselService.moorVessel(id, payload);
+      return { id, datetime: payload.mooring_datetime };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to moor vessel');
     }
   }
 );
@@ -65,6 +101,7 @@ const vesselSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch
       .addCase(fetchVessels.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -74,6 +111,53 @@ const vesselSlice = createSlice({
         state.items = action.payload;
       })
       .addCase(fetchVessels.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Create
+      .addCase(createVesselThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createVesselThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items.push(action.payload);
+      })
+      .addCase(createVesselThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Berth Vessel
+      .addCase(berthVesselThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(berthVesselThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const vessel = state.items.find((v) => v.id === action.payload.id);
+        if (vessel) {
+          vessel.status = 'BERTHED';
+          vessel.berthing_datetime = action.payload.datetime;
+        }
+      })
+      .addCase(berthVesselThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Moor Vessel
+      .addCase(moorVesselThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(moorVesselThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const vessel = state.items.find((v) => v.id === action.payload.id);
+        if (vessel) {
+          vessel.status = 'MOORED';
+          vessel.mooring_datetime = action.payload.datetime;
+        }
+      })
+      .addCase(moorVesselThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
