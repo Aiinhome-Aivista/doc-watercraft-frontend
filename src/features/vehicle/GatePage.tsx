@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addGateEntry, updateGateStatus, fetchGateEntries, createGateEntryThunk } from '@/store/slices/vehicleSlice';
+import { fetchVessels } from '@/store/slices/vesselSlice';
 import { GateEntry, GateStatus } from '@/types/vehicle';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
 
@@ -11,6 +12,7 @@ const GatePage: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchGateEntries());
+    dispatch(fetchVessels());
   }, [dispatch]);
 
   const [filter, setFilter] = useState<GateStatus | 'ALL'>('ALL');

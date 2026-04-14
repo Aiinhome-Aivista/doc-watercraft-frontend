@@ -24,6 +24,19 @@ export interface CreateGateEntryResponse {
   data: GateEntry;
 }
 
+export interface CreateWbinPayload {
+  gate_entry_id: number;
+  weighment_slip_no: string;
+  wbin_datetime: string;
+  gross_weight: number;
+  tare_weight: number;
+}
+
+export interface GenericStatusResponse {
+  success: boolean;
+  message: string;
+}
+
 export const VehicleService = {
   /**
    * Fetch all gate entries
@@ -39,5 +52,13 @@ export const VehicleService = {
   createGateEntry: async (payload: CreateGateEntryPayload): Promise<GateEntry> => {
     const response = await apiClient.post<CreateGateEntryResponse>(ENDPOINTS.VEHICLE.GATE_ENTRIES, payload);
     return response.data.data;
+  },
+
+  /**
+   * Record WBIN
+   */
+  recordWbin: async (payload: CreateWbinPayload): Promise<GenericStatusResponse> => {
+    const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.WEIGHBRIDGE.WBIN, payload);
+    return response.data;
   },
 };

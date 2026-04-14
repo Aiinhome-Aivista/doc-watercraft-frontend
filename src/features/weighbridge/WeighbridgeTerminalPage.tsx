@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { updateGateStatus } from '@/store/slices/vehicleSlice';
+import { updateGateStatus, recordWbinThunk } from '@/store/slices/vehicleSlice';
 import { GateEntry } from '@/types/vehicle';
 import { Modal, Input, Button, StatusBadge } from '@/components/ui';
 
@@ -57,74 +57,88 @@ const WeighbridgeTerminalPage: React.FC = () => {
   const netWeight = grossWeight - tareWeight;
   const wboutWeight = Number(form.wbout_weight || 0);
 
-  const handleAction = (status: 'WBIN_DONE' | 'COMPLETED') => {
+  const handleAction = async (status: 'WBIN_DONE' | 'COMPLETED') => {
     if (!selected || !form.datetime) {
       showAlert('Please provide weighbridge date and time', 'error');
       return;
     }
 
-    if (status === 'WBIN_DONE') {
-      if (!form.gross_weight || !form.tare_weight) {
-        showAlert('Please provide Gross Wt and Tare Wt for WBIN', 'error');
+    try {
+      if (status === 'WBIN_DONE') {
+        if (!form.gross_weight || !form.tare_weight) {
+          showAlert('Please provide Gross Wt and Tare Wt for WBIN', 'error');
+          return;
+        }
+
+        if (netWeight <= 0) {
+          showAlert('Gross Wt must be greater than Tare Wt', 'error');
+          return;
+        }
+
+        const payload = {
+          gate_entry_id: selected.id,
+          weighment_slip_no: form.weighment_slip_no || '',
+          wbin_datetime: form.datetime + ':00',
+          gross_weight: grossWeight,
+          tare_weight: tareWeight
+        };
+
+        await dispatch(recordWbinThunk(payload)).unwrap();
+        closeModal();
+        showAlert('WBIN recorded successfully');
         return;
       }
 
-      if (netWeight <= 0) {
-        showAlert('Gross Wt must be greater than Tare Wt', 'error');
-        return;
+      if (status === 'COMPLETED') {
+        if (!form.wbin_date || !form.wbin_time) {
+          showAlert('Please provide Date and Time of WBIN', 'error');
+          return;
+        }
+        if (!form.wbout_weight || wboutWeight <= 0) {
+          showAlert(
+            selected.direction === 'IMPORT' ? 'Please provide Tare Wt for WBOUT' : 'Please provide Gross Wt for WBOUT',
+            'error'
+          );
+          return;
+        }
       }
-    }
 
-    if (status === 'COMPLETED') {
-      if (!form.wbin_date || !form.wbin_time) {
-        showAlert('Please provide Date and Time of WBIN', 'error');
-        return;
-      }
-      if (!form.wbout_weight || wboutWeight <= 0) {
-        showAlert(
-          selected.direction === 'IMPORT' ? 'Please provide Tare Wt for WBOUT' : 'Please provide Gross Wt for WBOUT',
-          'error'
-        );
-        return;
-      }
-    }
-
-    const mergedGross =
-      status === 'COMPLETED' && selected.direction === 'EXPORT'
-        ? wboutWeight
-        : status === 'WBIN_DONE'
-          ? grossWeight
+      const mergedGross =
+        status === 'COMPLETED' && selected.direction === 'EXPORT'
+          ? wboutWeight
           : selected.gross_weight;
-    const mergedTare =
-      status === 'COMPLETED' && selected.direction === 'IMPORT'
-        ? wboutWeight
-        : status === 'WBIN_DONE'
-          ? tareWeight
+      const mergedTare =
+        status === 'COMPLETED' && selected.direction === 'IMPORT'
+          ? wboutWeight
           : selected.tare_weight;
-    const mergedNet =
-      mergedGross !== undefined && mergedTare !== undefined
-        ? mergedGross - mergedTare
-        : undefined;
+      const mergedNet =
+        mergedGross !== undefined && mergedTare !== undefined
+          ? mergedGross - mergedTare
+          : undefined;
 
-    const wbinDatetimeFromForm =
-      status === 'COMPLETED' && form.wbin_date && form.wbin_time
-        ? `${form.wbin_date}T${form.wbin_time}:00`
-        : undefined;
+      const wbinDatetimeFromForm =
+        status === 'COMPLETED' && form.wbin_date && form.wbin_time
+          ? `${form.wbin_date}T${form.wbin_time}:00`
+          : undefined;
 
-    dispatch(
-      updateGateStatus({
-        id: selected.id,
-        status,
-        datetime: `${form.datetime}:00`,
-        wbin_datetime: wbinDatetimeFromForm,
-        weighment_slip_no: form.weighment_slip_no || '',
-        gross_weight: mergedGross,
-        tare_weight: mergedTare,
-        net_weight: mergedNet,
-      })
-    );
-    closeModal();
-    showAlert(status === 'WBIN_DONE' ? 'WBIN recorded successfully' : 'WBOUT recorded and gate-out completed');
+      dispatch(
+        updateGateStatus({
+          id: selected.id,
+          status,
+          datetime: `${form.datetime}:00`,
+          wbin_datetime: wbinDatetimeFromForm,
+          weighment_slip_no: form.weighment_slip_no || '',
+          gross_weight: mergedGross,
+          tare_weight: mergedTare,
+          net_weight: mergedNet,
+        })
+      );
+      closeModal();
+      showAlert('WBOUT recorded and gate-out completed');
+
+    } catch (err: any) {
+      showAlert(err || 'Failed to record operation', 'error');
+    }
   };
 
   const wbinQueue = entries.filter((e) => e.status === 'PENDING_WBIN');

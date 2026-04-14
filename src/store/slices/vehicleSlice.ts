@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { GateEntry, GateStatus } from '@/types/vehicle';
-import { VehicleService, CreateGateEntryPayload } from '@/services/vehicleService';
+import { VehicleService, CreateGateEntryPayload, CreateWbinPayload } from '@/services/vehicleService';
 
 interface VehicleState {
   entries: GateEntry[];
@@ -34,6 +34,18 @@ export const createGateEntryThunk = createAsyncThunk(
       return data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create gate entry');
+    }
+  }
+);
+
+export const recordWbinThunk = createAsyncThunk(
+  'vehicles/recordWbin',
+  async (payload: CreateWbinPayload, { rejectWithValue }) => {
+    try {
+      await VehicleService.recordWbin(payload);
+      return payload;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to record WBIN');
     }
   }
 );
@@ -111,6 +123,26 @@ const vehicleSlice = createSlice({
         state.entries.push(action.payload);
       })
       .addCase(createGateEntryThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(recordWbinThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(recordWbinThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const entry = state.entries.find((e) => e.id === action.payload.gate_entry_id);
+        if (entry) {
+          entry.status = 'WBIN_DONE';
+          entry.wbin_datetime = action.payload.wbin_datetime;
+          entry.weighment_slip_no = action.payload.weighment_slip_no;
+          entry.gross_weight = action.payload.gross_weight;
+          entry.tare_weight = action.payload.tare_weight;
+          entry.net_weight = action.payload.gross_weight - action.payload.tare_weight;
+        }
+      })
+      .addCase(recordWbinThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

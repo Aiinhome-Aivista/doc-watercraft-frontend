@@ -17,4 +17,7 @@ export const ENDPOINTS = {
     BASE: '/vehicles',
     GATE_ENTRIES: '/gate-entries',
   },
+  WEIGHBRIDGE: {
+    WBIN: '/wbin',
+  },
 } as const;
