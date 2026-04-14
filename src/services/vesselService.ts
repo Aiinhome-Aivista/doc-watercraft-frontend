@@ -30,6 +30,15 @@ export interface MoorVesselPayload {
   mooring_datetime: string;
 }
 
+export interface SurveyVesselPayload {
+  survey_quantity: number;
+  survey_datetime: string;
+}
+
+export interface UnberthVesselPayload {
+  sailing_datetime: string;
+}
+
 export interface GenericStatusResponse {
   success: boolean;
   message: string;
@@ -66,6 +75,22 @@ export const VesselService = {
    */
   moorVessel: async (id: number | string, payload: MoorVesselPayload): Promise<GenericStatusResponse> => {
     const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.VESSEL.MOOR(id), payload);
+    return response.data;
+  },
+
+  /**
+   * Record vessel survey
+   */
+  surveyVessel: async (id: number | string, payload: SurveyVesselPayload): Promise<GenericStatusResponse> => {
+    const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.VESSEL.SURVEY(id), payload);
+    return response.data;
+  },
+
+  /**
+   * Unberth/Sail a vessel
+   */
+  unberthVessel: async (id: number | string, payload: UnberthVesselPayload): Promise<GenericStatusResponse> => {
+    const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.VESSEL.UNBERTH(id), payload);
     return response.data;
   },
 };

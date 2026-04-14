@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Vessel, VesselStatus } from '@/types/vessel';
-import { VesselService, CreateVesselPayload, BerthVesselPayload, MoorVesselPayload } from '@/services/vesselService';
+import { VesselService, CreateVesselPayload, BerthVesselPayload, MoorVesselPayload, SurveyVesselPayload, UnberthVesselPayload } from '@/services/vesselService';
 
 interface VesselState {
   items: Vessel[];
@@ -58,6 +58,30 @@ export const moorVesselThunk = createAsyncThunk(
       return { id, datetime: payload.mooring_datetime };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to moor vessel');
+    }
+  }
+);
+
+export const surveyVesselThunk = createAsyncThunk(
+  'vessels/surveyVessel',
+  async ({ id, payload }: { id: number | string; payload: SurveyVesselPayload }, { rejectWithValue }) => {
+    try {
+      await VesselService.surveyVessel(id, payload);
+      return { id, qty: payload.survey_quantity, datetime: payload.survey_datetime };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to record survey');
+    }
+  }
+);
+
+export const unberthVesselThunk = createAsyncThunk(
+  'vessels/unberthVessel',
+  async ({ id, payload }: { id: number | string; payload: UnberthVesselPayload }, { rejectWithValue }) => {
+    try {
+      await VesselService.unberthVessel(id, payload);
+      return { id, datetime: payload.sailing_datetime };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to unberth vessel');
     }
   }
 );
@@ -158,6 +182,40 @@ const vesselSlice = createSlice({
         }
       })
       .addCase(moorVesselThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Survey Vessel
+      .addCase(surveyVesselThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(surveyVesselThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const vessel = state.items.find((v) => v.id === action.payload.id);
+        if (vessel) {
+          vessel.survey_quantity = action.payload.qty;
+          vessel.survey_datetime = action.payload.datetime;
+        }
+      })
+      .addCase(surveyVesselThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Unberth Vessel
+      .addCase(unberthVesselThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(unberthVesselThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const vessel = state.items.find((v) => v.id === action.payload.id);
+        if (vessel) {
+          vessel.status = 'COMPLETED';
+          vessel.sailing_datetime = action.payload.datetime;
+        }
+      })
+      .addCase(unberthVesselThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

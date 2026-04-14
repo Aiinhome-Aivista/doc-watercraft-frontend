@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addVessel, updateVesselStatus, updateSurveyReport, fetchVessels, createVesselThunk, berthVesselThunk, moorVesselThunk } from '@/store/slices/vesselSlice';
+import { addVessel, updateVesselStatus, updateSurveyReport, fetchVessels, createVesselThunk, berthVesselThunk, moorVesselThunk, surveyVesselThunk, unberthVesselThunk } from '@/store/slices/vesselSlice';
 import { Vessel, VesselStatus } from '@/types/vessel';
 import { Modal, Input, Select, Button, StatusBadge } from '@/components/ui';
 
@@ -78,10 +78,13 @@ const VesselsPage: React.FC = () => {
         await dispatch(moorVesselThunk({ id: selected.id, payload: { mooring_datetime: datetime } })).unwrap();
         showAlert('Mooring operation recorded successfully');
       } else if (action === 'survey') {
-        dispatch(updateSurveyReport({ id: selected.id, surveyQty: parseFloat(form.survey_quantity), datetime: form.datetime + ':00' }));
+        const datetime = form.datetime + ':00';
+        const qty = parseFloat(form.survey_quantity) || 0;
+        await dispatch(surveyVesselThunk({ id: selected.id, payload: { survey_datetime: datetime, survey_quantity: qty } })).unwrap();
         showAlert('Survey operation recorded successfully');
       } else if (action === 'unberth') {
-        dispatch(updateVesselStatus({ id: selected.id, status: 'COMPLETED', datetime: form.datetime + ':00' }));
+        const datetime = form.datetime + ':00';
+        await dispatch(unberthVesselThunk({ id: selected.id, payload: { sailing_datetime: datetime } })).unwrap();
         showAlert('Unberthing operation recorded successfully');
       }
 
