@@ -20,6 +20,7 @@ const WeighbridgeTerminalPage: React.FC = () => {
   const [form, setForm] = useState<{
     datetime?: string;
     weighment_slip_no?: string;
+    direction?: string;
     gross_weight?: string;
     tare_weight?: string;
     wbout_gross_weight?: string;
@@ -39,6 +40,7 @@ const WeighbridgeTerminalPage: React.FC = () => {
     setForm({
       datetime: nowDt(),
       weighment_slip_no: entry.weighment_slip_no || '',
+      direction: entry.direction,
       gross_weight: entry.gross_weight?.toString() || '',
       tare_weight: entry.tare_weight?.toString() || '',
       wbout_gross_weight: '',
@@ -55,7 +57,10 @@ const WeighbridgeTerminalPage: React.FC = () => {
 
   const grossWeight = Number(form.gross_weight || 0);
   const tareWeight = Number(form.tare_weight || 0);
-  const netWeight = grossWeight - tareWeight;
+  const isImport = form.direction === 'IMPORT';
+  const isExport = form.direction === 'EXPORT';
+  const isWboutImport = selected?.direction === 'IMPORT';
+  const isWboutExport = selected?.direction === 'EXPORT';
 
   const handleAction = async (status: 'WBIN_DONE' | 'COMPLETED') => {
     if (!selected || !form.datetime) {
@@ -65,13 +70,18 @@ const WeighbridgeTerminalPage: React.FC = () => {
 
     try {
       if (status === 'WBIN_DONE') {
-        if (!form.gross_weight || !form.tare_weight) {
-          showAlert('Please provide Gross Wt and Tare Wt for WBIN', 'error');
+        if (!form.direction) {
+          showAlert('Unable to determine vessel direction', 'error');
           return;
         }
 
-        if (netWeight <= 0) {
-          showAlert('Gross Wt must be greater than Tare Wt', 'error');
+        if (isImport && (!form.tare_weight || tareWeight <= 0)) {
+          showAlert('Please provide Tare Wt for IMPORT WBIN', 'error');
+          return;
+        }
+
+        if (isExport && (!form.gross_weight || grossWeight <= 0)) {
+          showAlert('Please provide Gross Wt for EXPORT WBIN', 'error');
           return;
         }
 
@@ -79,8 +89,8 @@ const WeighbridgeTerminalPage: React.FC = () => {
           gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || '',
           wbin_datetime: form.datetime + ':00',
-          gross_weight: grossWeight,
-          tare_weight: tareWeight
+          gross_weight: isExport ? grossWeight : undefined,
+          tare_weight: isImport ? tareWeight : undefined,
         };
 
         await dispatch(recordWbinThunk(payload)).unwrap();
@@ -90,16 +100,21 @@ const WeighbridgeTerminalPage: React.FC = () => {
       }
 
       if (status === 'COMPLETED') {
+        if (!form.direction) {
+          showAlert('Unable to determine vessel direction', 'error');
+          return;
+        }
 
         const wboutGross = Number(form.wbout_gross_weight || 0);
         const wboutTare = Number(form.wbout_tare_weight || 0);
 
-        if (!form.wbout_gross_weight || wboutGross <= 0) {
-          showAlert('Please provide Gross Weight for WBOUT', 'error');
+        if (isWboutImport && (!form.wbout_gross_weight || wboutGross <= 0)) {
+          showAlert('Please provide Gross Wt for IMPORT WBOUT', 'error');
           return;
         }
-        if (!form.wbout_tare_weight || wboutTare <= 0) {
-          showAlert('Please provide Tare Weight for WBOUT', 'error');
+
+        if (isWboutExport && (!form.wbout_tare_weight || wboutTare <= 0)) {
+          showAlert('Please provide Tare Wt for EXPORT WBOUT', 'error');
           return;
         }
 
@@ -107,8 +122,8 @@ const WeighbridgeTerminalPage: React.FC = () => {
           gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || '',
           wbout_datetime: form.datetime + ':00',
-          gross_weight: wboutGross,
-          tare_weight: wboutTare
+          gross_weight: isWboutImport ? wboutGross : undefined,
+          tare_weight: isWboutExport ? wboutTare : undefined
         };
 
         await dispatch(recordWboutThunk(payload)).unwrap();
@@ -220,31 +235,34 @@ const WeighbridgeTerminalPage: React.FC = () => {
               onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })}
             />
             <Input
+              label="Direction"
+              value={form.direction || ''}
+              readOnly
+            />
+            <Input
               label="WBIN Date & Time"
               type="datetime-local"
               value={form.datetime || ''}
               onChange={(e) => setForm({ ...form, datetime: e.target.value })}
             />
-            <Input
-              label="Gross Wt"
-              type="number"
-              min={0}
-              value={form.gross_weight || ''}
-              onChange={(e) => setForm({ ...form, gross_weight: e.target.value })}
-            />
-            <Input
-              label="Tare Wt"
-              type="number"
-              min={0}
-              value={form.tare_weight || ''}
-              onChange={(e) => setForm({ ...form, tare_weight: e.target.value })}
-            />
-            <Input
-              label="Net Wt"
-              type="number"
-              value={Number.isFinite(netWeight) && netWeight > 0 ? netWeight : 0}
-              readOnly
-            />
+            {isImport && (
+              <Input
+                label="Tare Wt"
+                type="number"
+                min={0}
+                value={form.tare_weight || ''}
+                onChange={(e) => setForm({ ...form, tare_weight: e.target.value })}
+              />
+            )}
+            {isExport && (
+              <Input
+                label="Gross Wt"
+                type="number"
+                min={0}
+                value={form.gross_weight || ''}
+                onChange={(e) => setForm({ ...form, gross_weight: e.target.value })}
+              />
+            )}
           </div>
         </Modal>
       )}
@@ -261,26 +279,35 @@ const WeighbridgeTerminalPage: React.FC = () => {
               value={form.weighment_slip_no || ''}
               onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })}
             />
+              <Input
+                label="Direction"
+                value={selected?.direction || ''}
+                readOnly
+              />
             <Input
               label="WBOUT Date & Time"
               type="datetime-local"
               value={form.datetime || ''}
               onChange={(e) => setForm({ ...form, datetime: e.target.value })}
             />
-            <Input
-              label="Gross Weight (kg)"
-              type="number"
-              min={0}
-              value={form.wbout_gross_weight || ''}
-              onChange={(e) => setForm({ ...form, wbout_gross_weight: e.target.value })}
-            />
-            <Input
-              label="Tare Weight (kg)"
-              type="number"
-              min={0}
-              value={form.wbout_tare_weight || ''}
-              onChange={(e) => setForm({ ...form, wbout_tare_weight: e.target.value })}
-            />
+              {isWboutImport && (
+                <Input
+                  label="Gross Wt"
+                  type="number"
+                  min={0}
+                  value={form.wbout_gross_weight || ''}
+                  onChange={(e) => setForm({ ...form, wbout_gross_weight: e.target.value })}
+                />
+              )}
+              {isWboutExport && (
+                <Input
+                  label="Tare Wt"
+                  type="number"
+                  min={0}
+                  value={form.wbout_tare_weight || ''}
+                  onChange={(e) => setForm({ ...form, wbout_tare_weight: e.target.value })}
+                />
+              )}
           </div>
         </Modal>
       )}

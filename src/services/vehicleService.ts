@@ -15,6 +15,7 @@ export interface CreateGateEntryPayload {
   transporter_name: string;
   weighment_slip_no: string;
   own_weighbridge: 1 | 0;
+  gross_weight?: number;
   gate_in_datetime: string;
 }
 
@@ -28,16 +29,16 @@ export interface CreateWbinPayload {
   gate_entry_id: number;
   weighment_slip_no: string;
   wbin_datetime: string;
-  gross_weight: number;
-  tare_weight: number;
+  gross_weight?: number;
+  tare_weight?: number;
 }
 
 export interface CreateWboutPayload {
   gate_entry_id: number;
   weighment_slip_no: string;
   wbout_datetime: string;
-  gross_weight: number;
-  tare_weight: number;
+  gross_weight?: number;
+  tare_weight?: number;
 }
 
 export interface RecordCargoOpPayload {

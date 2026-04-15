@@ -45,12 +45,29 @@ const GatePage: React.FC = () => {
     setForm({});
   };
 
+  const handleVesselChange = (vesselId: string) => {
+    const selectedVessel = vessels.find((v) => v.id === Number(vesselId));
+    setForm({
+      ...form,
+      vessel_id: vesselId,
+      direction: selectedVessel?.direction || '',
+      consignor_name: selectedVessel?.party_name || 'Poddar Imports',
+    });
+  };
+
   const handleCreate = async () => {
     if (!form.vessel_id) {
         showAlert('Please select a vessel', 'error');
         return;
     }
     const ownWb = parseInt(form.own_weighbridge || '0') as 0 | 1;
+    const grossWeight = Number(form.gross_weight || 0);
+
+    if (ownWb === 1 && grossWeight <= 0) {
+      showAlert('Please enter gross weight for own weighbridge gate-in', 'error');
+      return;
+    }
+
     const payload = {
       vessel_id: parseInt(form.vessel_id),
       consignor_name: form.consignor_name || '',
@@ -59,6 +76,7 @@ const GatePage: React.FC = () => {
       transporter_name: form.transporter_name || '',
       weighment_slip_no: form.weighment_slip_no || '',
       own_weighbridge: ownWb,
+      gross_weight: ownWb === 1 ? grossWeight : undefined,
       gate_in_datetime: form.gate_in_datetime + ':00',
     };
 
@@ -109,7 +127,7 @@ const GatePage: React.FC = () => {
       </div>
 
       <div className="filter-bar">
-        {['ALL', 'PENDING_WBIN', 'WBIN_DONE', 'UNLOADING', 'PENDING_WBOUT', 'COMPLETED'].map((s) => (
+        {['ALL', 'PENDING_WBIN', 'WBIN_DONE', 'LOADING/UNLOADING', 'PENDING_WBOUT', 'COMPLETED'].map((s) => (
           <button
             key={s}
             className={`filter-tab ${filter === s ? 'active' : ''}`}
@@ -185,8 +203,9 @@ const GatePage: React.FC = () => {
           }
         >
           <div className="form-grid">
-            <Select label="Vessel (Moored/Berthed)" value={form.vessel_id || ''} onChange={(e) => setForm({ ...form, vessel_id: e.target.value })} 
+            <Select label="Vessel (Moored/Berthed)" value={form.vessel_id || ''} onChange={(e) => handleVesselChange(e.target.value)} 
               options={[{ value: '', label: 'Select Vessel' }, ...mooredVessels.map(v => ({ value: v.id, label: v.vessel_name }))]} />
+            <Input label="Direction" value={form.direction || ''} readOnly />
             <Input label="Gate-In Date & Time" type="datetime-local" value={form.gate_in_datetime || ''} onChange={(e) => setForm({ ...form, gate_in_datetime: e.target.value })} />
             <Input label="Consignor Name" value={form.consignor_name || ''} onChange={(e) => setForm({ ...form, consignor_name: e.target.value })} />
             <Input label="Challan / Invoice No" value={form.challan_invoice_no || ''} onChange={(e) => setForm({ ...form, challan_invoice_no: e.target.value })} />
@@ -195,6 +214,14 @@ const GatePage: React.FC = () => {
             <Input label="Weighment Slip No" value={form.weighment_slip_no || ''} onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })} />
             <Select label="Own Weighbridge? (≥60T skips WBIN)" value={form.own_weighbridge || '0'} onChange={(e) => setForm({ ...form, own_weighbridge: e.target.value })}
               options={[{ value: '0', label: 'No — Needs WBIN' }, { value: '1', label: 'Yes — Skip to WBOUT' }]} />
+            {form.own_weighbridge === '1' && (
+              <Input
+                label="Gross Weight"
+                type="number"
+                value={form.gross_weight || ''}
+                onChange={(e) => setForm({ ...form, gross_weight: e.target.value })}
+              />
+            )}
           </div>
         </Modal>
       )}

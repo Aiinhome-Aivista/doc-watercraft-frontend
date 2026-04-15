@@ -161,9 +161,15 @@ const vehicleSlice = createSlice({
           entry.status = 'WBIN_DONE';
           entry.wbin_datetime = action.payload.wbin_datetime;
           entry.weighment_slip_no = action.payload.weighment_slip_no;
-          entry.gross_weight = action.payload.gross_weight;
-          entry.tare_weight = action.payload.tare_weight;
-          entry.net_weight = action.payload.gross_weight - action.payload.tare_weight;
+          if (action.payload.gross_weight !== undefined) {
+            entry.gross_weight = action.payload.gross_weight;
+          }
+          if (action.payload.tare_weight !== undefined) {
+            entry.tare_weight = action.payload.tare_weight;
+          }
+          if (action.payload.gross_weight !== undefined && action.payload.tare_weight !== undefined) {
+            entry.net_weight = action.payload.gross_weight - action.payload.tare_weight;
+          }
         }
       })
       .addCase(recordWbinThunk.rejected, (state, action) => {
@@ -196,9 +202,15 @@ const vehicleSlice = createSlice({
           entry.status = 'COMPLETED';
           entry.gate_out_datetime = action.payload.wbout_datetime;
           entry.weighment_slip_no = action.payload.weighment_slip_no;
-          entry.gross_weight = action.payload.gross_weight;
-          entry.tare_weight = action.payload.tare_weight;
-          entry.net_weight = action.payload.gross_weight - action.payload.tare_weight;
+          if (action.payload.gross_weight !== undefined) {
+            entry.gross_weight = action.payload.gross_weight;
+          }
+          if (action.payload.tare_weight !== undefined) {
+            entry.tare_weight = action.payload.tare_weight;
+          }
+          if (action.payload.gross_weight !== undefined && action.payload.tare_weight !== undefined) {
+            entry.net_weight = action.payload.gross_weight - action.payload.tare_weight;
+          }
         }
       })
       .addCase(recordWboutThunk.rejected, (state, action) => {
