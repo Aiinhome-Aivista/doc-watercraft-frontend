@@ -101,7 +101,7 @@ const FinancePage: React.FC = () => {
                   <span className="billing-total-val">{fmtRs(bill.total)}</span>
                 </div>
                 <div style={{ marginTop: 20 }}>
-                  <Button className="w-full" style={{ width: '100%' }}>PRINT INVOICE</Button>
+                  <Button style={{ width: '100%' }}>PRINT INVOICE</Button>
                 </div>
               </div>
             );

@@ -415,7 +415,6 @@ const GatePage: React.FC = () => {
               <th>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1"
                   onClick={() =>
                     setGateInSort((current) =>
                       current === "latest" ? "oldest" : "latest",

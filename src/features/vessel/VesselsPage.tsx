@@ -224,7 +224,6 @@ const VesselsPage: React.FC = () => {
               <th>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1"
                   onClick={() =>
                     setCreatedAtSort((current) =>
                       current === "latest" ? "oldest" : "latest",
