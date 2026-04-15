@@ -3,6 +3,7 @@ import { Direction } from './vessel';
 export type GateStatus = 
   | 'PENDING_WBIN' 
   | 'WBIN_DONE' 
+  | 'LOADING'
   | 'UNLOADING' 
   | 'PENDING_WBOUT' 
   | 'COMPLETED';

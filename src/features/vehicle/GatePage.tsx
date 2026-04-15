@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addGateEntry, updateGateStatus, fetchGateEntries, createGateEntryThunk, recordCargoOpThunk } from '@/store/slices/vehicleSlice';
 import { fetchVessels } from '@/store/slices/vesselSlice';
@@ -16,13 +16,36 @@ const GatePage: React.FC = () => {
     dispatch(fetchVessels());
   }, [dispatch]);
 
-  const [filter, setFilter] = useState<GateStatus | 'ALL'>('ALL');
+  const [filter, setFilter] = useState<GateStatus | 'ALL' | 'LOADING/UNLOADING'>('ALL');
+  const [gateInSort, setGateInSort] = useState<'latest' | 'oldest'>('latest');
   const [modal, setModal] = useState<'create' | 'operation' | null>(null);
   const [selected, setSelected] = useState<GateEntry | null>(null);
   const [form, setForm] = useState<any>({});
   const [alert, setAlert] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  const filtered = filter === 'ALL' ? entries : entries.filter((e) => e.status === filter);
+  const getDateMs = (value: string | null | undefined) => {
+    if (!value) return 0;
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+    const withOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized) ? normalized : `${normalized}+05:30`;
+    const parsed = new Date(withOffset).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const filtered = useMemo(() => {
+    const base = entries.filter((entry) => {
+      if (filter === 'ALL') return true;
+      if (filter === 'LOADING/UNLOADING') {
+        const status = String(entry.status || '').toUpperCase();
+        return status === 'LOADING' || status === 'UNLOADING';
+      }
+      return entry.status === filter;
+    });
+
+    return [...base].sort((a, b) => {
+      const diff = getDateMs(a.gate_in_datetime) - getDateMs(b.gate_in_datetime);
+      return gateInSort === 'latest' ? -diff : diff;
+    });
+  }, [entries, filter, gateInSort]);
   const mooredVessels = vessels.filter((v) => ['MOORED', 'BERTHED'].includes(v.status));
 
   const nowDt = () => getCurrentISTDateTimeLocalValue();
@@ -148,7 +171,19 @@ const GatePage: React.FC = () => {
               <th>Consignor</th>
               <th>Challan</th>
               <th>Transporter</th>
-              <th>Gate In</th>
+              <th>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1"
+                  onClick={() => setGateInSort((current) => (current === 'latest' ? 'oldest' : 'latest'))}
+                  style={{ background: 'transparent', border: 0, padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer', marginBottom: 2 , display: 'flex', alignItems: 'center' }}
+                >
+                  <span>GATE IN</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: 13 , marginLeft: 2, }}>
+                    {gateInSort === 'latest' ? 'south' : 'north'}
+                  </span>
+                </button>
+              </th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -180,7 +215,7 @@ const GatePage: React.FC = () => {
                         <Button variant="primary" size="sm" onClick={() => openModal('operation', e)}>RECORD OP</Button>
                       )}
                       {e.status === 'PENDING_WBIN' && <span className="tag">Awaiting WBIN</span>}
-                      {(e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT') && <span className="tag">Awaiting WBOUT</span>}
+                      {(e.status === 'LOADING' || e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT') && <span className="tag">Awaiting WBOUT</span>}
                       {e.status === 'COMPLETED' && <span style={{ fontSize: 11, color: 'var(--green)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="material-symbols-outlined" style={{ fontSize: 14 }}>check_circle</span> Done</span>}
                     </div>
                   </td>
