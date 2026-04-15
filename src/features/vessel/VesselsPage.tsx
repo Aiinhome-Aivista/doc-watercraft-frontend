@@ -19,6 +19,19 @@ import {
   getCurrentISTDateValue,
 } from "@/utils/dateTime";
 
+const defaultChargeLines = [
+  { activity: 'Terminal Services', formula: 'Logic1', slabQty: '', rate: 46, gstRate: 18 },
+  { activity: 'Handling service', formula: 'Logic1', slabQty: '', rate: 170, gstRate: 18 },
+  { activity: 'Barthing charges', formula: 'Logic3', slabQty: '', rate: 3000, gstRate: 18 },
+  { activity: 'Mooring charges', formula: 'Logic4', slabQty: '', rate: 4000, gstRate: 12 },
+  { activity: 'Truck entry charges', formula: 'Logic2', slabQty: '', rate: 100, gstRate: 18 },
+  { activity: 'Weighment charges', formula: 'Logic6', slabQty: '', rate: 250, gstRate: 18 },
+  { activity: 'Parking charges', formula: 'Logic7', slabQty: '', rate: 100, gstRate: 5 },
+  { activity: 'Barthing Assistance', formula: 'Logic5', slabQty: '1-1400', rate: 2000, gstRate: 18 },
+  { activity: 'Barthing Assistance', formula: 'Logic5', slabQty: '1404-2100', rate: 4000, gstRate: 18 },
+  { activity: 'Barthing Assistance', formula: 'Logic5', slabQty: '2100-10000', rate: 5500, gstRate: 18 },
+];
+
 const VesselsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const vessels = useAppSelector((state) => state.vessels.items);
@@ -41,6 +54,7 @@ const VesselsPage: React.FC = () => {
     msg: string;
     type: "success" | "error";
   } | null>(null);
+  const [chargeLines, setChargeLines] = useState<any[]>([]);
 
   const fmtDateOnly = (v: string | null | undefined) => {
     if (!v) return "—";
@@ -74,12 +88,26 @@ const VesselsPage: React.FC = () => {
     setForm({ datetime: nowDt() });
     setModal(type);
     setAlert(null);
+    if (type === "create") {
+      setChargeLines([...defaultChargeLines]);
+    }
   };
 
   const closeModal = () => {
     setModal(null);
     setSelected(null);
     setForm({});
+    setChargeLines([]);
+  };
+
+  const updateChargeLine = (idx: number, field: string, value: any) => {
+    const newLine = [...chargeLines];
+    newLine[idx] = { ...newLine[idx], [field]: value };
+    setChargeLines(newLine);
+  };
+
+  const removeChargeLine = (idx: number) => {
+    setChargeLines(chargeLines.filter((_, i) => i !== idx));
   };
 
   const handleCreate = async () => {
@@ -333,6 +361,7 @@ const VesselsPage: React.FC = () => {
         <Modal
           title="REGISTER NEW VESSEL"
           onClose={closeModal}
+          width="850px"
           footer={
             <>
               <Button variant="ghost" onClick={closeModal}>
@@ -387,6 +416,77 @@ const VesselsPage: React.FC = () => {
                 setForm({ ...form, expected_date: e.target.value })
               }
             />
+          </div>
+
+          <div style={{ marginTop: '24px' }}>
+            <div style={{ color: '#e63946', fontSize: '0.85rem', marginBottom: '8px' }}>
+              This section To appear as default in Vessel INFO ( with editable info) user may chang any SLAB QTY/RATE/ GST RATE or remove a row if desired
+            </div>
+            <div className="table-wrap" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+              <table style={{ margin: 0, width: '100%' }}>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                  <tr>
+                    <th>Activity</th>
+                    <th>Formula</th>
+                    <th>Slab qty</th>
+                    <th>Rate</th>
+                    <th>GST RATE</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chargeLines.map((line, idx) => (
+                    <tr key={idx}>
+                      <td>{line.activity}</td>
+                      <td>{line.formula}</td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ padding: '4px 8px', height: '32px' }}
+                          value={line.slabQty}
+                          onChange={(e) => updateChargeLine(idx, 'slabQty', e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: '4px 8px', height: '32px' }}
+                          value={line.rate}
+                          onChange={(e) => updateChargeLine(idx, 'rate', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: '4px 8px', height: '32px' }}
+                          value={line.gstRate}
+                          onChange={(e) => updateChargeLine(idx, 'gstRate', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => removeChargeLine(idx)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e63946', padding: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {chargeLines.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '16px', color: '#666' }}>
+                        No charges available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </Modal>
       )}

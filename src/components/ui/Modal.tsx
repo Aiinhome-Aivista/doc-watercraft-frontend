@@ -5,15 +5,16 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  width?: string | number;
 }
 
-const Modal: React.FC<ModalProps> = ({ title, onClose, children, footer }) => {
+const Modal: React.FC<ModalProps> = ({ title, onClose, children, footer, width }) => {
   return (
     <div
       className="modal-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="modal">
+      <div className="modal" style={width ? { maxWidth: width, width: '100%' } : undefined}>
         <div className="modal-head">
           <span className="modal-title">{title}</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>
