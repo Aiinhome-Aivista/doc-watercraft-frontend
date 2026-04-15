@@ -17,6 +17,7 @@ export const ENDPOINTS = {
     BASE: '/vehicles',
     GATE_ENTRIES: '/gate-entries',
     CARGO_OPS: '/cargo-operations',
+    CARGO_OP_DETAIL: (id: string | number) => `/cargo-operations/${id}`,
   },
   WEIGHBRIDGE: {
     WBIN: '/wbin',

@@ -50,6 +50,15 @@ export interface RecordCargoOpPayload {
   remarks?: string;
 }
 
+export interface UpdateCargoOpPayload {
+  operation_id: number;
+  gate_entry_id: number;
+  operation_type: string;
+  end_datetime: string;
+  compressor_no?: string;
+  remarks?: string;
+}
+
 export interface GenericStatusResponse {
   success: boolean;
   message: string;
@@ -85,6 +94,15 @@ export const VehicleService = {
    */
   recordCargoOperation: async (payload: RecordCargoOpPayload): Promise<GenericStatusResponse> => {
     const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.VEHICLE.CARGO_OPS, payload);
+    return response.data;
+  },
+
+  /**
+   * Update Cargo Operation
+   */
+  updateCargoOperation: async (payload: UpdateCargoOpPayload): Promise<GenericStatusResponse> => {
+    const { operation_id, ...body } = payload;
+    const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.VEHICLE.CARGO_OP_DETAIL(operation_id), body);
     return response.data;
   },
 

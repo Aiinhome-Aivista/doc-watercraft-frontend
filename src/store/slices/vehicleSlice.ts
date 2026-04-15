@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { GateEntry, GateStatus } from '@/types/vehicle';
-import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload, CreateWboutPayload } from '@/services/vehicleService';
+import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload, UpdateCargoOpPayload, CreateWboutPayload } from '@/services/vehicleService';
 
 interface VehicleState {
   entries: GateEntry[];
@@ -52,9 +52,13 @@ export const recordWbinThunk = createAsyncThunk(
 
 export const recordCargoOpThunk = createAsyncThunk(
   'vehicles/recordCargoOp',
-  async (payload: RecordCargoOpPayload, { rejectWithValue }) => {
+  async (payload: RecordCargoOpPayload | UpdateCargoOpPayload, { rejectWithValue }) => {
     try {
-      await VehicleService.recordCargoOperation(payload);
+      if ('operation_id' in payload && payload.operation_id !== undefined) {
+        await VehicleService.updateCargoOperation(payload as UpdateCargoOpPayload);
+      } else {
+        await VehicleService.recordCargoOperation(payload as RecordCargoOpPayload);
+      }
       return payload;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to record cargo operation');

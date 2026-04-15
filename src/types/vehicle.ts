@@ -10,15 +10,17 @@ export type GateStatus =
 
 export interface GateEntry {
   id: number;
+  cargo_operation_id?: number;
   gate_in_no: string;
   vessel_id: number;
   vessel_name: string;
   party_name: string;
   consignor_name: string;
   challan_invoice_no: string;
+  compressor_no?: string | null;
   vehicle_no: string;
   transporter_name: string;
-  weighment_slip_no: string;
+  weighment_slip_no: string | null;
   own_weighbridge: 0 | 1; // 0 for No, 1 for Yes
   status: GateStatus;
   gate_in_datetime: string;
