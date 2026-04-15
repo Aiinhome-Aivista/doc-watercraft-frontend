@@ -419,12 +419,12 @@ const VesselsPage: React.FC = () => {
           </div>
 
           <div style={{ marginTop: '24px' }}>
-            <div style={{ color: '#e63946', fontSize: '0.85rem', marginBottom: '8px' }}>
+            {/* <div style={{ color: '#e63946', fontSize: '0.85rem', marginBottom: '8px' }}>
               This section To appear as default in Vessel INFO ( with editable info) user may chang any SLAB QTY/RATE/ GST RATE or remove a row if desired
-            </div>
+            </div> */}
             <div className="table-wrap" style={{ maxHeight: '250px', overflowY: 'auto' }}>
               <table style={{ margin: 0, width: '100%' }}>
-                <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: 'var(--bg2)' }}>
                   <tr>
                     <th>Activity</th>
                     <th>Formula</th>
