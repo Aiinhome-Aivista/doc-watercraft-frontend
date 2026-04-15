@@ -29,7 +29,7 @@ const GatePage: React.FC = () => {
     GateStatus | "ALL" | "LOADING/UNLOADING"
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
-  const [modal, setModal] = useState<"create" | "operation" | null>(null);
+  const [modal, setModal] = useState<"create" | "operation" | "detail" | null>(null);
   const [operationMode, setOperationMode] = useState<"record" | "update">(
     "record",
   );
@@ -223,6 +223,58 @@ const GatePage: React.FC = () => {
 
   const fmt = (v: string | null) => (v ? formatDateTimeIST(v) : "—");
 
+  const getWorkflowSteps = (entry: GateEntry) => {
+    const statusOrder = [
+      "PENDING_WBIN",
+      "WBIN_DONE",
+      "LOADING",
+      "UNLOADING",
+      "PENDING_WBOUT",
+      "COMPLETED",
+    ];
+    const currentIndex = statusOrder.indexOf(String(entry.status));
+
+    return [
+      {
+        key: "PENDING_WBIN",
+        label: "Gate-In / Awaiting WBIN",
+        time: fmt(entry.gate_in_datetime),
+        icon: "local_shipping",
+      },
+      {
+        key: "WBIN_DONE",
+        label: "WBIN Done",
+        time: fmt(entry.wbin_datetime || null),
+        icon: "scale",
+      },
+      {
+        key: "LOADING/UNLOADING",
+        label: "Cargo Operation",
+        time: entry.compressor_no ? `Compressor: ${entry.compressor_no}` : "Pending",
+        icon: "construction",
+      },
+      {
+        key: "PENDING_WBOUT",
+        label: "Awaiting WBOUT",
+        time: "Pending",
+        icon: "receipt_long",
+      },
+      {
+        key: "COMPLETED",
+        label: "Gate-Out Completed",
+        time: fmt(entry.gate_out_datetime),
+        icon: "check_circle",
+      },
+    ].map((step) => {
+      const isCargoStep = step.key === "LOADING/UNLOADING";
+      const isActive = isCargoStep
+        ? entry.status === "LOADING" || entry.status === "UNLOADING"
+        : entry.status === step.key;
+      const done = isCargoStep ? currentIndex >= 2 : currentIndex >= statusOrder.indexOf(step.key);
+      return { ...step, done, active: isActive };
+    });
+  };
+
   return (
     <>
       {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
@@ -347,6 +399,13 @@ const GatePage: React.FC = () => {
                   </td>
                   <td>
                     <div className="action-group">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal("detail", e)}
+                      >
+                        VIEW
+                      </Button>
                       {e.status === "WBIN_DONE" && (
                         <Button
                           variant="primary"
@@ -552,6 +611,66 @@ const GatePage: React.FC = () => {
               value={form.remarks || ""}
               onChange={(e) => setForm({ ...form, remarks: e.target.value })}
             />
+          </div>
+        </Modal>
+      )}
+
+      {modal === "detail" && selected && (
+        <Modal
+          title={`VEHICLE DETAILS — ${selected.gate_in_no}`}
+          onClose={closeModal}
+          footer={<Button variant="ghost" onClick={closeModal}>CLOSE</Button>}
+        >
+          <div className="detail-grid">
+            {[
+              ["Gate-In No", selected.gate_in_no, true],
+              ["Vehicle No", selected.vehicle_no],
+              ["Vessel", selected.vessel_name],
+              ["Direction", selected.direction],
+              ["Party", selected.party_name],
+              ["Consignor", selected.consignor_name],
+              ["Challan / Invoice", selected.challan_invoice_no, true],
+              ["Transporter", selected.transporter_name || "—"],
+              ["Weighment Slip", selected.weighment_slip_no || "—", true],
+              ["Compressor No", selected.compressor_no || "—"],
+              ["Gate-In Time", fmt(selected.gate_in_datetime), true],
+              ["Gate-Out Time", fmt(selected.gate_out_datetime), true],
+              ["Current Status", null, false, selected.status],
+            ].map(([k, v, mono, status]: any) => (
+              <div className="detail-cell" key={k}>
+                <div className="detail-key">{k}</div>
+                {status ? (
+                  <StatusBadge status={status} />
+                ) : (
+                  <div className={`detail-val ${mono ? "mono" : ""}`}>{v}</div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <div className="detail-key" style={{ marginBottom: 10 }}>
+              VEHICLE WORKFLOW
+            </div>
+            <div className="timeline">
+              {getWorkflowSteps(selected).map((step) => (
+                <div className="timeline-step" key={step.key}>
+                  <div
+                    className={`timeline-dot ${
+                      step.done ? "dot-done" : step.active ? "dot-active" : "dot-pending"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "inherit" }}>
+                      {step.icon}
+                    </span>
+                  </div>
+                  <div className="timeline-info">
+                    <div className="timeline-label">{step.label}</div>
+                    <div className="timeline-time">{step.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </Modal>
       )}
