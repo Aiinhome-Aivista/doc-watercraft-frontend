@@ -5,6 +5,8 @@ import {
   updateGateStatus,
   fetchGateEntries,
   createGateEntryThunk,
+  recordWbinThunk,
+  recordWboutThunk,
   recordCargoOpThunk,
 } from "@/store/slices/vehicleSlice";
 import { fetchVessels } from "@/store/slices/vesselSlice";
@@ -29,7 +31,7 @@ const GatePage: React.FC = () => {
     GateStatus | "ALL" | "LOADING/UNLOADING"
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
-  const [modal, setModal] = useState<"create" | "operation" | "detail" | null>(null);
+  const [modal, setModal] = useState<"create" | "operation" | "detail" | "wbin" | "wbout" | null>(null);
   const [operationMode, setOperationMode] = useState<"record" | "update">(
     "record",
   );
@@ -89,7 +91,7 @@ const GatePage: React.FC = () => {
     mode: "record" | "update" = "record",
   ) => {
     setSelected(entry);
-    if (type === "operation" && entry) {
+    if ((type === "operation" || type === "wbin" || type === "wbout") && entry) {
       const statusText = String(entry.status || "").toUpperCase();
       setOperationMode(mode);
       setForm({
@@ -97,6 +99,11 @@ const GatePage: React.FC = () => {
         end_datetime: nowDt(),
         direction: entry.direction || "",
         compressor_no: entry.compressor_no || "",
+        weighment_slip_no: entry.weighment_slip_no || "",
+        gross_weight: entry.gross_weight?.toString() || "",
+        tare_weight: entry.tare_weight?.toString() || "",
+        wbout_gross_weight: "",
+        wbout_tare_weight: "",
         op_type:
           statusText === "LOADING" || statusText === "UNLOADING"
             ? statusText
@@ -218,6 +225,82 @@ const GatePage: React.FC = () => {
       }
     } catch (err: any) {
       showAlert(err || "Failed to record operation", "error");
+    }
+  };
+
+  const handleWbin = async () => {
+    if (!selected || !form.datetime) {
+      showAlert("Please provide weighbridge date and time", "error");
+      return;
+    }
+
+    const isImport = String(form.direction || selected.direction || "").toUpperCase() === "IMPORT";
+    const isExport = String(form.direction || selected.direction || "").toUpperCase() === "EXPORT";
+    const grossWeight = Number(form.gross_weight || 0);
+    const tareWeight = Number(form.tare_weight || 0);
+
+    if (isImport && (!form.tare_weight || tareWeight <= 0)) {
+      showAlert("Please provide Tare Wt for IMPORT WBIN", "error");
+      return;
+    }
+
+    if (isExport && (!form.gross_weight || grossWeight <= 0)) {
+      showAlert("Please provide Gross Wt for EXPORT WBIN", "error");
+      return;
+    }
+
+    try {
+      await dispatch(
+        recordWbinThunk({
+          gate_entry_id: selected.id,
+          weighment_slip_no: form.weighment_slip_no || "",
+          wbin_datetime: form.datetime + ":00",
+          gross_weight: isExport ? grossWeight : undefined,
+          tare_weight: isImport ? tareWeight : undefined,
+        }),
+      ).unwrap();
+      closeModal();
+      showAlert("WBIN recorded successfully");
+    } catch (err: any) {
+      showAlert(err || "Failed to record WBIN", "error");
+    }
+  };
+
+  const handleWbout = async () => {
+    if (!selected || !form.datetime) {
+      showAlert("Please provide weighbridge date and time", "error");
+      return;
+    }
+
+    const isImport = String(form.direction || selected.direction || "").toUpperCase() === "IMPORT";
+    const isExport = String(form.direction || selected.direction || "").toUpperCase() === "EXPORT";
+    const grossWeight = Number(form.wbout_gross_weight || 0);
+    const tareWeight = Number(form.wbout_tare_weight || 0);
+
+    if (isImport && (!form.wbout_gross_weight || grossWeight <= 0)) {
+      showAlert("Please provide Gross Wt for IMPORT WBOUT", "error");
+      return;
+    }
+
+    if (isExport && (!form.wbout_tare_weight || tareWeight <= 0)) {
+      showAlert("Please provide Tare Wt for EXPORT WBOUT", "error");
+      return;
+    }
+
+    try {
+      await dispatch(
+        recordWboutThunk({
+          gate_entry_id: selected.id,
+          weighment_slip_no: form.weighment_slip_no || "",
+          wbout_datetime: form.datetime + ":00",
+          gross_weight: isImport ? grossWeight : undefined,
+          tare_weight: isExport ? tareWeight : undefined,
+        }),
+      ).unwrap();
+      closeModal();
+      showAlert("WBOUT recorded and gate-out completed");
+    } catch (err: any) {
+      showAlert(err || "Failed to record WBOUT", "error");
     }
   };
 
@@ -425,10 +508,22 @@ const GatePage: React.FC = () => {
                         </Button>
                       )}
                       {e.status === "PENDING_WBIN" && (
-                        <span className="tag">Awaiting WBIN</span>
+                        <Button
+                          variant="amber"
+                          size="sm"
+                          onClick={() => openModal("wbin", e)}
+                        >
+                          WBIN
+                        </Button>
                       )}
                       {e.status === "PENDING_WBOUT" && (
-                        <span className="tag">Awaiting WBOUT</span>
+                        <Button
+                          variant="green"
+                          size="sm"
+                          onClick={() => openModal("wbout", e)}
+                        >
+                          WBOUT
+                        </Button>
                       )}
                       {e.status === "COMPLETED" && (
                         <span
@@ -671,6 +766,46 @@ const GatePage: React.FC = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {modal === "wbin" && selected && (
+        <Modal
+          title={`WBIN — ${selected.vehicle_no}`}
+          onClose={closeModal}
+          footer={<Button variant="amber" onClick={handleWbin}>RECORD WBIN</Button>}
+        >
+          <div className="form-grid">
+            <Input label="Weighment Slip No" value={form.weighment_slip_no || ""} onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })} />
+            <Input label="Direction" value={form.direction || selected.direction || ""} readOnly />
+            <Input label="WBIN Date & Time" type="datetime-local" value={form.datetime || ""} onChange={(e) => setForm({ ...form, datetime: e.target.value })} />
+            {String(form.direction || selected.direction || "").toUpperCase() === "IMPORT" && (
+              <Input label="Tare Wt" type="number" min={0} value={form.tare_weight || ""} onChange={(e) => setForm({ ...form, tare_weight: e.target.value })} />
+            )}
+            {String(form.direction || selected.direction || "").toUpperCase() === "EXPORT" && (
+              <Input label="Gross Wt" type="number" min={0} value={form.gross_weight || ""} onChange={(e) => setForm({ ...form, gross_weight: e.target.value })} />
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {modal === "wbout" && selected && (
+        <Modal
+          title={`WBOUT — ${selected.vehicle_no}`}
+          onClose={closeModal}
+          footer={<Button variant="green" onClick={handleWbout}>RECORD WBOUT</Button>}
+        >
+          <div className="form-grid">
+            <Input label="Weighment Slip No" value={form.weighment_slip_no || ""} onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })} />
+            <Input label="Direction" value={form.direction || selected.direction || ""} readOnly />
+            <Input label="WBOUT Date & Time" type="datetime-local" value={form.datetime || ""} onChange={(e) => setForm({ ...form, datetime: e.target.value })} />
+            {String(form.direction || selected.direction || "").toUpperCase() === "IMPORT" && (
+              <Input label="Gross Wt" type="number" min={0} value={form.wbout_gross_weight || ""} onChange={(e) => setForm({ ...form, wbout_gross_weight: e.target.value })} />
+            )}
+            {String(form.direction || selected.direction || "").toUpperCase() === "EXPORT" && (
+              <Input label="Tare Wt" type="number" min={0} value={form.wbout_tare_weight || ""} onChange={(e) => setForm({ ...form, wbout_tare_weight: e.target.value })} />
+            )}
           </div>
         </Modal>
       )}
