@@ -12,7 +12,8 @@ import {
   unberthVesselThunk,
 } from "@/store/slices/vesselSlice";
 import { Vessel, VesselStatus } from "@/types/vessel";
-import { Modal, Input, Select, Button, StatusBadge } from "@/components/ui";
+import { partyService } from "@/services/partyService";
+import { Modal, Input, Select, Button, StatusBadge, SearchableSelect } from "@/components/ui";
 import {
   formatDateTimeIST,
   getCurrentISTDateTimeLocalValue,
@@ -36,9 +37,20 @@ const VesselsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const vessels = useAppSelector((state) => state.vessels.items);
   const loading = useAppSelector((state) => state.vessels.loading);
+  const [parties, setParties] = useState<any[]>([]);
 
   useEffect(() => {
     dispatch(fetchVessels());
+    const fetchParties = async () => {
+      try {
+        const res = await partyService.getPartyMasters();
+        const list = Array.isArray(res) ? res : res.data || [];
+        setParties(list);
+      } catch (err) {
+        console.error("Failed to fetch parties", err);
+      }
+    };
+    fetchParties();
   }, [dispatch]);
 
   const [filter, setFilter] = useState<VesselStatus | "ALL">("ALL");
@@ -379,11 +391,12 @@ const VesselsPage: React.FC = () => {
                 setForm({ ...form, vessel_name: e.target.value })
               }
             />
-            <Input
-              label="Party Name"
+            <SearchableSelect
+              label="Party Name *"
               placeholder="Party / Client Name"
               value={form.party_name || ""}
-              onChange={(e) => setForm({ ...form, party_name: e.target.value })}
+              onChange={(value) => setForm({ ...form, party_name: value })}
+              options={parties.map(p => ({ value: p.party_code, label: p.party_name }))}
             />
             <Input
               label="Cargo Type"
