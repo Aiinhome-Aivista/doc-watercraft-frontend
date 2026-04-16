@@ -1,7 +1,7 @@
 # DOC Watercraft Frontend - Project Summary
 
 ## Overview
-This is a React + TypeScript frontend for dock watercraft operations. It manages vessel lifecycle, vehicle gate operations, weighbridge records, dashboard KPIs, and finance calculations.
+This is a React + TypeScript frontend for dock watercraft operations. It manages vessel lifecycle, vehicle gate operations, weighbridge records, dashboard KPIs, finance calculations, user administration, and party master management.
 
 ## Tech Stack
 - React 19 + TypeScript
@@ -20,55 +20,61 @@ The app follows a feature-first structure with centralized state and service lay
 - `src/services/*`: API service methods
 - `src/api/*`: Axios client + endpoint map
 - `src/components/ui/*`: Shared reusable UI components
+- `src/components/auth/*`: Security and guard components
 - `src/types/*`: Domain and API types
 - `src/layouts/*`: Main shell layout
 - `src/routes/*`: Route definitions
 
 ## Main Feature Modules
 
-### 1) Dashboard
+### 1) Auth & Security
+Files: `src/features/auth/*`, `src/components/auth/*`
+- Implements the login module for user authentication.
+- Wraps the application under `AuthGuard` ensuring all protected routes require authenticated session tokens.
+
+### 2) Dashboard
 File: `src/features/dashboard/DashboardPage.tsx`
 - Displays vessel-related KPI cards.
 - Shows status counts and quantity summaries.
 - Includes vessel activity table.
 
-### 2) Vessel Operations
+### 3) Vessel Operations
 File: `src/features/vessel/VesselsPage.tsx`
 - Handles vessel lifecycle flows.
 - Supports create and status transitions (berth, moor, survey, unberth).
 - Uses modal-driven forms and Redux thunks.
 
-### 3) Vehicle Gate Operations
+### 4) Vehicle Gate Operations
 File: `src/features/vehicle/GatePage.tsx`
 - Tracks gate-in entries for trucks.
 - Records cargo operations linked to entries.
 - Integrates with vessel context and status progression.
 
-### 4) Weighbridge Terminal
+### 5) Weighbridge Terminal
 File: `src/features/weighbridge/WeighbridgeTerminalPage.tsx`
 - Handles WBIN and WBOUT entries.
 - Computes net weight from gross/tare.
 - Updates gate lifecycle through weighment events.
 
-### 5) Finance
-Files:
-- `src/features/finance/FinancePage.tsx`
-- `src/features/finance/utils/calculations.ts`
-
-Responsibilities:
+### 6) Finance
+Files: `src/features/finance/FinancePage.tsx`, `src/features/finance/utils/calculations.ts`
 - Calculates billing lines (terminal, handling, berth/moor, truck charges).
 - Builds invoice-like totals from operational records.
 
-## Data & Request Flow
-Typical flow:
-1. Page component dispatches a thunk.
-2. Thunk calls a service method.
-3. Service uses Axios client and endpoint constants.
-4. Response updates Redux slice state.
-5. UI re-renders from selectors.
+### 7) Party Master
+File: `src/features/party/PartyMasterPage.tsx`
+- Allows for administration and mapping of the various parties and vendors engaged in operations.
 
-Flow path:
+### 8) Settings & User Administration
+File: `src/features/settings/SettingsPage.tsx`
+- Provides a global directory of registered dashboard accounts.
+- Secured module to view and manage application roles and systems statuses.
+
+## Data & Request Flow
+For complex, system-wide state:
 `Feature Page -> Redux Thunk -> Service -> Axios Client -> API`
+For simpler features (like Settings or Party Master):
+`Feature Page -> Local State -> Service -> Axios Client -> API`
 
 ## State Management
 Core slices:
@@ -96,11 +102,14 @@ Avoid using raw `new Date().toISOString()` for `datetime-local` defaults to prev
 ## Routing
 File: `src/routes/AppRouter.tsx`
 Current key routes:
-- `/` -> Dashboard
+- `/` -> Login/AuthPage
+- `/dashboard`
 - `/vessels`
 - `/vehicles`
 - `/weighbridge`
 - `/finance`
+- `/party-master`
+- `/settings`
 
 ## Run & Build
 From project root:
@@ -114,7 +123,6 @@ npm run preview
 
 ## Important Notes / Gaps to Remember
 - Finance berth/moor slot values are currently hardcoded in calculation logic.
-- A sidebar settings link exists in layout but no dedicated settings page route is implemented.
 - Validation is mostly custom/manual (no schema/form library yet).
 - Notification handling is basic (limited centralized toast feedback).
 
@@ -128,7 +136,7 @@ When reopening this project:
 
 ## Suggested Next Improvements
 1. Make berth/moor charges duration-based instead of hardcoded slot counts.
-2. Add a proper Settings page or remove the dead navigation link.
+2. Implement User Role validation checks inside components, not just routing guards.
 3. Introduce form validation schema (e.g., Zod/Yup + react-hook-form).
 4. Add a toast/notification system for success/error feedback.
 5. Add paginated tables and stronger server-side filtering for scale.
