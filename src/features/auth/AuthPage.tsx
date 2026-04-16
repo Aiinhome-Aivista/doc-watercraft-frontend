@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { useNavigate } from "react-router-dom";
+import { authService } from "@/services/authService";
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,24 +22,88 @@ const AuthPage: React.FC = () => {
     password: "",
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [globalError, setGlobalError] = useState<string | null>(null);
+
   const handleRegChange = (field: string, value: string) => {
     setRegForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
+    setGlobalError(null);
   };
 
   const handleLoginChange = (field: string, value: string) => {
     setLoginForm((prev) => ({ ...prev, [field]: value }));
+    setGlobalError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    setGlobalError(null);
+
     if (isLogin) {
-      console.log("Logging in with", loginForm);
-      // Simulate auth success
-      navigate("/");
+      if (!loginForm.email.trim()) { setErrors(prev => ({ ...prev, email: "Email is required" })); return; }
+      if (!loginForm.password) { setErrors(prev => ({ ...prev, password: "Password is required" })); return; }
+
+      try {
+        console.log("Locating user credentials...", loginForm);
+        const res = await authService.loginUser(loginForm);
+        
+        if (res.token) {
+          localStorage.setItem('access_token', res.token);
+          if (res.data) {
+            localStorage.setItem('user_data', JSON.stringify(res.data));
+          }
+        }
+
+        console.log("Login sequence executed:", res);
+        navigate("/");
+      } catch (error: any) {
+        console.error("Authentication rejected:", error);
+        setGlobalError(error.response?.data?.message || "Invalid credentials provided");
+      }
     } else {
-      console.log("Registering with", regForm);
-      // Simulate auth success
-      navigate("/");
+      // Input Validation
+      const newErrors: Record<string, string> = {};
+      
+      if (!regForm.name.trim()) newErrors.name = "Full Name is required";
+      if (!regForm.phone.trim()) newErrors.phone = "Phone number is required";
+      if (!regForm.email.trim()) newErrors.email = "Email is required";
+      
+      if (!regForm.password) {
+        newErrors.password = "Password is required";
+      } else if (regForm.password !== regForm.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
+      
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+      
+      try {
+        const payload = {
+          username: regForm.email.split('@')[0], 
+          password: regForm.password,
+          full_name: regForm.name,
+          mobile: regForm.phone,
+          email: regForm.email
+        };
+        
+        console.log("Registering payload:", payload);
+        const res = await authService.registerUser(payload);
+        console.log("Registration Response:", res);
+        alert(res.message || "User registered successfully");
+        
+        // After successful registration, flip to login panel
+        setIsLogin(true);
+        setLoginForm(prev => ({ ...prev, email: regForm.email }));
+        setRegForm({ name: "", phone: "", email: "", password: "", confirmPassword: "" });
+        
+      } catch (error: any) {
+        console.error("Registration failed:", error);
+        setGlobalError(error.response?.data?.message || "An error occurred during registration");
+      }
     }
   };
 
@@ -111,6 +176,12 @@ const AuthPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             
+            {globalError && (
+              <div style={{ padding: "12px", backgroundColor: "rgba(230, 57, 70, 0.1)", border: "1px solid #e63946", borderRadius: "8px", color: "#e63946", fontSize: "14px", textAlign: "center", fontWeight: "bold" }}>
+                {globalError}
+              </div>
+            )}
+            
             {!isLogin && (
               <>
                 <Input
@@ -118,12 +189,14 @@ const AuthPage: React.FC = () => {
                   placeholder="John Doe"
                   value={regForm.name}
                   onChange={(e) => handleRegChange("name", e.target.value)}
+                  error={errors.name}
                 />
                 <Input
                   label="Phone Number *"
                   placeholder="+1 (555) 000-0000"
                   value={regForm.phone}
                   onChange={(e) => handleRegChange("phone", e.target.value)}
+                  error={errors.phone}
                 />
               </>
             )}
@@ -133,6 +206,7 @@ const AuthPage: React.FC = () => {
               placeholder="name@domain.com"
               type="email"
               value={isLogin ? loginForm.email : regForm.email}
+              error={!isLogin ? errors.email : undefined}
               onChange={(e) => 
                 isLogin 
                   ? handleLoginChange("email", e.target.value) 
@@ -145,6 +219,7 @@ const AuthPage: React.FC = () => {
               placeholder="••••••••"
               type="password"
               value={isLogin ? loginForm.password : regForm.password}
+              error={!isLogin ? errors.password : undefined}
               onChange={(e) => 
                 isLogin 
                   ? handleLoginChange("password", e.target.value) 
@@ -158,6 +233,7 @@ const AuthPage: React.FC = () => {
                 placeholder="••••••••"
                 type="password"
                 value={regForm.confirmPassword}
+                error={errors.confirmPassword}
                 onChange={(e) => handleRegChange("confirmPassword", e.target.value)}
               />
             )}

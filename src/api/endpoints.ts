@@ -26,4 +26,8 @@ export const ENDPOINTS = {
   PARTY_MASTER: {
     BASE: '/partymasters',
   },
+  AUTH: {
+    REGISTER: '/register',
+    LOGIN: '/login',
+  },
 } as const;
