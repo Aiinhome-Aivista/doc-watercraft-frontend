@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { authService } from "@/services/authService";
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Registration state
   const [regForm, setRegForm] = useState({
@@ -46,6 +48,7 @@ const AuthPage: React.FC = () => {
       if (!loginForm.password) { setErrors(prev => ({ ...prev, password: "Password is required" })); return; }
 
       try {
+        dispatch({ type: 'auth/login/pending' });
         console.log("Locating user credentials...", loginForm);
         const res = await authService.loginUser(loginForm);
         
@@ -57,8 +60,10 @@ const AuthPage: React.FC = () => {
         }
 
         console.log("Login sequence executed:", res);
+        dispatch({ type: 'auth/login/fulfilled' });
         navigate("/");
       } catch (error: any) {
+        dispatch({ type: 'auth/login/rejected' });
         console.error("Authentication rejected:", error);
         setGlobalError(error.response?.data?.message || "Invalid credentials provided");
       }
@@ -82,6 +87,7 @@ const AuthPage: React.FC = () => {
       }
       
       try {
+        dispatch({ type: 'auth/register/pending' });
         const payload = {
           username: regForm.email.split('@')[0], 
           password: regForm.password,
@@ -93,6 +99,8 @@ const AuthPage: React.FC = () => {
         console.log("Registering payload:", payload);
         const res = await authService.registerUser(payload);
         console.log("Registration Response:", res);
+        
+        dispatch({ type: 'auth/register/fulfilled' });
         alert(res.message || "User registered successfully");
         
         // After successful registration, flip to login panel
@@ -101,6 +109,7 @@ const AuthPage: React.FC = () => {
         setRegForm({ name: "", phone: "", email: "", password: "", confirmPassword: "" });
         
       } catch (error: any) {
+        dispatch({ type: 'auth/register/rejected' });
         console.error("Registration failed:", error);
         setGlobalError(error.response?.data?.message || "An error occurred during registration");
       }
