@@ -48,11 +48,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
   const navItems = [
     { label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/' },
+    { label: 'PARTY MASTER', icon: <Users size={18} />, path: '/party-master' },
     { label: 'VESSEL OPS', icon: <Anchor size={18} />, path: '/vessels' },
     { label: 'VEHICLE LOGISTICS', icon: <Truck size={18} />, path: '/vehicles' },
     { label: 'WEIGHBRIDGE TERMINAL', icon: <Scale size={18} />, path: '/weighbridge' },
     { label: 'REPORTS & BILLING', icon: <FileText size={18} />, path: '/finance' },
-    { label: 'PARTY MASTER', icon: <Users size={18} />, path: '/party-master' },
   ];
 
   const getPageTitle = () => {
