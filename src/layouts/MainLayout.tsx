@@ -47,7 +47,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     setSidebarOpen(false);
   };
   const navItems = [
-    { label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/' },
+    { label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
     { label: 'PARTY MASTER', icon: <Users size={18} />, path: '/party-master' },
     { label: 'VESSEL OPS', icon: <Anchor size={18} />, path: '/vessels' },
     { label: 'VEHICLE LOGISTICS', icon: <Truck size={18} />, path: '/vehicles' },

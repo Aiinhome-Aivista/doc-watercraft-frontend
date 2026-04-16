@@ -8,17 +8,19 @@ import WeighbridgeTerminalPage from '@/features/weighbridge/WeighbridgeTerminalP
 import FinancePage from '@/features/finance/FinancePage';
 import PartyMasterPage from '@/features/party/PartyMasterPage';
 import AuthPage from '@/features/auth/AuthPage';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 const AppRouter: React.FC = () => {
   return (
     <Routes>
-      <Route path="/auth" element={<AuthPage />} />
-      <Route
-        path="/*"
-        element={
-          <MainLayout>
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
+      <Route path="/" element={<AuthPage />} />
+      <Route element={<AuthGuard />}>
+        <Route
+          path="/*"
+          element={
+            <MainLayout>
+              <Routes>
+                <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/vessels" element={<VesselsPage />} />
               <Route path="/vehicles" element={<GatePage />} />
               <Route path="/weighbridge" element={<WeighbridgeTerminalPage />} />
@@ -29,6 +31,7 @@ const AppRouter: React.FC = () => {
           </MainLayout>
         }
       />
+      </Route>
     </Routes>
   );
 };

@@ -61,7 +61,7 @@ const AuthPage: React.FC = () => {
 
         console.log("Login sequence executed:", res);
         dispatch({ type: 'auth/login/fulfilled' });
-        navigate("/");
+        navigate("/dashboard");
       } catch (error: any) {
         dispatch({ type: 'auth/login/rejected' });
         console.error("Authentication rejected:", error);
