@@ -34,4 +34,11 @@ export const partyService = {
     const response = await apiClient.delete(`${ENDPOINTS.PARTY_MASTER.BASE}/${id}`);
     return response.data;
   },
+  /**
+   * Update a party master record by ID.
+   */
+  updatePartyMaster: async (id: number | string, payload: Partial<PartyMasterPayload>) => {
+    const response = await apiClient.post(`${ENDPOINTS.PARTY_MASTER.BASE}/${id}`, payload);
+    return response.data;
+  },
 };

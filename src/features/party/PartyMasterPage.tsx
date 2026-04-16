@@ -4,6 +4,7 @@ import { partyService } from "@/services/partyService";
 
 const PartyMasterPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editId, setEditId] = useState<number | string | null>(null);
   const [parties, setParties] = useState<any[]>([]);
 
   const fetchParties = async () => {
@@ -84,6 +85,44 @@ const PartyMasterPage: React.FC = () => {
     setEmails(newEmails.length ? newEmails : [""]);
   };
 
+  const openAddModal = () => {
+    setEditId(null);
+    setForm({
+      partyName: "",
+      partyCode: "",
+      address: "",
+      state: "",
+      country: "",
+      pincode: "",
+    });
+    setMobiles([""]);
+    setEmails([""]);
+    setErrors({});
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (p: any) => {
+    setEditId(p.id);
+    setForm({
+      partyName: p.party_name || "",
+      partyCode: p.party_code || "",
+      address: p.address || "",
+      state: p.state || "",
+      country: p.country || "",
+      pincode: p.pincode || "",
+    });
+
+    let mList = p.mobiles;
+    let eList = p.emails;
+    try { if (typeof mList === 'string') mList = JSON.parse(mList); } catch {}
+    try { if (typeof eList === 'string') eList = JSON.parse(eList); } catch {}
+    
+    setMobiles(Array.isArray(mList) && mList.length > 0 ? mList : [""]);
+    setEmails(Array.isArray(eList) && eList.length > 0 ? eList : [""]);
+    setErrors({});
+    setIsModalOpen(true);
+  };
+
   const handleDelete = async (id: number | string) => {
     if (!window.confirm("Are you sure you want to delete this Party Master?")) return;
     try {
@@ -156,9 +195,15 @@ const PartyMasterPage: React.FC = () => {
     };
 
     try {
-      console.log("Saving Party Master:", payload);
-      await partyService.createPartyMaster(payload);
-      showAlert("Party Master saved successfully");
+      if (editId) {
+        console.log("Updating Party Master:", payload);
+        await partyService.updatePartyMaster(editId, payload);
+        showAlert("Party Master updated successfully");
+      } else {
+        console.log("Saving Party Master:", payload);
+        await partyService.createPartyMaster(payload);
+        showAlert("Party Master saved successfully");
+      }
 
       // Clear form
       setForm({
@@ -186,7 +231,7 @@ const PartyMasterPage: React.FC = () => {
 
       <div className="section-head">
         <span className="section-title">PARTY MASTER</span>
-        <Button variant="light" onClick={() => setIsModalOpen(true)}>
+        <Button variant="light" onClick={openAddModal}>
           + ADD PARTY
         </Button>
       </div>
@@ -247,7 +292,7 @@ const PartyMasterPage: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => console.log('Edit party', p.id || p.party_code)}
+                          onClick={() => handleEdit(p)}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
                             edit
@@ -275,7 +320,7 @@ const PartyMasterPage: React.FC = () => {
 
       {isModalOpen && (
         <Modal
-          title="ADD PARTY MASTER"
+          title={editId ? "EDIT PARTY MASTER" : "ADD PARTY MASTER"}
           onClose={() => setIsModalOpen(false)}
           width="800px"
           footer={
@@ -284,7 +329,7 @@ const PartyMasterPage: React.FC = () => {
                 CANCEL
               </Button>
               <Button variant="primary" onClick={handleSave}>
-                SAVE PARTY MASTER
+                {editId ? "UPDATE PARTY MASTER" : "SAVE PARTY MASTER"}
               </Button>
             </>
           }
@@ -351,14 +396,14 @@ const PartyMasterPage: React.FC = () => {
                 Contact Details (Mobile) *
               </div>
               {errors.mobiles && (
-                <div className="text-[#e63946] text-xs mb-2">
+                <div className="text-[#e63946] text-xs mb-2" >
                   {errors.mobiles}
                 </div>
               )}
               {mobiles.map((mobile, idx) => (
                 <div
                   key={`mob-${idx}`}
-                  className="flex flex-wrap gap-2 mb-2 items-start"
+                  className="flex flex-wrap gap-2 mb-2 items-start" style={{ marginBottom: "10px" }}
                 >
                   <div className="flex-1 min-w-[200px]">
                     <Input
@@ -405,7 +450,7 @@ const PartyMasterPage: React.FC = () => {
               {emails.map((email, idx) => (
                 <div
                   key={`email-${idx}`}
-                  className="flex flex-wrap gap-2 mb-2 items-start"
+                  className="flex flex-wrap gap-2 mb-2 items-start" style={{ marginBottom: "10px" }}
                 >
                   <div className="flex-1 min-w-[200px]">
                     <Input
