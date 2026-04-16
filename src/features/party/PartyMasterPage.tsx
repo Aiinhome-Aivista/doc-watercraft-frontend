@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import { Button, Input, Modal } from "@/components/ui";
 import { partyService } from "@/services/partyService";
 
 const PartyMasterPage: React.FC = () => {
+  const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | string | null>(null);
   const [parties, setParties] = useState<any[]>([]);
 
   const fetchParties = async () => {
+    dispatch({ type: 'party/fetch/pending' });
     try {
       const res = await partyService.getPartyMasters();
       const list = Array.isArray(res) ? res : res.data || [];
       setParties(list);
+      dispatch({ type: 'party/fetch/fulfilled' });
     } catch (err) {
       console.error("Failed to fetch parties", err);
+      dispatch({ type: 'party/fetch/rejected' });
     }
   };
 
@@ -125,11 +130,14 @@ const PartyMasterPage: React.FC = () => {
 
   const handleDelete = async (id: number | string) => {
     if (!window.confirm("Are you sure you want to delete this Party Master?")) return;
+    dispatch({ type: 'party/delete/pending' });
     try {
       await partyService.deletePartyMaster(id);
+      dispatch({ type: 'party/delete/fulfilled' });
       showAlert("Party Master deleted successfully");
       fetchParties();
     } catch (error: any) {
+      dispatch({ type: 'party/delete/rejected' });
       console.error("Failed to delete Party Master:", error);
       showAlert(error?.response?.data?.message || "Failed to delete Party Master", "error");
     }
@@ -194,6 +202,7 @@ const PartyMasterPage: React.FC = () => {
       emails: formEmails,
     };
 
+    dispatch({ type: 'party/save/pending' });
     try {
       if (editId) {
         console.log("Updating Party Master:", payload);
@@ -204,6 +213,7 @@ const PartyMasterPage: React.FC = () => {
         await partyService.createPartyMaster(payload);
         showAlert("Party Master saved successfully");
       }
+      dispatch({ type: 'party/save/fulfilled' });
 
       // Clear form
       setForm({
@@ -220,6 +230,7 @@ const PartyMasterPage: React.FC = () => {
       setIsModalOpen(false);
       fetchParties();
     } catch (error: any) {
+      dispatch({ type: 'party/save/rejected' });
       console.error("Failed to save Party Master:", error);
       showAlert(error?.response?.data?.message || "Failed to save Party Master", "error");
     }

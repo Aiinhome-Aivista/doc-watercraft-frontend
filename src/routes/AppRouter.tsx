@@ -7,20 +7,29 @@ import GatePage from '@/features/vehicle/GatePage';
 import WeighbridgeTerminalPage from '@/features/weighbridge/WeighbridgeTerminalPage';
 import FinancePage from '@/features/finance/FinancePage';
 import PartyMasterPage from '@/features/party/PartyMasterPage';
+import AuthPage from '@/features/auth/AuthPage';
 
 const AppRouter: React.FC = () => {
   return (
-    <MainLayout>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/vessels" element={<VesselsPage />} />
-        <Route path="/vehicles" element={<GatePage />} />
-        <Route path="/weighbridge" element={<WeighbridgeTerminalPage />} />
-        <Route path="/finance" element={<FinancePage />} />
-        <Route path="/party-master" element={<PartyMasterPage />} />
-        <Route path="*" element={<div>Page Not Found</div>} />
-      </Routes>
-    </MainLayout>
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route
+        path="/*"
+        element={
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/vessels" element={<VesselsPage />} />
+              <Route path="/vehicles" element={<GatePage />} />
+              <Route path="/weighbridge" element={<WeighbridgeTerminalPage />} />
+              <Route path="/finance" element={<FinancePage />} />
+              <Route path="/party-master" element={<PartyMasterPage />} />
+              <Route path="*" element={<div>Page Not Found</div>} />
+            </Routes>
+          </MainLayout>
+        }
+      />
+    </Routes>
   );
 };
 
