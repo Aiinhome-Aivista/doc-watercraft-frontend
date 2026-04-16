@@ -22,7 +22,12 @@ const AuthGuard: React.FC = () => {
   }
 
   // RBAC checks
-  // If the user role is purely 'user', limit them strictly to the dashboard.
+  // 1. Admins have unrestricted access to all routes
+  if (userRole === 'admin') {
+    return <Outlet />;
+  }
+
+  // 2. Standard users are restricted strictly to the dashboard core
   if (userRole === 'user' && location.pathname !== '/dashboard') {
     return <Navigate to="/dashboard" replace />;
   }
