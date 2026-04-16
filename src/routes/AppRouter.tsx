@@ -9,6 +9,7 @@ import FinancePage from '@/features/finance/FinancePage';
 import PartyMasterPage from '@/features/party/PartyMasterPage';
 import AuthPage from '@/features/auth/AuthPage';
 import AuthGuard from '@/components/auth/AuthGuard';
+import SettingsPage from '@/features/settings/SettingsPage';
 
 const AppRouter: React.FC = () => {
   return (
@@ -26,6 +27,7 @@ const AppRouter: React.FC = () => {
               <Route path="/weighbridge" element={<WeighbridgeTerminalPage />} />
               <Route path="/finance" element={<FinancePage />} />
               <Route path="/party-master" element={<PartyMasterPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<div>Page Not Found</div>} />
             </Routes>
           </MainLayout>

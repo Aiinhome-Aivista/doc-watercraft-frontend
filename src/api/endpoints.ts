@@ -29,5 +29,6 @@ export const ENDPOINTS = {
   AUTH: {
     REGISTER: '/register',
     LOGIN: '/login',
+    USERS: '/users',
   },
 } as const;

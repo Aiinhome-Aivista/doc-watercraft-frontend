@@ -24,5 +24,13 @@ export const authService = {
   loginUser: async (payload: any) => {
     const response = await apiClient.post(ENDPOINTS.AUTH.LOGIN, payload);
     return response.data;
+  },
+
+  /**
+   * Fetch details of all users
+   */
+  getAllUsers: async () => {
+    const response = await apiClient.get(ENDPOINTS.AUTH.USERS);
+    return response.data;
   }
 };
