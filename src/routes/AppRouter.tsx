@@ -6,6 +6,7 @@ import VesselsPage from '@/features/vessel/VesselsPage';
 import GatePage from '@/features/vehicle/GatePage';
 import WeighbridgeTerminalPage from '@/features/weighbridge/WeighbridgeTerminalPage';
 import FinancePage from '@/features/finance/FinancePage';
+import PartyMasterPage from '@/features/party/PartyMasterPage';
 
 const AppRouter: React.FC = () => {
   return (
@@ -16,6 +17,7 @@ const AppRouter: React.FC = () => {
         <Route path="/vehicles" element={<GatePage />} />
         <Route path="/weighbridge" element={<WeighbridgeTerminalPage />} />
         <Route path="/finance" element={<FinancePage />} />
+        <Route path="/party-master" element={<PartyMasterPage />} />
         <Route path="*" element={<div>Page Not Found</div>} />
       </Routes>
     </MainLayout>

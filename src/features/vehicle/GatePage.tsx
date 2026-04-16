@@ -31,7 +31,9 @@ const GatePage: React.FC = () => {
     GateStatus | "ALL" | "LOADING/UNLOADING"
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
-  const [modal, setModal] = useState<"create" | "operation" | "detail" | "wbin" | "wbout" | null>(null);
+  const [modal, setModal] = useState<
+    "create" | "operation" | "detail" | "wbin" | "wbout" | null
+  >(null);
   const [operationMode, setOperationMode] = useState<"record" | "update">(
     "record",
   );
@@ -91,7 +93,10 @@ const GatePage: React.FC = () => {
     mode: "record" | "update" = "record",
   ) => {
     setSelected(entry);
-    if ((type === "operation" || type === "wbin" || type === "wbout") && entry) {
+    if (
+      (type === "operation" || type === "wbin" || type === "wbout") &&
+      entry
+    ) {
       const statusText = String(entry.status || "").toUpperCase();
       setOperationMode(mode);
       setForm({
@@ -119,7 +124,7 @@ const GatePage: React.FC = () => {
   const closeModal = () => {
     setModal(null);
     setOperationMode("record");
-    setSelected(null)
+    setSelected(null);
     setForm({});
   };
 
@@ -234,8 +239,12 @@ const GatePage: React.FC = () => {
       return;
     }
 
-    const isImport = String(form.direction || selected.direction || "").toUpperCase() === "IMPORT";
-    const isExport = String(form.direction || selected.direction || "").toUpperCase() === "EXPORT";
+    const isImport =
+      String(form.direction || selected.direction || "").toUpperCase() ===
+      "IMPORT";
+    const isExport =
+      String(form.direction || selected.direction || "").toUpperCase() ===
+      "EXPORT";
     const grossWeight = Number(form.gross_weight || 0);
     const tareWeight = Number(form.tare_weight || 0);
 
@@ -272,8 +281,12 @@ const GatePage: React.FC = () => {
       return;
     }
 
-    const isImport = String(form.direction || selected.direction || "").toUpperCase() === "IMPORT";
-    const isExport = String(form.direction || selected.direction || "").toUpperCase() === "EXPORT";
+    const isImport =
+      String(form.direction || selected.direction || "").toUpperCase() ===
+      "IMPORT";
+    const isExport =
+      String(form.direction || selected.direction || "").toUpperCase() ===
+      "EXPORT";
     const grossWeight = Number(form.wbout_gross_weight || 0);
     const tareWeight = Number(form.wbout_tare_weight || 0);
 
@@ -333,7 +346,9 @@ const GatePage: React.FC = () => {
       {
         key: "LOADING/UNLOADING",
         label: "Cargo Operation",
-        time: entry.compressor_no ? `Compressor: ${entry.compressor_no}` : "Pending",
+        time: entry.compressor_no
+          ? `Compressor: ${entry.compressor_no}`
+          : "Pending",
         icon: "construction",
       },
       {
@@ -353,7 +368,9 @@ const GatePage: React.FC = () => {
       const isActive = isCargoStep
         ? entry.status === "LOADING" || entry.status === "UNLOADING"
         : entry.status === step.key;
-      const done = isCargoStep ? currentIndex >= 2 : currentIndex >= statusOrder.indexOf(step.key);
+      const done = isCargoStep
+        ? currentIndex >= 2
+        : currentIndex >= statusOrder.indexOf(step.key);
       return { ...step, done, active: isActive };
     });
   };
@@ -390,6 +407,7 @@ const GatePage: React.FC = () => {
           "WBIN_DONE",
           "LOADING/UNLOADING",
           "PENDING_WBOUT",
+          "GATE_OUT",
           "COMPLETED",
         ].map((s) => (
           <button
@@ -713,7 +731,11 @@ const GatePage: React.FC = () => {
         <Modal
           title={`VEHICLE DETAILS — ${selected.gate_in_no}`}
           onClose={closeModal}
-          footer={<Button variant="ghost" onClick={closeModal}>CLOSE</Button>}
+          footer={
+            <Button variant="ghost" onClick={closeModal}>
+              CLOSE
+            </Button>
+          }
         >
           <div className="detail-grid">
             {[
@@ -751,10 +773,17 @@ const GatePage: React.FC = () => {
                 <div className="timeline-step" key={step.key}>
                   <div
                     className={`timeline-dot ${
-                      step.done ? "dot-done" : step.active ? "dot-active" : "dot-pending"
+                      step.done
+                        ? "dot-done"
+                        : step.active
+                          ? "dot-active"
+                          : "dot-pending"
                     }`}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: "inherit" }}>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: "inherit" }}
+                    >
                       {step.icon}
                     </span>
                   </div>
@@ -773,17 +802,56 @@ const GatePage: React.FC = () => {
         <Modal
           title={`WBIN — ${selected.vehicle_no}`}
           onClose={closeModal}
-          footer={<Button variant="amber" onClick={handleWbin}>RECORD WBIN</Button>}
+          footer={
+            <Button variant="amber" onClick={handleWbin}>
+              RECORD WBIN
+            </Button>
+          }
         >
           <div className="form-grid">
-            <Input label="Weighment Slip No" value={form.weighment_slip_no || ""} onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })} />
-            <Input label="Direction" value={form.direction || selected.direction || ""} readOnly />
-            <Input label="WBIN Date & Time" type="datetime-local" value={form.datetime || ""} onChange={(e) => setForm({ ...form, datetime: e.target.value })} />
-            {String(form.direction || selected.direction || "").toUpperCase() === "IMPORT" && (
-              <Input label="Tare Wt" type="number" min={0} value={form.tare_weight || ""} onChange={(e) => setForm({ ...form, tare_weight: e.target.value })} />
+            <Input
+              label="Weighment Slip No"
+              value={form.weighment_slip_no || ""}
+              onChange={(e) =>
+                setForm({ ...form, weighment_slip_no: e.target.value })
+              }
+            />
+            <Input
+              label="Direction"
+              value={form.direction || selected.direction || ""}
+              readOnly
+            />
+            <Input
+              label="WBIN Date & Time"
+              type="datetime-local"
+              value={form.datetime || ""}
+              onChange={(e) => setForm({ ...form, datetime: e.target.value })}
+            />
+            {String(
+              form.direction || selected.direction || "",
+            ).toUpperCase() === "IMPORT" && (
+              <Input
+                label="Tare Wt"
+                type="number"
+                min={0}
+                value={form.tare_weight || ""}
+                onChange={(e) =>
+                  setForm({ ...form, tare_weight: e.target.value })
+                }
+              />
             )}
-            {String(form.direction || selected.direction || "").toUpperCase() === "EXPORT" && (
-              <Input label="Gross Wt" type="number" min={0} value={form.gross_weight || ""} onChange={(e) => setForm({ ...form, gross_weight: e.target.value })} />
+            {String(
+              form.direction || selected.direction || "",
+            ).toUpperCase() === "EXPORT" && (
+              <Input
+                label="Gross Wt"
+                type="number"
+                min={0}
+                value={form.gross_weight || ""}
+                onChange={(e) =>
+                  setForm({ ...form, gross_weight: e.target.value })
+                }
+              />
             )}
           </div>
         </Modal>
@@ -793,17 +861,56 @@ const GatePage: React.FC = () => {
         <Modal
           title={`WBOUT — ${selected.vehicle_no}`}
           onClose={closeModal}
-          footer={<Button variant="green" onClick={handleWbout}>RECORD WBOUT</Button>}
+          footer={
+            <Button variant="green" onClick={handleWbout}>
+              RECORD WBOUT
+            </Button>
+          }
         >
           <div className="form-grid">
-            <Input label="Weighment Slip No" value={form.weighment_slip_no || ""} onChange={(e) => setForm({ ...form, weighment_slip_no: e.target.value })} />
-            <Input label="Direction" value={form.direction || selected.direction || ""} readOnly />
-            <Input label="WBOUT Date & Time" type="datetime-local" value={form.datetime || ""} onChange={(e) => setForm({ ...form, datetime: e.target.value })} />
-            {String(form.direction || selected.direction || "").toUpperCase() === "IMPORT" && (
-              <Input label="Gross Wt" type="number" min={0} value={form.wbout_gross_weight || ""} onChange={(e) => setForm({ ...form, wbout_gross_weight: e.target.value })} />
+            <Input
+              label="Weighment Slip No"
+              value={form.weighment_slip_no || ""}
+              onChange={(e) =>
+                setForm({ ...form, weighment_slip_no: e.target.value })
+              }
+            />
+            <Input
+              label="Direction"
+              value={form.direction || selected.direction || ""}
+              readOnly
+            />
+            <Input
+              label="WBOUT Date & Time"
+              type="datetime-local"
+              value={form.datetime || ""}
+              onChange={(e) => setForm({ ...form, datetime: e.target.value })}
+            />
+            {String(
+              form.direction || selected.direction || "",
+            ).toUpperCase() === "IMPORT" && (
+              <Input
+                label="Gross Wt"
+                type="number"
+                min={0}
+                value={form.wbout_gross_weight || ""}
+                onChange={(e) =>
+                  setForm({ ...form, wbout_gross_weight: e.target.value })
+                }
+              />
             )}
-            {String(form.direction || selected.direction || "").toUpperCase() === "EXPORT" && (
-              <Input label="Tare Wt" type="number" min={0} value={form.wbout_tare_weight || ""} onChange={(e) => setForm({ ...form, wbout_tare_weight: e.target.value })} />
+            {String(
+              form.direction || selected.direction || "",
+            ).toUpperCase() === "EXPORT" && (
+              <Input
+                label="Tare Wt"
+                type="number"
+                min={0}
+                value={form.wbout_tare_weight || ""}
+                onChange={(e) =>
+                  setForm({ ...form, wbout_tare_weight: e.target.value })
+                }
+              />
             )}
           </div>
         </Modal>

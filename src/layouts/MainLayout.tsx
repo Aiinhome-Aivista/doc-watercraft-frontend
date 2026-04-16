@@ -11,7 +11,8 @@ import {
   Bell,
   User,
   Sun,
-  Moon
+  Moon,
+  Users
 } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -51,6 +52,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     { label: 'VEHICLE LOGISTICS', icon: <Truck size={18} />, path: '/vehicles' },
     { label: 'WEIGHBRIDGE TERMINAL', icon: <Scale size={18} />, path: '/weighbridge' },
     { label: 'REPORTS & BILLING', icon: <FileText size={18} />, path: '/finance' },
+    { label: 'PARTY MASTER', icon: <Users size={18} />, path: '/party-master' },
   ];
 
   const getPageTitle = () => {
