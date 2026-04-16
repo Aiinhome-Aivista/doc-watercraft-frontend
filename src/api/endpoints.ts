@@ -23,4 +23,7 @@ export const ENDPOINTS = {
     WBIN: '/wbin',
     WBOUT: '/wbout',
   },
+  PARTY_MASTER: {
+    BASE: '/partymasters',
+  },
 } as const;

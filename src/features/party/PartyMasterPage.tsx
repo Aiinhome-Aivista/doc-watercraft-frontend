@@ -1,30 +1,51 @@
-import React, { useState } from 'react';
-import { Button, Input } from '@/components/ui';
+import React, { useState, useEffect } from "react";
+import { Button, Input, Modal } from "@/components/ui";
+import { partyService } from "@/services/partyService";
 
 const PartyMasterPage: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [parties, setParties] = useState<any[]>([]);
+
+  const fetchParties = async () => {
+    try {
+      const res = await partyService.getPartyMasters();
+      const list = Array.isArray(res) ? res : res.data || [];
+      setParties(list);
+    } catch (err) {
+      console.error("Failed to fetch parties", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchParties();
+  }, []);
+
   const [form, setForm] = useState({
-    partyName: '',
-    partyCode: '',
-    address: '',
-    state: '',
-    country: '',
-    pincode: '',
+    partyName: "",
+    partyCode: "",
+    address: "",
+    state: "",
+    country: "",
+    pincode: "",
   });
 
-  const [mobiles, setMobiles] = useState<string[]>(['']);
-  const [emails, setEmails] = useState<string[]>(['']);
+  const [mobiles, setMobiles] = useState<string[]>([""]);
+  const [emails, setEmails] = useState<string[]>([""]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [alert, setAlert] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [alert, setAlert] = useState<{
+    msg: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  const showAlert = (msg: string, type: 'success' | 'error' = 'success') => {
+  const showAlert = (msg: string, type: "success" | "error" = "success") => {
     setAlert({ msg, type });
     setTimeout(() => setAlert(null), 4000);
   };
 
   const handleChange = (field: string, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const handleMobileChange = (index: number, value: string) => {
@@ -39,10 +60,10 @@ const PartyMasterPage: React.FC = () => {
     }
   };
 
-  const addMobile = () => setMobiles([...mobiles, '']);
+  const addMobile = () => setMobiles([...mobiles, ""]);
   const removeMobile = (index: number) => {
     const newMobiles = mobiles.filter((_, i) => i !== index);
-    setMobiles(newMobiles.length ? newMobiles : ['']);
+    setMobiles(newMobiles.length ? newMobiles : [""]);
   };
 
   const handleEmailChange = (index: number, value: string) => {
@@ -57,80 +78,106 @@ const PartyMasterPage: React.FC = () => {
     }
   };
 
-  const addEmail = () => setEmails([...emails, '']);
+  const addEmail = () => setEmails([...emails, ""]);
   const removeEmail = (index: number) => {
     const newEmails = emails.filter((_, i) => i !== index);
-    setEmails(newEmails.length ? newEmails : ['']);
+    setEmails(newEmails.length ? newEmails : [""]);
   };
 
-  const handleSave = () => {
+  const handleDelete = async (id: number | string) => {
+    if (!window.confirm("Are you sure you want to delete this Party Master?")) return;
+    try {
+      await partyService.deletePartyMaster(id);
+      showAlert("Party Master deleted successfully");
+      fetchParties();
+    } catch (error: any) {
+      console.error("Failed to delete Party Master:", error);
+      showAlert(error?.response?.data?.message || "Failed to delete Party Master", "error");
+    }
+  };
+
+  const handleSave = async () => {
     // Basic validation
     const newErrors: Record<string, string> = {};
-    
-    if (!form.partyName.trim()) newErrors.partyName = 'Party Name is required';
-    if (!form.partyCode.trim()) newErrors.partyCode = 'Party Code is required';
-    if (!form.address.trim()) newErrors.address = 'Address is required';
-    if (!form.state.trim()) newErrors.state = 'State is required';
-    if (!form.country.trim()) newErrors.country = 'Country is required';
-    
+
+    if (!form.partyName.trim()) newErrors.partyName = "Party Name is required";
+    if (!form.partyCode.trim()) newErrors.partyCode = "Party Code is required";
+    if (!form.address.trim()) newErrors.address = "Address is required";
+    if (!form.state.trim()) newErrors.state = "State is required";
+    if (!form.country.trim()) newErrors.country = "Country is required";
+
     if (!form.pincode.trim()) {
-      newErrors.pincode = 'Pincode is required';
+      newErrors.pincode = "Pincode is required";
     } else if (!/^\d{4,10}$/.test(form.pincode.trim())) {
-      newErrors.pincode = 'Invalid pincode (4-10 digits)';
+      newErrors.pincode = "Invalid pincode (4-10 digits)";
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const mobileRegex = /^\d{10}$/; // Standard 10 digit Indian layout 
+    const mobileRegex = /^\d{10}$/; // Standard 10 digit Indian layout
 
-    const formMobiles = mobiles.map(m => m.trim()).filter(m => m !== '');
+    const formMobiles = mobiles.map((m) => m.trim()).filter((m) => m !== "");
     if (formMobiles.length === 0) {
-      newErrors.mobiles = 'At least one valid mobile number is required';
+      newErrors.mobiles = "At least one valid mobile number is required";
     } else {
       mobiles.forEach((m, idx) => {
-        if (m.trim() !== '' && !mobileRegex.test(m.trim())) {
-          newErrors[`mobile_${idx}`] = 'Invalid mobile number (10 digits expected)';
+        if (m.trim() !== "" && !mobileRegex.test(m.trim())) {
+          newErrors[`mobile_${idx}`] =
+            "Invalid mobile number (10 digits expected)";
         }
       });
     }
 
-    const formEmails = emails.map(e => e.trim()).filter(e => e !== '');
+    const formEmails = emails.map((e) => e.trim()).filter((e) => e !== "");
     if (formEmails.length === 0) {
-      newErrors.emails = 'At least one valid email address is required';
+      newErrors.emails = "At least one valid email address is required";
     } else {
       emails.forEach((e, idx) => {
-        if (e.trim() !== '' && !emailRegex.test(e.trim())) {
-          newErrors[`email_${idx}`] = 'Invalid email address format';
+        if (e.trim() !== "" && !emailRegex.test(e.trim())) {
+          newErrors[`email_${idx}`] = "Invalid email address format";
         }
       });
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      showAlert('Please fix the validation errors', 'error');
+      showAlert("Please fix the validation errors", "error");
       return;
     }
 
     const payload = {
-      ...form,
+      party_name: form.partyName,
+      party_code: form.partyCode,
+      address: form.address,
+      state: form.state,
+      country: form.country,
+      pincode: form.pincode,
       mobiles: formMobiles,
       emails: formEmails,
     };
 
-    console.log('Saving Party Master:', payload);
-    showAlert('Party Master saved successfully (Mock)');
-    
-    // Clear form
-    setForm({
-      partyName: '',
-      partyCode: '',
-      address: '',
-      state: '',
-      country: '',
-      pincode: '',
-    });
-    setMobiles(['']);
-    setEmails(['']);
-    setErrors({});
+    try {
+      console.log("Saving Party Master:", payload);
+      await partyService.createPartyMaster(payload);
+      showAlert("Party Master saved successfully");
+
+      // Clear form
+      setForm({
+        partyName: "",
+        partyCode: "",
+        address: "",
+        state: "",
+        country: "",
+        pincode: "",
+      });
+      setMobiles([""]);
+      setEmails([""]);
+      setErrors({});
+      setIsModalOpen(false);
+      fetchParties();
+    } catch (error: any) {
+      console.error("Failed to save Party Master:", error);
+      showAlert(error?.response?.data?.message || "Failed to save Party Master", "error");
+    }
   };
 
   return (
@@ -138,118 +185,262 @@ const PartyMasterPage: React.FC = () => {
       {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
 
       <div className="section-head">
-        <span className="section-title">ADD PARTY MASTER</span>
+        <span className="section-title">PARTY MASTER</span>
+        <Button variant="light" onClick={() => setIsModalOpen(true)}>
+          + ADD PARTY
+        </Button>
       </div>
 
-      <div className="form-panel" style={{ background: 'var(--card-bg)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-        <div className="form-grid">
-          <Input 
-            label="Party Name *" 
-            placeholder="Enter party name"
-            value={form.partyName}
-            onChange={(e) => handleChange('partyName', e.target.value)}
-            error={errors.partyName}
-          />
-          <Input 
-            label="Party Code *" 
-            placeholder="Enter party code"
-            value={form.partyCode}
-            onChange={(e) => handleChange('partyCode', e.target.value)}
-            error={errors.partyCode}
-          />
-          
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-            <label className="form-label">Address *</label>
-            <textarea 
-              className={`form-input ${errors.address ? 'input-error' : ''}`} 
-              placeholder="Enter address"
-              rows={3}
-              value={form.address}
-              onChange={(e) => handleChange('address', e.target.value)}
-              style={{ width: '100%', resize: 'vertical' }}
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Party Name</th>
+              <th>Party Code</th>
+              <th>Address</th>
+              <th>State</th>
+              <th>Country</th>
+              <th>Pincode</th>
+              <th>Mobiles</th>
+              <th>Emails</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {parties.length === 0 ? (
+              <tr>
+                <td colSpan={9}>
+                  <div className="empty">
+                    <div className="empty-icon">
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: "inherit" }}
+                      >
+                        group
+                      </span>
+                    </div>
+                    <div className="empty-text">
+                      No parties found. Click + ADD PARTY to create one.
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              parties.map((p: any) => {
+                let mList = p.mobiles;
+                let eList = p.emails;
+                try { if (typeof mList === 'string') mList = JSON.parse(mList); } catch {}
+                try { if (typeof eList === 'string') eList = JSON.parse(eList); } catch {}
+                
+                return (
+                  <tr key={p.id || p.party_code}>
+                    <td className="td-primary">{p.party_name}</td>
+                    <td className="font-mono" style={{ fontSize: 13 }}>{p.party_code}</td>
+                    <td>{p.address}</td>
+                    <td>{p.state}</td>
+                    <td>{p.country}</td>
+                    <td>{p.pincode}</td>
+                    <td>{Array.isArray(mList) ? mList.join(', ') : mList}</td>
+                    <td>{Array.isArray(eList) ? eList.join(', ') : eList}</td>
+                    <td>
+                      <div className="action-group">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => console.log('Edit party', p.id || p.party_code)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+                            edit
+                          </span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(p.id)}
+                          className="text-[#e63946]"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+                            delete
+                          </span>
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {isModalOpen && (
+        <Modal
+          title="ADD PARTY MASTER"
+          onClose={() => setIsModalOpen(false)}
+          width="800px"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
+                CANCEL
+              </Button>
+              <Button variant="primary" onClick={handleSave}>
+                SAVE PARTY MASTER
+              </Button>
+            </>
+          }
+        >
+          <div className="form-grid p-2">
+            <Input
+              label="Party Name *"
+              placeholder="Enter party name"
+              value={form.partyName}
+              onChange={(e) => handleChange("partyName", e.target.value)}
+              error={errors.partyName}
             />
-            {errors.address && <span className="error-text" style={{ color: '#e63946', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{errors.address}</span>}
+            <Input
+              label="Party Code *"
+              placeholder="Enter party code"
+              value={form.partyCode}
+              onChange={(e) => handleChange("partyCode", e.target.value)}
+              error={errors.partyCode}
+            />
+
+            <div className="form-group col-span-full">
+              <label className="form-label">Address *</label>
+              <textarea
+                className={`form-input w-full resize-y ${errors.address ? "input-error" : ""}`}
+                placeholder="Enter address"
+                rows={3}
+                value={form.address}
+                onChange={(e) => handleChange("address", e.target.value)}
+              />
+              {errors.address && (
+                <span className="error-text text-[#e63946] text-xs mt-1 block">
+                  {errors.address}
+                </span>
+              )}
+            </div>
+
+            <Input
+              label="State *"
+              placeholder="Enter state"
+              value={form.state}
+              onChange={(e) => handleChange("state", e.target.value)}
+              error={errors.state}
+            />
+            <Input
+              label="Country *"
+              placeholder="Enter country"
+              value={form.country}
+              onChange={(e) => handleChange("country", e.target.value)}
+              error={errors.country}
+            />
+            <Input
+              label="Pincode *"
+              placeholder="Enter pincode"
+              value={form.pincode}
+              onChange={(e) => handleChange("pincode", e.target.value)}
+              error={errors.pincode}
+            />
           </div>
 
-          <Input 
-            label="State *" 
-            placeholder="Enter state"
-            value={form.state}
-            onChange={(e) => handleChange('state', e.target.value)}
-            error={errors.state}
-          />
-          <Input 
-            label="Country *" 
-            placeholder="Enter country"
-            value={form.country}
-            onChange={(e) => handleChange('country', e.target.value)}
-            error={errors.country}
-          />
-          <Input 
-            label="Pincode *" 
-            placeholder="Enter pincode"
-            value={form.pincode}
-            onChange={(e) => handleChange('pincode', e.target.value)}
-            error={errors.pincode}
-          />
-        </div>
-
-        <div style={{ marginTop: '24px', display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-          {/* Mobile Numbers Section */}
-          <div style={{ flex: '1 1 300px' }}>
-            <div style={{ marginBottom: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>Contact Details (Mobile) *</div>
-            {errors.mobiles && <div style={{ color: '#e63946', fontSize: '0.8rem', marginBottom: '8px' }}>{errors.mobiles}</div>}
-            {mobiles.map((mobile, idx) => (
-              <div key={`mob-${idx}`} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                <Input 
-                  placeholder={`Mobile ${idx + 1}`}
-                  value={mobile}
-                  onChange={(e) => handleMobileChange(idx, e.target.value)}
-                  style={{ flex: 1, minWidth: '200px' }}
-                  error={errors[`mobile_${idx}`]}
-                />
-                {mobiles.length > 1 && (
-                  <Button variant="ghost" size="sm" onClick={() => removeMobile(idx)} style={{ color: '#e63946', height: 'fit-content', marginTop: '6px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                  </Button>
-                )}
+          <div className="mt-6 flex gap-8 flex-wrap p-2 pt-0">
+            {/* Mobile Numbers Section */}
+            <div className="flex-[1_1_300px]">
+              <div className="mb-3 font-semibold text-[var(--text-primary)]">
+                Contact Details (Mobile) *
               </div>
-            ))}
-            <Button variant="ghost" size="sm" onClick={addMobile} style={{ marginTop: '4px' }}>
-               + ADD MOBILE
-            </Button>
-          </div>
+              {errors.mobiles && (
+                <div className="text-[#e63946] text-xs mb-2">
+                  {errors.mobiles}
+                </div>
+              )}
+              {mobiles.map((mobile, idx) => (
+                <div
+                  key={`mob-${idx}`}
+                  className="flex flex-wrap gap-2 mb-2 items-start"
+                >
+                  <div className="flex-1 min-w-[200px]">
+                    <Input
+                      placeholder={`Mobile ${idx + 1}`}
+                      value={mobile}
+                      onChange={(e) => handleMobileChange(idx, e.target.value)}
+                      error={errors[`mobile_${idx}`]}
+                    />
+                  </div>
+                  {mobiles.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeMobile(idx)}
+                      className="text-[#e63946] h-fit mt-1.5"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        delete
+                      </span>
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={addMobile}
+                className="mt-1"
+              >
+                + ADD MOBILE
+              </Button>
+            </div>
 
-          {/* Email IDs Section */}
-          <div style={{ flex: '1 1 300px' }}>
-            <div style={{ marginBottom: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>Contact Details (Email) *</div>
-            {errors.emails && <div style={{ color: '#e63946', fontSize: '0.8rem', marginBottom: '8px' }}>{errors.emails}</div>}
-            {emails.map((email, idx) => (
-              <div key={`email-${idx}`} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                <Input 
-                  placeholder={`Email ${idx + 1}`}
-                  value={email}
-                  onChange={(e) => handleEmailChange(idx, e.target.value)}
-                  style={{ flex: 1, minWidth: '200px' }}
-                  error={errors[`email_${idx}`]}
-                />
-                {emails.length > 1 && (
-                  <Button variant="ghost" size="sm" onClick={() => removeEmail(idx)} style={{ color: '#e63946', height: 'fit-content', marginTop: '6px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                  </Button>
-                )}
+            {/* Email IDs Section */}
+            <div className="flex-[1_1_300px]">
+              <div className="mb-3 font-semibold text-[var(--text-primary)]">
+                Contact Details (Email) *
               </div>
-            ))}
-            <Button variant="ghost" size="sm" onClick={addEmail} style={{ marginTop: '4px' }}>
-               + ADD EMAIL
-            </Button>
+              {errors.emails && (
+                <div className="text-[#e63946] text-xs mb-2">
+                  {errors.emails}
+                </div>
+              )}
+              {emails.map((email, idx) => (
+                <div
+                  key={`email-${idx}`}
+                  className="flex flex-wrap gap-2 mb-2 items-start"
+                >
+                  <div className="flex-1 min-w-[200px]">
+                    <Input
+                      placeholder={`Email ${idx + 1}`}
+                      value={email}
+                      onChange={(e) => handleEmailChange(idx, e.target.value)}
+                      error={errors[`email_${idx}`]}
+                    />
+                  </div>
+                  {emails.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeEmail(idx)}
+                      className="text-[#e63946] h-fit mt-1.5"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        delete
+                      </span>
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={addEmail}
+                className="mt-1"
+              >
+                + ADD EMAIL
+              </Button>
+            </div>
           </div>
-        </div>
-
-        <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-           <Button variant="primary" onClick={handleSave}>SAVE PARTY MASTER</Button>
-        </div>
-      </div>
+        </Modal>
+      )}
     </>
   );
 };
