@@ -19,6 +19,7 @@ import {
   getCurrentISTDateTimeLocalValue,
   getCurrentISTDateValue,
 } from "@/utils/dateTime";
+import { useAccessRights } from "@/hooks/useAccessRights";
 
 const defaultChargeLines = [
   { activity: 'Terminal Services', formula: 'Logic1', slabQty: '', rate: 46, gstRate: 18 },
@@ -38,6 +39,7 @@ const VesselsPage: React.FC = () => {
   const vessels = useAppSelector((state) => state.vessels.items);
   const loading = useAppSelector((state) => state.vessels.loading);
   const [parties, setParties] = useState<any[]>([]);
+  const { canVesselStatus, vesselStatuses } = useAccessRights();
 
   useEffect(() => {
     dispatch(fetchVessels());
@@ -213,7 +215,9 @@ const VesselsPage: React.FC = () => {
       </div>
 
       <div className="filter-bar">
-        {["ALL", "PLANNED", "BERTHED", "MOORED", "COMPLETED"].map((s) => (
+        {["ALL", "PLANNED", "BERTHED", "MOORED", "COMPLETED"]
+          .filter((s) => s === "ALL" || vesselStatuses.includes(s))
+          .map((s) => (
           <button
             key={s}
             className={`filter-tab ${filter === s ? "active" : ""}`}
@@ -323,7 +327,7 @@ const VesselsPage: React.FC = () => {
                       >
                         VIEW
                       </Button>
-                      {v.status === "PLANNED" && (
+                      {v.status === "PLANNED" && canVesselStatus("PLANNED") && (
                         <Button
                           variant="amber"
                           size="sm"
@@ -332,7 +336,7 @@ const VesselsPage: React.FC = () => {
                           BERTH
                         </Button>
                       )}
-                      {v.status === "BERTHED" && (
+                      {v.status === "BERTHED" && canVesselStatus("BERTHED") && (
                         <Button
                           variant="light"
                           size="sm"
@@ -341,7 +345,7 @@ const VesselsPage: React.FC = () => {
                           MOOR
                         </Button>
                       )}
-                      {v.status === "MOORED" && (
+                      {v.status === "MOORED" && canVesselStatus("MOORED") && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -350,7 +354,8 @@ const VesselsPage: React.FC = () => {
                           SURVEY
                         </Button>
                       )}
-                      {["BERTHED", "MOORED"].includes(v.status) && (
+                      {["BERTHED", "MOORED"].includes(v.status) &&
+                        (canVesselStatus("BERTHED") || canVesselStatus("MOORED")) && (
                         <Button
                           variant="green"
                           size="sm"

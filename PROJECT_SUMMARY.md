@@ -30,7 +30,10 @@ The app follows a feature-first structure with centralized state and service lay
 ### 1) Auth & Security
 Files: `src/features/auth/*`, `src/components/auth/*`
 - Implements the login module for user authentication.
-- Wraps the application under `AuthGuard` ensuring all protected routes require authenticated session tokens.
+- Login API returns `access_rights` (modules, vessel_statuses, gate_operations), `role`, and JWT `token`.
+- User data including `access_rights` is stored in `localStorage` as `user_data`.
+- `AuthGuard` reads `access_rights.modules` to dynamically restrict route access per user.
+- Admins always get Settings access; non-admin users are blocked from `/settings` regardless of module list.
 
 ### 2) Dashboard
 File: `src/features/dashboard/DashboardPage.tsx`
@@ -68,7 +71,9 @@ File: `src/features/party/PartyMasterPage.tsx`
 ### 8) Settings & User Administration
 File: `src/features/settings/SettingsPage.tsx`
 - Provides a global directory of registered dashboard accounts.
-- Secured module to view and manage application roles and systems statuses.
+- Includes a dynamic Access Rights management UI (Modal) to bind granular permissions (Modules, Vessel Statuses, Gate Operations) directly via the API.
+- **Only visible to admin users.** Sidebar link and route are both restricted by role.
+- Uses `GET /access-rights/{id}` to load existing permissions and `POST /access-rights/{id}` to save updates.
 
 ## Data & Request Flow
 For complex, system-wide state:
@@ -125,6 +130,8 @@ npm run preview
 - Finance berth/moor slot values are currently hardcoded in calculation logic.
 - Validation is mostly custom/manual (no schema/form library yet).
 - Notification handling is basic (limited centralized toast feedback).
+- Role-based access is enforced at 3 layers: `AuthGuard` (route), `MainLayout` (sidebar), and Settings page (admin-only).
+- `access_rights` are stored in `localStorage` as part of `user_data` on login.
 
 ## Quick Re-entry Checklist (For Later)
 When reopening this project:

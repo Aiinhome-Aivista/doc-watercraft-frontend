@@ -30,6 +30,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  // Read user data and access rights from localStorage
+  let userRole = '';
+  let allowedModules: string[] = [];
+  try {
+    const raw = localStorage.getItem('user_data');
+    if (raw) {
+      const user = JSON.parse(raw);
+      userRole = user.role || '';
+      allowedModules = user.access_rights?.modules || [];
+    }
+  } catch (e) {
+    console.error('Failed to parse user data in MainLayout', e);
+  }
+
+  const isAdmin = userRole === 'admin';
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -67,18 +83,24 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     navigate('/');
   };
 
-  const navItems = [
-    { label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
-    { label: 'PARTY MASTER', icon: <Users size={18} />, path: '/party-master' },
-    { label: 'VESSEL OPS', icon: <Anchor size={18} />, path: '/vessels' },
-    { label: 'VEHICLE LOGISTICS', icon: <Truck size={18} />, path: '/vehicles' },
-    { label: 'WEIGHBRIDGE TERMINAL', icon: <Scale size={18} />, path: '/weighbridge' },
-    { label: 'REPORTS & BILLING', icon: <FileText size={18} />, path: '/finance' },
+  // Map from module key -> { label, icon, path }
+  const allNavItems = [
+    { module: 'DASHBOARD', label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
+    { module: 'PARTY_MASTER', label: 'PARTY MASTER', icon: <Users size={18} />, path: '/party-master' },
+    { module: 'VESSEL_OPS', label: 'VESSEL OPS', icon: <Anchor size={18} />, path: '/vessels' },
+    { module: 'VEHICLE_LOGISTICS', label: 'VEHICLE LOGISTICS', icon: <Truck size={18} />, path: '/vehicles' },
+    { module: 'WEIGHBRIDGE_TERMINAL', label: 'WEIGHBRIDGE TERMINAL', icon: <Scale size={18} />, path: '/weighbridge' },
+    { module: 'REPORTS_BILLING', label: 'REPORTS & BILLING', icon: <FileText size={18} />, path: '/finance' },
   ];
+
+  // Filter nav items based on the user's allowed modules
+  const navItems = allNavItems.filter(item => allowedModules.includes(item.module));
 
   const getPageTitle = () => {
     const item = navItems.find(i => i.path === location.pathname);
-    return item ? item.label : 'DOCK SYSTEM';
+    if (item) return item.label;
+    if (location.pathname === '/settings' && isAdmin) return 'SETTINGS';
+    return 'DOCK SYSTEM';
   };
 
   return (
@@ -105,11 +127,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             </Link>
           ))}
           
-          <div className="nav-section-label" style={{ marginTop: 20 }}>System</div>
-          <Link to="/settings" className="nav-item" onClick={closeSidebar}>
-            <span className="nav-icon"><Settings size={18} /></span>
-            SETTINGS
-          </Link>
+          
+          {isAdmin && (
+            <>
+              <div className="nav-section-label" style={{ marginTop: 20 }}>System</div>
+              <Link to="/settings" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`} onClick={closeSidebar}>
+                <span className="nav-icon"><Settings size={18} /></span>
+                SETTINGS
+              </Link>
+            </>
+          )}
           
 
         </nav>

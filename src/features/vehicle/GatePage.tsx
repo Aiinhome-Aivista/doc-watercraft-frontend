@@ -16,11 +16,13 @@ import {
   formatDateTimeIST,
   getCurrentISTDateTimeLocalValue,
 } from "@/utils/dateTime";
+import { useAccessRights } from "@/hooks/useAccessRights";
 
 const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.vehicles.entries);
   const vessels = useAppSelector((state) => state.vessels.items);
+  const { canGateOp, gateOperations } = useAccessRights();
 
   useEffect(() => {
     dispatch(fetchGateEntries());
@@ -409,7 +411,14 @@ const GatePage: React.FC = () => {
           "PENDING_WBOUT",
           "GATE_OUT",
           "COMPLETED",
-        ].map((s) => (
+        ]
+          .filter((s) => {
+            if (s === "ALL") return true;
+            // Map display keys to API keys
+            const apiKey = s === "LOADING/UNLOADING" ? "UNLOADING" : s;
+            return gateOperations.includes(apiKey);
+          })
+          .map((s) => (
           <button
             key={s}
             className={`filter-tab ${filter === s ? "active" : ""}`}
@@ -506,7 +515,7 @@ const GatePage: React.FC = () => {
                       >
                         VIEW
                       </Button>
-                      {e.status === "WBIN_DONE" && (
+                      {e.status === "WBIN_DONE" && canGateOp("WBIN_DONE") && (
                         <Button
                           variant="primary"
                           size="sm"
@@ -515,7 +524,7 @@ const GatePage: React.FC = () => {
                           RECORD OP
                         </Button>
                       )}
-                      {(e.status === "LOADING" || e.status === "UNLOADING") && (
+                      {(e.status === "LOADING" || e.status === "UNLOADING") && canGateOp("UNLOADING") && (
                         <Button
                           variant="primary"
                           size="sm"
@@ -524,7 +533,7 @@ const GatePage: React.FC = () => {
                           UPDATE OP
                         </Button>
                       )}
-                      {e.status === "PENDING_WBIN" && (
+                      {e.status === "PENDING_WBIN" && canGateOp("PENDING_WBIN") && (
                         <Button
                           variant="amber"
                           size="sm"
@@ -533,7 +542,7 @@ const GatePage: React.FC = () => {
                           WBIN
                         </Button>
                       )}
-                      {e.status === "PENDING_WBOUT" && (
+                      {e.status === "PENDING_WBOUT" && canGateOp("PENDING_WBOUT") && (
                         <Button
                           variant="green"
                           size="sm"

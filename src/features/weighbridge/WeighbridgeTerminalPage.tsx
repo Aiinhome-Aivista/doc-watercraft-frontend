@@ -5,10 +5,12 @@ import { fetchVessels } from '@/store/slices/vesselSlice';
 import { GateEntry } from '@/types/vehicle';
 import { Modal, Input, Button, StatusBadge } from '@/components/ui';
 import { formatDateTimeIST, getCurrentISTDateTimeLocalValue } from '@/utils/dateTime';
+import { useAccessRights } from '@/hooks/useAccessRights';
 
 const WeighbridgeTerminalPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.vehicles.entries);
+  const { canGateOp } = useAccessRights();
 
   useEffect(() => {
     dispatch(fetchGateEntries());
@@ -136,8 +138,13 @@ const WeighbridgeTerminalPage: React.FC = () => {
     }
   };
 
-  const wbinQueue = entries.filter((e) => e.status === 'PENDING_WBIN');
-  const wboutQueue = entries.filter((e) => e.status === 'UNLOADING' || e.status === 'PENDING_WBOUT');
+  // Only show rows where the user has access to that gate operation status
+  const wbinQueue = entries.filter((e) => e.status === 'PENDING_WBIN' && canGateOp('PENDING_WBIN'));
+  const wboutQueue = entries.filter((e) => {
+    if (e.status === 'UNLOADING') return canGateOp('UNLOADING') || canGateOp('PENDING_WBOUT');
+    if (e.status === 'PENDING_WBOUT') return canGateOp('PENDING_WBOUT');
+    return false;
+  });
 
   const fmt = (v: string | null) => (v ? formatDateTimeIST(v) : '-');
 
@@ -193,11 +200,11 @@ const WeighbridgeTerminalPage: React.FC = () => {
                 <td><StatusBadge status={e.status} /></td>
                 <td>
                   <div className="action-group">
-                    {e.status === 'PENDING_WBIN' && (
+                    {e.status === 'PENDING_WBIN' && canGateOp('PENDING_WBIN') && (
                       <Button variant="amber" size="sm" onClick={() => openModal('wbin', e)}>WBIN</Button>
                     )}
                     {e.status === 'UNLOADING' && <span className="tag">Unloading</span>}
-                    {e.status === 'PENDING_WBOUT' && (
+                    {e.status === 'PENDING_WBOUT' && canGateOp('PENDING_WBOUT') && (
                       <Button variant="green" size="sm" onClick={() => openModal('wbout', e)}>WBOUT</Button>
                     )}
                   </div>
