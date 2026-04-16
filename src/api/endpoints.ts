@@ -30,5 +30,6 @@ export const ENDPOINTS = {
     REGISTER: '/register',
     LOGIN: '/login',
     USERS: '/users',
+    ACCESS_RIGHTS: (id: string | number) => `/access-rights/${id}`,
   },
 } as const;

@@ -32,5 +32,21 @@ export const authService = {
   getAllUsers: async () => {
     const response = await apiClient.get(ENDPOINTS.AUTH.USERS);
     return response.data;
+  },
+
+  /**
+   * Fetch access rights for a specific user
+   */
+  getAccessRights: async (userId: string | number) => {
+    const response = await apiClient.get(ENDPOINTS.AUTH.ACCESS_RIGHTS(userId));
+    return response.data;
+  },
+
+  /**
+   * Update access rights for a specific user
+   */
+  updateAccessRights: async (userId: string | number, payload: any) => {
+    const response = await apiClient.post(ENDPOINTS.AUTH.ACCESS_RIGHTS(userId), payload);
+    return response.data;
   }
 };

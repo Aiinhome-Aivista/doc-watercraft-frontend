@@ -12,12 +12,46 @@ interface UserProfile {
   is_active: number;
 }
 
+interface AccessRights {
+  modules: string[];
+  vessel_statuses: string[];
+  gate_operations: string[];
+}
+
 const SettingsPage: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [userPermissions, setUserPermissions] = useState<AccessRights>({
+    modules: [],
+    vessel_statuses: [],
+    gate_operations: []
+  });
+
+  const handleEditUser = async (user: UserProfile) => {
+    try {
+      setLoading(true);
+      const res = await authService.getAccessRights(user.id);
+      const rights = res?.data?.access_rights;
+      if (rights) {
+        setUserPermissions({
+          modules: rights.modules || [],
+          vessel_statuses: rights.vessel_statuses || [],
+          gate_operations: rights.gate_operations || []
+        });
+      } else {
+        setUserPermissions({ modules: [], vessel_statuses: [], gate_operations: [] });
+      }
+      setSelectedUser(user);
+    } catch (err) {
+      console.error("Failed to fetch access rights", err);
+      setUserPermissions({ modules: [], vessel_statuses: [], gate_operations: [] });
+      setSelectedUser(user);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -126,10 +160,7 @@ const SettingsPage: React.FC = () => {
                     <Button
                       variant="light"
                       size="sm"
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setUserPermissions([]);
-                      }}
+                      onClick={() => handleEditUser(user)}
                     >
                       EDIT
                     </Button>
@@ -168,14 +199,17 @@ const SettingsPage: React.FC = () => {
               </Button>
               <Button
                 variant="primary"
-                onClick={() => {
-                  console.log(
-                    "Saved permissions:",
-                    userPermissions,
-                    "for user:",
-                    selectedUser.id,
-                  );
-                  setSelectedUser(null);
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    await authService.updateAccessRights(selectedUser.id, userPermissions);
+                    setSelectedUser(null);
+                  } catch (err) {
+                    console.error("Failed to save permissions", err);
+                    alert("Failed to save changes. Please try again.");
+                  } finally {
+                    setLoading(false);
+                  }
                 }}
               >
                 SAVE CHANGES
@@ -208,15 +242,16 @@ const SettingsPage: React.FC = () => {
                 Modules
               </div>
               {[
-                "DASHBOARD",
-                "PARTY MASTER",
-                "VESSEL OPS",
-                "VEHICLE LOGISTICS",
-                "WEIGHBRIDGE TERMINAL",
-                "REPORTS & BILLING",
+                { value: "DASHBOARD", label: "DASHBOARD" },
+                { value: "PARTY_MASTER", label: "PARTY MASTER" },
+                { value: "VESSEL_OPS", label: "VESSEL OPS" },
+                { value: "VEHICLE_LOGISTICS", label: "VEHICLE LOGISTICS" },
+                { value: "WEIGHBRIDGE_TERMINAL", label: "WEIGHBRIDGE TERMINAL" },
+                { value: "REPORTS_BILLING", label: "REPORTS & BILLING" },
+                { value: "SETTINGS", label: "SETTINGS" },
               ].map((feat) => (
                 <label
-                  key={feat}
+                  key={feat.value}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -227,15 +262,15 @@ const SettingsPage: React.FC = () => {
                 >
                   <input
                     type="checkbox"
-                    checked={userPermissions.includes(feat)}
+                    checked={userPermissions.modules.includes(feat.value)}
                     onChange={(e) => {
                       if (e.target.checked)
-                        setUserPermissions((p) => [...p, feat]);
+                        setUserPermissions((p) => ({ ...p, modules: [...p.modules, feat.value] }));
                       else
-                        setUserPermissions((p) => p.filter((x) => x !== feat));
+                        setUserPermissions((p) => ({ ...p, modules: p.modules.filter((x) => x !== feat.value) }));
                     }}
                   />
-                  {feat}
+                  {feat.label}
                 </label>
               ))}
             </div>
@@ -260,9 +295,14 @@ const SettingsPage: React.FC = () => {
                 >
                   Vessel Statuses
                 </div>
-                {["PLANNED", "BERTHED", "MOORED", "COMPLETED"].map((feat) => (
+                {[
+                  { value: "PLANNED", label: "PLANNED" },
+                  { value: "BERTHED", label: "BERTHED" },
+                  { value: "MOORED", label: "MOORED" },
+                  { value: "COMPLETED", label: "COMPLETED" }
+                ].map((feat) => (
                   <label
-                    key={feat}
+                    key={feat.value}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -273,17 +313,18 @@ const SettingsPage: React.FC = () => {
                   >
                     <input
                       type="checkbox"
-                      checked={userPermissions.includes(feat)}
+                      checked={userPermissions.vessel_statuses.includes(feat.value)}
                       onChange={(e) => {
                         if (e.target.checked)
-                          setUserPermissions((p) => [...p, feat]);
+                          setUserPermissions((p) => ({ ...p, vessel_statuses: [...p.vessel_statuses, feat.value] }));
                         else
-                          setUserPermissions((p) =>
-                            p.filter((x) => x !== feat),
-                          );
+                          setUserPermissions((p) => ({
+                            ...p,
+                            vessel_statuses: p.vessel_statuses.filter((x) => x !== feat.value),
+                          }));
                       }}
                     />
-                    {feat}
+                    {feat.label}
                   </label>
                 ))}
               </div>
@@ -306,18 +347,16 @@ const SettingsPage: React.FC = () => {
                   Gate Operations
                 </div>
                 {[
-                  "PENDING WBIN",
-                  "WBIN DONE",
-                  "LOADING/UNLOADING",
-                  "PENDING WBOUT",
-                  "GATE OUT",
-                  "COMPLETED_GATE",
+                  { value: "PENDING_WBIN", label: "PENDING WBIN" },
+                  { value: "WBIN_DONE", label: "WBIN DONE" },
+                  { value: "UNLOADING", label: "LOADING/UNLOADING" },
+                  { value: "PENDING_WBOUT", label: "PENDING WBOUT" },
+                  { value: "GATE_OUT", label: "GATE OUT" },
+                  { value: "COMPLETED", label: "COMPLETED" },
                 ].map((feat) => {
-                  const labelStr =
-                    feat === "COMPLETED_GATE" ? "COMPLETED" : feat;
                   return (
                     <label
-                      key={feat}
+                      key={feat.value}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -328,17 +367,18 @@ const SettingsPage: React.FC = () => {
                     >
                       <input
                         type="checkbox"
-                        checked={userPermissions.includes(feat)}
+                        checked={userPermissions.gate_operations.includes(feat.value)}
                         onChange={(e) => {
                           if (e.target.checked)
-                            setUserPermissions((p) => [...p, feat]);
+                            setUserPermissions((p) => ({ ...p, gate_operations: [...p.gate_operations, feat.value] }));
                           else
-                            setUserPermissions((p) =>
-                              p.filter((x) => x !== feat),
-                            );
+                            setUserPermissions((p) => ({
+                              ...p,
+                              gate_operations: p.gate_operations.filter((x) => x !== feat.value),
+                            }));
                         }}
                       />
-                      {labelStr}
+                      {feat.label}
                     </label>
                   );
                 })}
