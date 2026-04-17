@@ -22,16 +22,16 @@ import {
 import { useAccessRights } from "@/hooks/useAccessRights";
 
 const defaultChargeLines = [
-  { activity: 'Terminal Services', formula: 'Logic1', slabQty: '', rate: 46, gstRate: 18 },
-  { activity: 'Handling service', formula: 'Logic1', slabQty: '', rate: 170, gstRate: 18 },
-  { activity: 'Barthing charges', formula: 'Logic3', slabQty: '', rate: 3000, gstRate: 18 },
-  { activity: 'Mooring charges', formula: 'Logic4', slabQty: '', rate: 4000, gstRate: 12 },
-  { activity: 'Truck entry charges', formula: 'Logic2', slabQty: '', rate: 100, gstRate: 18 },
-  { activity: 'Weighment charges', formula: 'Logic6', slabQty: '', rate: 250, gstRate: 18 },
-  { activity: 'Parking charges', formula: 'Logic7', slabQty: '', rate: 100, gstRate: 5 },
-  { activity: 'Barthing Assistance', formula: 'Logic5', slabQty: '1-1400', rate: 2000, gstRate: 18 },
-  { activity: 'Barthing Assistance', formula: 'Logic5', slabQty: '1404-2100', rate: 4000, gstRate: 18 },
-  { activity: 'Barthing Assistance', formula: 'Logic5', slabQty: '2100-10000', rate: 5500, gstRate: 18 },
+  { activity: 'Terminal Services',   formula: 'Logic1', rate: 46,   gst_rate: 18, min_qty: 0,    max_qty: 0 },
+  { activity: 'Handling service',    formula: 'Logic1', rate: 170,  gst_rate: 18, min_qty: 0,    max_qty: 0 },
+  { activity: 'Berthing charges',    formula: 'Logic3', rate: 3000, gst_rate: 18, min_qty: 0,    max_qty: 0 },
+  { activity: 'Mooring charges',     formula: 'Logic4', rate: 4000, gst_rate: 12, min_qty: 0,    max_qty: 0 },
+  { activity: 'Truck entry charges', formula: 'Logic2', rate: 100,  gst_rate: 18, min_qty: 0,    max_qty: 0 },
+  { activity: 'Weighment charges',   formula: 'Logic6', rate: 250,  gst_rate: 18, min_qty: 0,    max_qty: 0 },
+  { activity: 'Parking charges',     formula: 'Logic7', rate: 100,  gst_rate: 5,  min_qty: 0,    max_qty: 0 },
+  { activity: 'Berthing Assistance', formula: 'Logic5', rate: 2000, gst_rate: 18, min_qty: 1,    max_qty: 1400 },
+  { activity: 'Berthing Assistance', formula: 'Logic5', rate: 4000, gst_rate: 18, min_qty: 1401, max_qty: 2100 },
+  { activity: 'Berthing Assistance', formula: 'Logic5', rate: 5500, gst_rate: 18, min_qty: 2101, max_qty: 10000 },
 ];
 
 const VesselsPage: React.FC = () => {
@@ -126,17 +126,35 @@ const VesselsPage: React.FC = () => {
 
   const handleCreate = async () => {
     if (!form.vessel_name || !form.party_name) {
-      showAlert("Vessel name and Party name are required", "error");
+      showAlert("Vessel name and Party are required", "error");
       return;
     }
 
+    const party = parties.find(p => p.party_name === form.party_name);
+    const party_id = party ? party.id : null;
+
+    if (!party_id || isNaN(party_id)) {
+      showAlert("Please select a valid party from the list", "error");
+      return;
+    }
+
+    const rates = chargeLines.map((line: any) => ({
+      activity: line.activity,
+      formula:  line.formula,
+      rate:     parseFloat(line.rate)     || 0,
+      gst_rate: parseFloat(line.gst_rate) || 0,
+      min_qty:  parseFloat(line.min_qty)  || 0,
+      max_qty:  parseFloat(line.max_qty)  || 0,
+    }));
+
     const payload = {
-      vessel_name: form.vessel_name,
-      party_name: form.party_name,
-      cargo_type: form.cargo_type || "FLYASH",
-      quantity: parseFloat(form.quantity) || 0,
-      direction: (form.direction as any) || "IMPORT",
+      vessel_name:   form.vessel_name,
+      party_id,
+      cargo_type:    form.cargo_type || "FLYASH",
+      quantity:      parseFloat(form.quantity) || 0,
+      direction:     (form.direction as any) || "IMPORT",
       expected_date: form.expected_date || getCurrentISTDateValue(),
+      rates,
     };
 
     try {
@@ -401,7 +419,7 @@ const VesselsPage: React.FC = () => {
               placeholder="Party / Client Name"
               value={form.party_name || ""}
               onChange={(value) => setForm({ ...form, party_name: value })}
-              options={parties.map(p => ({ value: p.party_code, label: p.party_name }))}
+              options={parties.map(p => ({ value: String(p.id), label: p.party_name }))}
             />
             <Input
               label="Cargo Type"
@@ -445,26 +463,18 @@ const VesselsPage: React.FC = () => {
                   <tr>
                     <th>Activity</th>
                     <th>Formula</th>
-                    <th>Slab qty</th>
                     <th>Rate</th>
-                    <th>GST RATE</th>
+                    <th>GST %</th>
+                    <th>Min Qty</th>
+                    <th>Max Qty</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {chargeLines.map((line, idx) => (
+                  {chargeLines.map((line: any, idx: number) => (
                     <tr key={idx}>
                       <td>{line.activity}</td>
                       <td>{line.formula}</td>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ padding: '4px 8px', height: '32px' }}
-                          value={line.slabQty}
-                          onChange={(e) => updateChargeLine(idx, 'slabQty', e.target.value)}
-                        />
-                      </td>
                       <td>
                         <input
                           type="number"
@@ -479,8 +489,26 @@ const VesselsPage: React.FC = () => {
                           type="number"
                           className="form-input"
                           style={{ padding: '4px 8px', height: '32px' }}
-                          value={line.gstRate}
-                          onChange={(e) => updateChargeLine(idx, 'gstRate', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                          value={line.gst_rate}
+                          onChange={(e) => updateChargeLine(idx, 'gst_rate', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: '4px 8px', height: '32px' }}
+                          value={line.min_qty}
+                          onChange={(e) => updateChargeLine(idx, 'min_qty', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: '4px 8px', height: '32px' }}
+                          value={line.max_qty}
+                          onChange={(e) => updateChargeLine(idx, 'max_qty', e.target.value !== '' ? parseFloat(e.target.value) : '')}
                         />
                       </td>
                       <td style={{ textAlign: 'center' }}>
@@ -496,7 +524,7 @@ const VesselsPage: React.FC = () => {
                   ))}
                   {chargeLines.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '16px', color: '#666' }}>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '16px', color: '#666' }}>
                         No charges available.
                       </td>
                     </tr>

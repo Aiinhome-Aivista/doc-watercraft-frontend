@@ -474,7 +474,7 @@ tr:hover td {
   width: 520px;
   max-width: 95vw;
   max-height: 90vh;
-  overflow-y: auto;
+  /* overflow-y: auto; */
   animation: slideIn 0.2s ease;
 }
 @keyframes slideIn {
@@ -502,6 +502,8 @@ tr:hover td {
 }
 .modal-body {
   padding: 20px;
+  max-height: calc(90vh - 10rem);
+  overflow-y: auto;
 }
 .modal-foot {
   padding: 14px 20px;
@@ -854,12 +856,12 @@ tr:hover td {
 .glass-glare {
   position: absolute;
   inset: 0;
- 
+
   z-index: 10;
   pointer-events: none;
 }
 
- /* background: linear-gradient(
+/* background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.1) 0%,
     transparent 50%,

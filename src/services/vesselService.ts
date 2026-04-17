@@ -7,13 +7,23 @@ export interface GetVesselsResponse {
   data: Vessel[];
 }
 
+export interface VesselRate {
+  activity: string;
+  formula: string;
+  rate: number;
+  gst_rate: number;
+  min_qty: number;
+  max_qty: number;
+}
+
 export interface CreateVesselPayload {
   vessel_name: string;
-  party_name: string;
+  party_id: number;
   cargo_type: string;
   quantity: number;
   direction: string;
   expected_date: string;
+  rates: VesselRate[];
 }
 
 export interface CreateVesselResponse {
