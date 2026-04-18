@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { GateEntry, GateStatus } from '@/types/vehicle';
-import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload, UpdateCargoOpPayload, CreateWboutPayload } from '@/services/vehicleService';
+import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload, UpdateCargoOpPayload, CreateWboutPayload, RecordGateOutPayload } from '@/services/vehicleService';
 
 interface VehicleState {
   entries: GateEntry[];
@@ -74,6 +74,18 @@ export const recordWboutThunk = createAsyncThunk(
       return payload;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to record WBOUT');
+    }
+  }
+);
+
+export const recordGateOutThunk = createAsyncThunk(
+  'vehicles/recordGateOut',
+  async (payload: RecordGateOutPayload, { rejectWithValue }) => {
+    try {
+      await VehicleService.recordGateOut(payload);
+      return payload;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to record Gate Out');
     }
   }
 );
@@ -203,8 +215,7 @@ const vehicleSlice = createSlice({
         state.loading = false;
         const entry = state.entries.find((e) => e.id === action.payload.gate_entry_id);
         if (entry) {
-          entry.status = 'COMPLETED';
-          entry.gate_out_datetime = action.payload.wbout_datetime;
+          entry.status = 'GATE_OUT'; // WBOUT complete implies waiting for gate out
           entry.weighment_slip_no = action.payload.weighment_slip_no;
           if (action.payload.gross_weight !== undefined) {
             entry.gross_weight = action.payload.gross_weight;
@@ -218,6 +229,22 @@ const vehicleSlice = createSlice({
         }
       })
       .addCase(recordWboutThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(recordGateOutThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(recordGateOutThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const entry = state.entries.find((e) => e.id === action.payload.gate_entry_id);
+        if (entry) {
+          entry.status = 'COMPLETED';
+          entry.gate_out_datetime = action.payload.gate_out_datetime;
+        }
+      })
+      .addCase(recordGateOutThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

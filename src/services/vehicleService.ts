@@ -41,6 +41,11 @@ export interface CreateWboutPayload {
   tare_weight?: number;
 }
 
+export interface RecordGateOutPayload {
+  gate_entry_id: number;
+  gate_out_datetime: string;
+}
+
 export interface RecordCargoOpPayload {
   gate_entry_id: number;
   operation_type: string;
@@ -106,11 +111,17 @@ export const VehicleService = {
     return response.data;
   },
 
-  /**
-   * Record WBOUT
-   */
   recordWbout: async (payload: CreateWboutPayload): Promise<GenericStatusResponse> => {
     const response = await apiClient.post<GenericStatusResponse>(ENDPOINTS.WEIGHBRIDGE.WBOUT, payload);
+    return response.data;
+  },
+
+  /**
+   * Record Gate Out
+   */
+  recordGateOut: async (payload: RecordGateOutPayload): Promise<GenericStatusResponse> => {
+    const { gate_entry_id, gate_out_datetime } = payload;
+    const response = await apiClient.post<GenericStatusResponse>(`/gate-entries/${gate_entry_id}/gate-out`, { gate_out_datetime });
     return response.data;
   },
 };

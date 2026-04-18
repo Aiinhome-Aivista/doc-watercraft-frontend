@@ -8,6 +8,7 @@ import {
   recordWbinThunk,
   recordWboutThunk,
   recordCargoOpThunk,
+  recordGateOutThunk,
 } from "@/store/slices/vehicleSlice";
 import { fetchVessels } from "@/store/slices/vesselSlice";
 import { GateEntry, GateStatus } from "@/types/vehicle";
@@ -34,7 +35,7 @@ const GatePage: React.FC = () => {
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
   const [modal, setModal] = useState<
-    "create" | "operation" | "detail" | "wbin" | "wbout" | null
+    "create" | "operation" | "detail" | "wbin" | "wbout" | "gateout" | null
   >(null);
   const [operationMode, setOperationMode] = useState<"record" | "update">(
     "record",
@@ -96,7 +97,7 @@ const GatePage: React.FC = () => {
   ) => {
     setSelected(entry);
     if (
-      (type === "operation" || type === "wbin" || type === "wbout") &&
+      (type === "operation" || type === "wbin" || type === "wbout" || type === "gateout") &&
       entry
     ) {
       const statusText = String(entry.status || "").toUpperCase();
@@ -313,9 +314,29 @@ const GatePage: React.FC = () => {
         }),
       ).unwrap();
       closeModal();
-      showAlert("WBOUT recorded and gate-out completed");
+      showAlert("WBOUT recorded successfully");
     } catch (err: any) {
       showAlert(err || "Failed to record WBOUT", "error");
+    }
+  };
+
+  const handleGateOut = async () => {
+    if (!selected || !form.datetime) {
+      showAlert("Please provide Gate-Out date and time", "error");
+      return;
+    }
+
+    try {
+      await dispatch(
+        recordGateOutThunk({
+          gate_entry_id: selected.id,
+          gate_out_datetime: form.datetime + ":00",
+        }),
+      ).unwrap();
+      closeModal();
+      showAlert("Gate-out recorded successfully");
+    } catch (err: any) {
+      showAlert(err || "Failed to record Gate-Out", "error");
     }
   };
 
@@ -328,6 +349,7 @@ const GatePage: React.FC = () => {
       "LOADING",
       "UNLOADING",
       "PENDING_WBOUT",
+      "GATE_OUT",
       "COMPLETED",
     ];
     const currentIndex = statusOrder.indexOf(String(entry.status));
@@ -358,6 +380,12 @@ const GatePage: React.FC = () => {
         label: "Awaiting WBOUT",
         time: "Pending",
         icon: "receipt_long",
+      },
+      {
+        key: "GATE_OUT",
+        label: "Awaiting Gate-Out",
+        time: "Pending",
+        icon: "directions_car",
       },
       {
         key: "COMPLETED",
@@ -551,6 +579,15 @@ const GatePage: React.FC = () => {
                           WBOUT
                         </Button>
                       )}
+                      {e.status === "GATE_OUT" && canGateOp("GATE_OUT") && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => openModal("gateout", e)}
+                        >
+                          GATE OUT
+                        </Button>
+                      )}
                       {e.status === "COMPLETED" && (
                         <span
                           style={{
@@ -731,6 +768,27 @@ const GatePage: React.FC = () => {
               label="Remarks"
               value={form.remarks || ""}
               onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {modal === "gateout" && selected && (
+        <Modal
+          title={`GATE OUT — ${selected.vehicle_no}`}
+          onClose={closeModal}
+          footer={
+            <Button variant="primary" onClick={handleGateOut}>
+              RECORD GATE OUT
+            </Button>
+          }
+        >
+          <div className="form-grid">
+            <Input
+              label="Gate-Out Date & Time"
+              type="datetime-local"
+              value={form.datetime || ""}
+              onChange={(e) => setForm({ ...form, datetime: e.target.value })}
             />
           </div>
         </Modal>

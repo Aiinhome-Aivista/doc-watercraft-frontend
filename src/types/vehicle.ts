@@ -5,7 +5,8 @@ export type GateStatus =
   | 'WBIN_DONE' 
   | 'LOADING'
   | 'UNLOADING' 
-  | 'PENDING_WBOUT' 
+  | 'PENDING_WBOUT'
+  | 'GATE_OUT'
   | 'COMPLETED';
 
 export interface GateEntry {
