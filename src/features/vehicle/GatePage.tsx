@@ -35,7 +35,7 @@ const GatePage: React.FC = () => {
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
 
-  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultStartDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const defaultEndDate = new Date().toISOString().split("T")[0];
 
   const [dateRange, setDateRange] = useState({ start: defaultStartDate, end: defaultEndDate });
