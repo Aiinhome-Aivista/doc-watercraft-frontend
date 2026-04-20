@@ -20,6 +20,7 @@ import {
   getCurrentISTDateValue,
 } from "@/utils/dateTime";
 import { useAccessRights } from "@/hooks/useAccessRights";
+import toast from "react-hot-toast";
 
 const defaultChargeLines = [
   { activity: 'Terminal Services',   formula: 'Logic1', rate: 46,   gst_rate: 18, min_qty: 0,    max_qty: 0 },
@@ -71,10 +72,6 @@ const VesselsPage: React.FC = () => {
   >(null);
   const [selected, setSelected] = useState<Vessel | null>(null);
   const [form, setForm] = useState<any>({});
-  const [alert, setAlert] = useState<{
-    msg: string;
-    type: "success" | "error";
-  } | null>(null);
   const [chargeLines, setChargeLines] = useState<any[]>([]);
 
   const fmtDateOnly = (v: string | null | undefined) => {
@@ -119,16 +116,10 @@ const VesselsPage: React.FC = () => {
 
   const nowDt = () => getCurrentISTDateTimeLocalValue();
 
-  const showAlert = (msg: string, type: "success" | "error" = "success") => {
-    setAlert({ msg, type });
-    setTimeout(() => setAlert(null), 4000);
-  };
-
   const openModal = (type: any, vessel: Vessel | null = null) => {
     setSelected(vessel);
     setForm({ datetime: nowDt() });
     setModal(type);
-    setAlert(null);
     if (type === "create") {
       setChargeLines([...defaultChargeLines]);
     }
@@ -160,7 +151,7 @@ const VesselsPage: React.FC = () => {
 
   const handleCreate = async () => {
     if (!form.vessel_name || !form.party_name) {
-      showAlert("Vessel name and Party are required", "error");
+      toast.error("Vessel name and Party are required");
       return;
     }
 
@@ -168,7 +159,7 @@ const VesselsPage: React.FC = () => {
     const party_id = party ? party.id : null;
 
     if (!party_id || isNaN(party_id)) {
-      showAlert("Please select a valid party from the list", "error");
+      toast.error("Please select a valid party from the list");
       return;
     }
 
@@ -194,9 +185,9 @@ const VesselsPage: React.FC = () => {
     try {
       await dispatch(createVesselThunk(payload)).unwrap();
       closeModal();
-      showAlert(`Vessel ${payload.vessel_name} created successfully`);
+      toast.success(`Vessel ${payload.vessel_name} created successfully`);
     } catch (err: any) {
-      showAlert(err || "Failed to create vessel", "error");
+      toast.error(err || "Failed to create vessel");
     }
   };
 
@@ -212,7 +203,7 @@ const VesselsPage: React.FC = () => {
             payload: { berthing_datetime: datetime },
           }),
         ).unwrap();
-        showAlert("Berthing operation recorded successfully");
+        toast.success("Berthing operation recorded successfully");
       } else if (action === "moor") {
         const datetime = form.datetime + ":00";
         await dispatch(
@@ -221,7 +212,7 @@ const VesselsPage: React.FC = () => {
             payload: { mooring_datetime: datetime },
           }),
         ).unwrap();
-        showAlert("Mooring operation recorded successfully");
+        toast.success("Mooring operation recorded successfully");
       } else if (action === "survey") {
         const datetime = form.datetime + ":00";
         const qty = parseFloat(form.survey_quantity) || 0;
@@ -231,7 +222,7 @@ const VesselsPage: React.FC = () => {
             payload: { survey_datetime: datetime, survey_quantity: qty },
           }),
         ).unwrap();
-        showAlert("Survey operation recorded successfully");
+        toast.success("Survey operation recorded successfully");
       } else if (action === "unberth") {
         const datetime = form.datetime + ":00";
         await dispatch(
@@ -240,12 +231,12 @@ const VesselsPage: React.FC = () => {
             payload: { sailing_datetime: datetime },
           }),
         ).unwrap();
-        showAlert("Unberthing operation recorded successfully");
+        toast.success("Unberthing operation recorded successfully");
       }
 
       closeModal();
     } catch (err: any) {
-      showAlert(err || "Operation failed", "error");
+      toast.error(err || "Operation failed");
     }
   };
 
@@ -257,8 +248,6 @@ const VesselsPage: React.FC = () => {
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
-
       <div className="section-head">
         <span className="section-title">VESSEL MANAGEMENT</span>
         <Button variant="light" onClick={() => openModal("create")}>

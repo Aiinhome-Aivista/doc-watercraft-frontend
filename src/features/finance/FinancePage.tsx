@@ -3,6 +3,7 @@ import { useAppSelector } from '@/store/hooks';
 import { partyService } from '@/services/partyService';
 import { billingService, BillingVesselDTO } from '@/services/billingService';
 import { Button, SearchableSelect, Input } from '@/components/ui';
+import toast from 'react-hot-toast';
 
 const generateVchNo = () => {
   const now = new Date();
@@ -34,7 +35,6 @@ const FinancePage: React.FC = () => {
   const vessels = useAppSelector((state) => state.vessels.items);
 
   const [parties, setParties] = useState<any[]>([]);
-  const [alert, setAlert] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   // Header form state
   const [vchNo]            = useState(() => generateVchNo());
@@ -84,30 +84,25 @@ const FinancePage: React.FC = () => {
     fetchVessels();
   }, [partyName, periodFrom, periodTo, parties]);
 
-  const showAlert = (msg: string, type: 'success' | 'error' = 'success') => {
-    setAlert({ msg, type });
-    setTimeout(() => setAlert(null), 4000);
-  };
-
   const handleAddToBilling = async () => {
     if (!vesselName) {
-      showAlert('Please select a vessel to add to billing', 'error');
+      toast.error('Please select a vessel to add to billing');
       return;
     }
     const vessel = billingVessels.find((v) => v.vessel_name === vesselName);
     if (!vessel) {
-      showAlert('Selected vessel not found', 'error');
+      toast.error('Selected vessel not found');
       return;
     }
     const alreadyAdded = billingLines.some((l) => l.vessel_id === vessel.vessel_id);
     if (alreadyAdded) {
-      showAlert('This vessel is already added to billing', 'error');
+      toast.error('This vessel is already added to billing');
       return;
     }
 
     const party = parties.find(p => p.party_name === partyName);
     if (!party) {
-      showAlert('Party ID missing for generation', 'error');
+      toast.error('Party ID missing for generation');
       return;
     }
 
@@ -147,10 +142,10 @@ const FinancePage: React.FC = () => {
         ]);
         
         setVesselName('');
-        showAlert(`${vessel.vessel_name} added successfully! Voucher No: ${res.bill.voucher_number}`);
+        toast.success(`${vessel.vessel_name} added successfully! Voucher No: ${res.bill.voucher_number}`);
       }
     } catch (err: any) {
-      showAlert(err?.response?.data?.message || 'Failed to generate billing activities', 'error');
+      toast.error(err?.response?.data?.message || 'Failed to generate billing activities');
     } finally {
       setLoadingGenerate(false);
     }
@@ -159,7 +154,7 @@ const FinancePage: React.FC = () => {
   const handleGenerateInvoice = async () => {
     // If they click "GENERATE INVOICE" at the bottom, just pretend it prints or triggers something else, since the API was already hit.
     if (billingLines.length === 0) return;
-    showAlert('Invoice generation process complete. Ready to print.', 'success');
+    toast.success('Invoice generation process complete. Ready to print.');
   };
 
   const removeLine = (id: number) => {
@@ -171,8 +166,6 @@ const FinancePage: React.FC = () => {
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
-
       {/* ── Page header ── */}
       <div className="section-head">
         <span className="section-title">BILLING &amp; INVOICING</span>

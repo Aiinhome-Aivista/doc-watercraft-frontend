@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { Button, Input, Modal } from "@/components/ui";
+import { Button, Input, Modal, ConfirmDialog } from "@/components/ui";
 import { partyService } from "@/services/partyService";
+import toast from "react-hot-toast";
 
 const PartyMasterPage: React.FC = () => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<number | string | null>(null);
   const [editId, setEditId] = useState<number | string | null>(null);
   const [parties, setParties] = useState<any[]>([]);
 
@@ -39,15 +41,6 @@ const PartyMasterPage: React.FC = () => {
   const [emails, setEmails] = useState<string[]>([""]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [alert, setAlert] = useState<{
-    msg: string;
-    type: "success" | "error";
-  } | null>(null);
-
-  const showAlert = (msg: string, type: "success" | "error" = "success") => {
-    setAlert({ msg, type });
-    setTimeout(() => setAlert(null), 4000);
-  };
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -128,18 +121,24 @@ const PartyMasterPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number | string) => {
-    if (!window.confirm("Are you sure you want to delete this Party Master?")) return;
+  const confirmDelete = (id: number | string) => {
+    setDeleteDialog(id);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteDialog) return;
     dispatch({ type: 'party/delete/pending' });
     try {
-      await partyService.deletePartyMaster(id);
+      await partyService.deletePartyMaster(deleteDialog);
       dispatch({ type: 'party/delete/fulfilled' });
-      showAlert("Party Master deleted successfully");
+      toast.success("Party Master deleted successfully");
       fetchParties();
     } catch (error: any) {
       dispatch({ type: 'party/delete/rejected' });
       console.error("Failed to delete Party Master:", error);
-      showAlert(error?.response?.data?.message || "Failed to delete Party Master", "error");
+      toast.error(error?.response?.data?.message || "Failed to delete Party Master");
+    } finally {
+      setDeleteDialog(null);
     }
   };
 
@@ -187,7 +186,7 @@ const PartyMasterPage: React.FC = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      showAlert("Please fix the validation errors", "error");
+      toast.error("Please fix the validation errors");
       return;
     }
 
@@ -207,11 +206,11 @@ const PartyMasterPage: React.FC = () => {
       if (editId) {
         console.log("Updating Party Master:", payload);
         await partyService.updatePartyMaster(editId, payload);
-        showAlert("Party Master updated successfully");
+        toast.success("Party Master updated successfully");
       } else {
         console.log("Saving Party Master:", payload);
         await partyService.createPartyMaster(payload);
-        showAlert("Party Master saved successfully");
+        toast.success("Party Master saved successfully");
       }
       dispatch({ type: 'party/save/fulfilled' });
 
@@ -232,14 +231,12 @@ const PartyMasterPage: React.FC = () => {
     } catch (error: any) {
       dispatch({ type: 'party/save/rejected' });
       console.error("Failed to save Party Master:", error);
-      showAlert(error?.response?.data?.message || "Failed to save Party Master", "error");
+      toast.error(error?.response?.data?.message || "Failed to save Party Master");
     }
   };
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
-
       <div className="section-head">
         <span className="section-title">PARTY MASTER</span>
         <Button variant="light" onClick={openAddModal}>
@@ -312,7 +309,7 @@ const PartyMasterPage: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(p.id)}
+                          onClick={() => confirmDelete(p.id)}
                           className="text-[#e63946]"
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
@@ -497,6 +494,17 @@ const PartyMasterPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteDialog !== null}
+        title="CONFIRM DELETE"
+        message="Are you sure you want to delete this Party Master? This action cannot be undone."
+        type="confirm"
+        confirmText="YES, DELETE"
+        cancelText="NO, CANCEL"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteDialog(null)}
+      />
     </>
   );
 };

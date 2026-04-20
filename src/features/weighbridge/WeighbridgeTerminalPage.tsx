@@ -6,6 +6,7 @@ import { GateEntry } from '@/types/vehicle';
 import { Modal, Input, Button, StatusBadge } from '@/components/ui';
 import { formatDateTimeIST, getCurrentISTDateTimeLocalValue } from '@/utils/dateTime';
 import { useAccessRights } from '@/hooks/useAccessRights';
+import toast from 'react-hot-toast';
 
 const WeighbridgeTerminalPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -28,14 +29,8 @@ const WeighbridgeTerminalPage: React.FC = () => {
     wbout_gross_weight?: string;
     wbout_tare_weight?: string;
   }>({});
-  const [alert, setAlert] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const nowDt = () => getCurrentISTDateTimeLocalValue();
-
-  const showAlert = (msg: string, type: 'success' | 'error' = 'success') => {
-    setAlert({ msg, type });
-    setTimeout(() => setAlert(null), 4000);
-  };
 
   const openModal = (type: 'wbin' | 'wbout', entry: GateEntry) => {
     setSelected(entry);
@@ -66,24 +61,24 @@ const WeighbridgeTerminalPage: React.FC = () => {
 
   const handleAction = async (status: 'WBIN_DONE' | 'COMPLETED') => {
     if (!selected || !form.datetime) {
-      showAlert('Please provide weighbridge date and time', 'error');
+      toast.error('Please provide weighbridge date and time');
       return;
     }
 
     try {
       if (status === 'WBIN_DONE') {
         if (!form.direction) {
-          showAlert('Unable to determine vessel direction', 'error');
+          toast.error('Unable to determine vessel direction');
           return;
         }
 
         if (isImport && (!form.tare_weight || tareWeight <= 0)) {
-          showAlert('Please provide Tare Wt for IMPORT WBIN', 'error');
+          toast.error('Please provide Tare Wt for IMPORT WBIN');
           return;
         }
 
         if (isExport && (!form.gross_weight || grossWeight <= 0)) {
-          showAlert('Please provide Gross Wt for EXPORT WBIN', 'error');
+          toast.error('Please provide Gross Wt for EXPORT WBIN');
           return;
         }
 
@@ -97,13 +92,13 @@ const WeighbridgeTerminalPage: React.FC = () => {
 
         await dispatch(recordWbinThunk(payload)).unwrap();
         closeModal();
-        showAlert('WBIN recorded successfully');
+        toast.success('WBIN recorded successfully');
         return;
       }
 
       if (status === 'COMPLETED') {
         if (!form.direction) {
-          showAlert('Unable to determine vessel direction', 'error');
+          toast.error('Unable to determine vessel direction');
           return;
         }
 
@@ -111,12 +106,12 @@ const WeighbridgeTerminalPage: React.FC = () => {
         const wboutTare = Number(form.wbout_tare_weight || 0);
 
         if (isWboutImport && (!form.wbout_gross_weight || wboutGross <= 0)) {
-          showAlert('Please provide Gross Wt for IMPORT WBOUT', 'error');
+          toast.error('Please provide Gross Wt for IMPORT WBOUT');
           return;
         }
 
         if (isWboutExport && (!form.wbout_tare_weight || wboutTare <= 0)) {
-          showAlert('Please provide Tare Wt for EXPORT WBOUT', 'error');
+          toast.error('Please provide Tare Wt for EXPORT WBOUT');
           return;
         }
 
@@ -130,11 +125,11 @@ const WeighbridgeTerminalPage: React.FC = () => {
 
         await dispatch(recordWboutThunk(payload)).unwrap();
         closeModal();
-        showAlert('WBOUT recorded and gate-out completed');
+        toast.success('WBOUT recorded and gate-out completed');
         return;
       }
     } catch (err: any) {
-      showAlert(err || 'Failed to record operation', 'error');
+      toast.error(err || 'Failed to record operation');
     }
   };
 
@@ -150,8 +145,6 @@ const WeighbridgeTerminalPage: React.FC = () => {
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
-
       <div className="section-head">
         <span className="section-title">WEIGHBRIDGE TERMINAL</span>
       </div>

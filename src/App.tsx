@@ -5,6 +5,7 @@ import { store } from './store';
 import AppRouter from './routes/AppRouter';
 import { useAppSelector } from './store/hooks';
 import { GlobalLoader } from './components/ui';
+import { Toaster } from 'react-hot-toast';
 
 const AppContent: React.FC = () => {
   const isLoading = useAppSelector((state) => state.loader.pendingRequests > 0);
@@ -15,6 +16,7 @@ const AppContent: React.FC = () => {
         <AppRouter />
       </BrowserRouter>
       {isLoading && <GlobalLoader />}
+      <Toaster position="top-right" />
     </>
   );
 };

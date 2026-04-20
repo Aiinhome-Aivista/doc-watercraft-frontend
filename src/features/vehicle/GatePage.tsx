@@ -18,6 +18,7 @@ import {
   getCurrentISTDateTimeLocalValue,
 } from "@/utils/dateTime";
 import { useAccessRights } from "@/hooks/useAccessRights";
+import toast from "react-hot-toast";
 
 const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -49,10 +50,6 @@ const GatePage: React.FC = () => {
   );
   const [selected, setSelected] = useState<GateEntry | null>(null);
   const [form, setForm] = useState<any>({});
-  const [alert, setAlert] = useState<{
-    msg: string;
-    type: "success" | "error";
-  } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (field: string, value: string) => {
@@ -119,11 +116,6 @@ const GatePage: React.FC = () => {
       : "LOADING";
   };
 
-  const showAlert = (msg: string, type: "success" | "error" = "success") => {
-    setAlert({ msg, type });
-    setTimeout(() => setAlert(null), 4000);
-  };
-
   const openModal = (
     type: any,
     entry: GateEntry | null = null,
@@ -139,6 +131,7 @@ const GatePage: React.FC = () => {
       setForm({
         start_datetime: nowDt(),
         end_datetime: nowDt(),
+        datetime: nowDt(),
         direction: entry.direction || "",
         compressor_no: entry.compressor_no || "",
         weighment_slip_no: entry.weighment_slip_no || "",
@@ -155,7 +148,6 @@ const GatePage: React.FC = () => {
       setForm({ datetime: nowDt(), gate_in_datetime: nowDt() });
     }
     setModal(type);
-    setAlert(null);
     setErrors({});
   };
 
@@ -213,7 +205,7 @@ const GatePage: React.FC = () => {
     try {
       await dispatch(createGateEntryThunk(payload)).unwrap();
       closeModal();
-      showAlert("Gate-In recorded successfully");
+      toast.success("Gate-In recorded successfully");
     } catch (err: any) {
       setErrors({ global: err || "Failed to record Gate-In" });
     }
@@ -227,11 +219,10 @@ const GatePage: React.FC = () => {
         const operationDateTime =
           operationMode === "update" ? form.end_datetime : form.start_datetime;
         if (!operationDateTime) {
-          showAlert(
+          toast.error(
             operationMode === "update"
               ? "Please provide End Date & Time"
-              : "Please provide Start Date & Time",
-            "error",
+              : "Please provide Start Date & Time"
           );
           return;
         }
@@ -239,7 +230,7 @@ const GatePage: React.FC = () => {
         if (operationMode === "update") {
           const operationId = Number(selected.cargo_operation_id);
           if (!Number.isFinite(operationId) || operationId <= 0) {
-            showAlert("Cargo Operation ID not found for update", "error");
+            toast.error("Cargo Operation ID not found for update");
             return;
           }
 
@@ -255,7 +246,7 @@ const GatePage: React.FC = () => {
 
           await dispatch(recordCargoOpThunk(payload)).unwrap();
           closeModal();
-          showAlert("Cargo operation recorded successfully");
+          toast.success("Cargo operation recorded successfully");
           return;
         }
 
@@ -269,17 +260,17 @@ const GatePage: React.FC = () => {
         };
         await dispatch(recordCargoOpThunk(payload)).unwrap();
         closeModal();
-        showAlert("Cargo operation recorded successfully");
+        toast.success("Cargo operation recorded successfully");
         return;
       }
     } catch (err: any) {
-      showAlert(err || "Failed to record operation", "error");
+      toast.error(err || "Failed to record operation");
     }
   };
 
   const handleWbin = async () => {
     if (!selected || !form.datetime) {
-      showAlert("Please provide weighbridge date and time", "error");
+      toast.error("Please provide weighbridge date and time");
       return;
     }
 
@@ -293,12 +284,12 @@ const GatePage: React.FC = () => {
     const tareWeight = Number(form.tare_weight || 0);
 
     if (isImport && (!form.tare_weight || tareWeight <= 0)) {
-      showAlert("Please provide Tare Wt for IMPORT WBIN", "error");
+      toast.error("Please provide Tare Wt for IMPORT WBIN");
       return;
     }
 
     if (isExport && (!form.gross_weight || grossWeight <= 0)) {
-      showAlert("Please provide Gross Wt for EXPORT WBIN", "error");
+      toast.error("Please provide Gross Wt for EXPORT WBIN");
       return;
     }
 
@@ -313,15 +304,15 @@ const GatePage: React.FC = () => {
         }),
       ).unwrap();
       closeModal();
-      showAlert("WBIN recorded successfully");
+      toast.success("WBIN recorded successfully");
     } catch (err: any) {
-      showAlert(err || "Failed to record WBIN", "error");
+      toast.error(err || "Failed to record WBIN");
     }
   };
 
   const handleWbout = async () => {
     if (!selected || !form.datetime) {
-      showAlert("Please provide weighbridge date and time", "error");
+      toast.error("Please provide weighbridge date and time");
       return;
     }
 
@@ -335,12 +326,12 @@ const GatePage: React.FC = () => {
     const tareWeight = Number(form.wbout_tare_weight || 0);
 
     if (isImport && (!form.wbout_gross_weight || grossWeight <= 0)) {
-      showAlert("Please provide Gross Wt for IMPORT WBOUT", "error");
+      toast.error("Please provide Gross Wt for IMPORT WBOUT");
       return;
     }
 
     if (isExport && (!form.wbout_tare_weight || tareWeight <= 0)) {
-      showAlert("Please provide Tare Wt for EXPORT WBOUT", "error");
+      toast.error("Please provide Tare Wt for EXPORT WBOUT");
       return;
     }
 
@@ -355,15 +346,15 @@ const GatePage: React.FC = () => {
         }),
       ).unwrap();
       closeModal();
-      showAlert("WBOUT recorded successfully");
+      toast.success("WBOUT recorded successfully");
     } catch (err: any) {
-      showAlert(err || "Failed to record WBOUT", "error");
+      toast.error(err || "Failed to record WBOUT");
     }
   };
 
   const handleGateOut = async () => {
     if (!selected || !form.datetime) {
-      showAlert("Please provide Gate-Out date and time", "error");
+      toast.error("Please provide Gate-Out date and time");
       return;
     }
 
@@ -375,9 +366,9 @@ const GatePage: React.FC = () => {
         }),
       ).unwrap();
       closeModal();
-      showAlert("Gate-out recorded successfully");
+      toast.success("Gate-out recorded successfully");
     } catch (err: any) {
-      showAlert(err || "Failed to record Gate-Out", "error");
+      toast.error(err || "Failed to record Gate-Out");
     }
   };
 
@@ -448,7 +439,6 @@ const GatePage: React.FC = () => {
 
   return (
     <>
-      {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
       <div className="section-head">
         <span className="section-title">VEHICLE GATE MANAGEMENT</span>
         <Button variant="light" onClick={() => openModal("create")}>
