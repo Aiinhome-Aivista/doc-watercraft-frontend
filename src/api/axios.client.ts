@@ -64,7 +64,6 @@ apiClient.interceptors.response.use(
         case 502:
         case 503:
           console.error('[API] Server Error:', data);
-          alert('A critical server error occurred. Please try again later.'); // Consider using 'react-toastify'
           break;
         default:
           console.error(`[API] Unhandled Error Code (${status})`, data);

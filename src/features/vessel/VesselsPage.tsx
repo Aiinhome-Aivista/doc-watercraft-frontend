@@ -13,7 +13,7 @@ import {
 } from "@/store/slices/vesselSlice";
 import { Vessel, VesselStatus } from "@/types/vessel";
 import { partyService } from "@/services/partyService";
-import { Modal, Input, Select, Button, StatusBadge, SearchableSelect } from "@/components/ui";
+import { Modal, Input, Select, Button, StatusBadge, SearchableSelect, ConfirmDialog } from "@/components/ui";
 import {
   formatDateTimeIST,
   getCurrentISTDateTimeLocalValue,
@@ -65,6 +65,7 @@ const VesselsPage: React.FC = () => {
 
   const [dateRange, setDateRange] = useState({ start: defaultStartDate, end: defaultEndDate });
   const [filterVesselName, setFilterVesselName] = useState<string>("");
+  const [deleteDialog, setDeleteDialog] = useState<{isOpen: boolean, idx: number | null}>({isOpen: false, idx: null});
   const [modal, setModal] = useState<
     "create" | "berth" | "moor" | "survey" | "unberth" | "detail" | null
   >(null);
@@ -146,8 +147,15 @@ const VesselsPage: React.FC = () => {
     setChargeLines(newLine);
   };
 
-  const removeChargeLine = (idx: number) => {
-    setChargeLines(chargeLines.filter((_, i) => i !== idx));
+  const confirmRemoveChargeLine = (idx: number) => {
+    setDeleteDialog({ isOpen: true, idx });
+  };
+
+  const handleRemoveChargeLine = () => {
+    if (deleteDialog.idx !== null) {
+      setChargeLines(chargeLines.filter((_, i) => i !== deleteDialog.idx));
+    }
+    setDeleteDialog({ isOpen: false, idx: null });
   };
 
   const handleCreate = async () => {
@@ -272,7 +280,7 @@ const VesselsPage: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-end', background: 'var(--bg2)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '4px', alignItems: 'flex-end', background: 'var(--bg2)', padding: '16px', border: '1px solid var(--border)' }}>
         <div style={{ flex: 1, maxWidth: 200 }}>
           <Input 
             label="Start Date" 
@@ -576,7 +584,7 @@ const VesselsPage: React.FC = () => {
                       <td style={{ textAlign: 'center' }}>
                         <button
                           type="button"
-                          onClick={() => removeChargeLine(idx)}
+                          onClick={() => confirmRemoveChargeLine(idx)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e63946', padding: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
@@ -808,6 +816,17 @@ const VesselsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        title="CONFIRM DELETE"
+        message="Do you want to Delete this item? This action cannot be undone."
+        type="confirm"
+        confirmText="YES, DELETE"
+        cancelText="NO, CANCEL"
+        onConfirm={handleRemoveChargeLine}
+        onCancel={() => setDeleteDialog({ isOpen: false, idx: null })}
+      />
     </>
   );
 };

@@ -485,7 +485,7 @@ const GatePage: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-end', background: 'var(--bg2)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end',marginBottom: '4px', background: 'var(--bg2)', padding: '16px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '150px', maxWidth: '200px' }}>
           <Input 
             label="Start Date" 

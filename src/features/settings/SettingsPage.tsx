@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { authService } from "@/services/authService";
-import { GlobalLoader, Button, Modal, Input } from "@/components/ui";
+import { GlobalLoader, Button, Modal, Input, ConfirmDialog } from "@/components/ui";
 
 interface UserProfile {
   id: number;
@@ -40,6 +40,10 @@ const SettingsPage: React.FC = () => {
   const [regErrors, setRegErrors] = useState<Record<string, string>>({});
   const [regGlobalError, setRegGlobalError] = useState<string | null>(null);
 
+  const [dialogState, setDialogState] = useState<{isOpen: boolean; title: string; message: string; type: "info"|"confirm"|"error"}>({
+    isOpen: false, title: "", message: "", type: "info"
+  });
+
   const handleRegChange = (field: string, value: string) => {
     setRegForm((prev) => ({ ...prev, [field]: value }));
     if (regErrors[field]) setRegErrors(prev => ({ ...prev, [field]: "" }));
@@ -70,7 +74,7 @@ const SettingsPage: React.FC = () => {
         email: regForm.email
       };
       const res = await authService.registerUser(payload);
-      alert(res.message || "User registered successfully");
+      setDialogState({ isOpen: true, title: "SUCCESS", message: res.message || "User registered successfully", type: "info" });
       setIsAddUserModalOpen(false);
       setRegForm({ name: "", phone: "", email: "", password: "", confirmPassword: "" });
       
@@ -265,7 +269,7 @@ const SettingsPage: React.FC = () => {
                     setSelectedUser(null);
                   } catch (err) {
                     console.error("Failed to save permissions", err);
-                    alert("Failed to save changes. Please try again.");
+                    setDialogState({ isOpen: true, title: "ERROR", message: "Failed to save changes. Please try again.", type: "error" });
                   } finally {
                     setLoading(false);
                   }
@@ -439,6 +443,14 @@ const SettingsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      <ConfirmDialog
+        isOpen={dialogState.isOpen}
+        title={dialogState.title}
+        message={dialogState.message}
+        type={dialogState.type}
+        onConfirm={() => setDialogState(prev => ({ ...prev, isOpen: false }))}
+      />
     </>
   );
 };
