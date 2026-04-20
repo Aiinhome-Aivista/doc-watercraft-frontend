@@ -7,20 +7,22 @@ interface Option {
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
+  error?: string;
   options: Option[];
 }
 
-const Select: React.FC<SelectProps> = ({ label, options, ...props }) => {
+const Select: React.FC<SelectProps> = ({ label, error, options, ...props }) => {
   return (
     <div className="form-group">
       {label && <label className="form-label">{label}</label>}
-      <select className="form-select" {...props}>
+      <select className={`form-select ${error ? 'input-error' : ''}`} {...props}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
       </select>
+      {error && <span className="error-text" style={{ color: '#e63946', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{error}</span>}
     </div>
   );
 };

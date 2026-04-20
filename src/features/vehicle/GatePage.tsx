@@ -53,6 +53,12 @@ const GatePage: React.FC = () => {
     msg: string;
     type: "success" | "error";
   } | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev: any) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
 
   const getDateMs = (value: string | null | undefined) => {
     if (!value) return 0;
@@ -150,6 +156,7 @@ const GatePage: React.FC = () => {
     }
     setModal(type);
     setAlert(null);
+    setErrors({});
   };
 
   const closeModal = () => {
@@ -157,31 +164,37 @@ const GatePage: React.FC = () => {
     setOperationMode("record");
     setSelected(null);
     setForm({});
+    setErrors({});
   };
 
   const handleVesselChange = (vesselId: string) => {
     const selectedVessel = vessels.find((v) => v.id === Number(vesselId));
+    const direction = selectedVessel?.direction || "";
     setForm({
       ...form,
       vessel_id: vesselId,
-      direction: selectedVessel?.direction || "",
+      direction: direction,
       consignor_name: selectedVessel?.party_name || "Poddar Imports",
+      own_weighbridge: direction === "IMPORT" ? "0" : (form.own_weighbridge || "0"),
     });
   };
 
   const handleCreate = async () => {
+    const newErrors: Record<string, string> = {};
+
     if (!form.vessel_id) {
-      showAlert("Please select a vessel", "error");
-      return;
+      newErrors.vessel_id = "Please select a vessel";
     }
+
     const ownWb = parseInt(form.own_weighbridge || "0") as 0 | 1;
     const grossWeight = Number(form.gross_weight || 0);
 
-    if (ownWb === 1 && grossWeight <= 0) {
-      showAlert(
-        "Please enter gross weight for own weighbridge gate-in",
-        "error",
-      );
+    if (ownWb === 1 && grossWeight <= 60) {
+      newErrors.gross_weight = "Gross weight must be greater than 60 for own weighbridge";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -202,7 +215,7 @@ const GatePage: React.FC = () => {
       closeModal();
       showAlert("Gate-In recorded successfully");
     } catch (err: any) {
-      showAlert(err || "Failed to record Gate-In", "error");
+      setErrors({ global: err || "Failed to record Gate-In" });
     }
   };
 
@@ -703,10 +716,19 @@ const GatePage: React.FC = () => {
           }
         >
           <div className="form-grid">
+            {errors.global && (
+              <div style={{ gridColumn: "1 / -1", padding: "12px", backgroundColor: "rgba(230, 57, 70, 0.1)", border: "1px solid #e63946", borderRadius: "8px", color: "#e63946", fontSize: "14px", textAlign: "center", fontWeight: "bold", marginBottom: "8px", width: "100%" }}>
+                {errors.global}
+              </div>
+            )}
             <Select
-              label="Vessel"
+              label="Vessel *"
               value={form.vessel_id || ""}
-              onChange={(e) => handleVesselChange(e.target.value)}
+              onChange={(e) => {
+                handleVesselChange(e.target.value);
+                if (errors.vessel_id) setErrors(prev => ({...prev, vessel_id: ""}));
+              }}
+              error={errors.vessel_id}
               options={[
                 { value: "", label: "Select Vessel" },
                 ...mooredVessels.map((v) => ({
@@ -720,49 +742,39 @@ const GatePage: React.FC = () => {
               label="Gate-In Date & Time"
               type="datetime-local"
               value={form.gate_in_datetime || ""}
-              onChange={(e) =>
-                setForm({ ...form, gate_in_datetime: e.target.value })
-              }
+              onChange={(e) => handleChange("gate_in_datetime", e.target.value)}
             />
             <Input
               label="Consignor Name"
               value={form.consignor_name || ""}
-              onChange={(e) =>
-                setForm({ ...form, consignor_name: e.target.value })
-              }
+              onChange={(e) => handleChange("consignor_name", e.target.value)}
             />
             <Input
               label="Challan / Invoice No"
               value={form.challan_invoice_no || ""}
-              onChange={(e) =>
-                setForm({ ...form, challan_invoice_no: e.target.value })
-              }
+              onChange={(e) => handleChange("challan_invoice_no", e.target.value)}
             />
             <Input
               label="Vehicle No"
               value={form.vehicle_no || ""}
-              onChange={(e) => setForm({ ...form, vehicle_no: e.target.value })}
+              onChange={(e) => handleChange("vehicle_no", e.target.value)}
+              error={errors.vehicle_no}
             />
             <Input
               label="Transporter Name"
               value={form.transporter_name || ""}
-              onChange={(e) =>
-                setForm({ ...form, transporter_name: e.target.value })
-              }
+              onChange={(e) => handleChange("transporter_name", e.target.value)}
             />
             <Input
               label="Weighment Slip No"
               value={form.weighment_slip_no || ""}
-              onChange={(e) =>
-                setForm({ ...form, weighment_slip_no: e.target.value })
-              }
+              onChange={(e) => handleChange("weighment_slip_no", e.target.value)}
             />
             <Select
               label="Own Weighbridge? (≥60T skips WBIN)"
-              value={form.own_weighbridge || "0"}
-              onChange={(e) =>
-                setForm({ ...form, own_weighbridge: e.target.value })
-              }
+              value={form.direction === "IMPORT" ? "0" : (form.own_weighbridge || "0")}
+              disabled={form.direction === "IMPORT"}
+              onChange={(e) => handleChange("own_weighbridge", e.target.value)}
               options={[
                 { value: "0", label: "No — Needs WBIN" },
                 { value: "1", label: "Yes — Skip to WBOUT" },
@@ -770,12 +782,11 @@ const GatePage: React.FC = () => {
             />
             {form.own_weighbridge === "1" && (
               <Input
-                label="Gross Weight"
+                label="Gross Weight *"
                 type="number"
                 value={form.gross_weight || ""}
-                onChange={(e) =>
-                  setForm({ ...form, gross_weight: e.target.value })
-                }
+                onChange={(e) => handleChange("gross_weight", e.target.value)}
+                error={errors.gross_weight}
               />
             )}
           </div>
