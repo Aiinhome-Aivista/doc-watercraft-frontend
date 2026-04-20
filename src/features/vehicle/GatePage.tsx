@@ -12,7 +12,7 @@ import {
 } from "@/store/slices/vehicleSlice";
 import { fetchVessels } from "@/store/slices/vesselSlice";
 import { GateEntry, GateStatus } from "@/types/vehicle";
-import { Modal, Input, Select, Button, StatusBadge } from "@/components/ui";
+import { Modal, Input, Select, Button, StatusBadge, SearchableSelect } from "@/components/ui";
 import {
   formatDateTimeIST,
   getCurrentISTDateTimeLocalValue,
@@ -34,6 +34,13 @@ const GatePage: React.FC = () => {
     GateStatus | "ALL" | "LOADING/UNLOADING"
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
+
+  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultEndDate = new Date().toISOString().split("T")[0];
+
+  const [dateRange, setDateRange] = useState({ start: defaultStartDate, end: defaultEndDate });
+  const [filterGateInNo, setFilterGateInNo] = useState<string>("");
+  const [filterVehicleNo, setFilterVehicleNo] = useState<string>("");
   const [modal, setModal] = useState<
     "create" | "operation" | "detail" | "wbin" | "wbout" | "gateout" | null
   >(null);
@@ -58,7 +65,7 @@ const GatePage: React.FC = () => {
   };
 
   const filtered = useMemo(() => {
-    const base = entries.filter((entry) => {
+    let base = entries.filter((entry) => {
       if (filter === "ALL") return true;
       if (filter === "LOADING/UNLOADING") {
         const status = String(entry.status || "").toUpperCase();
@@ -67,12 +74,33 @@ const GatePage: React.FC = () => {
       return entry.status === filter;
     });
 
+    if (dateRange.start || dateRange.end) {
+      base = base.filter(entry => {
+        const entryMs = getDateMs(entry.gate_in_datetime);
+        const startMs = dateRange.start ? new Date(dateRange.start).getTime() : 0;
+        const endMs = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity;
+        return entryMs >= startMs && entryMs <= endMs;
+      });
+    }
+
+    if (filterGateInNo) {
+      base = base.filter(entry => entry.gate_in_no === filterGateInNo);
+    }
+
+    if (filterVehicleNo) {
+      base = base.filter(entry => entry.vehicle_no.toLowerCase().includes(filterVehicleNo.toLowerCase()));
+    }
+
     return [...base].sort((a, b) => {
       const diff =
         getDateMs(a.gate_in_datetime) - getDateMs(b.gate_in_datetime);
       return gateInSort === "latest" ? -diff : diff;
     });
-  }, [entries, filter, gateInSort]);
+  }, [entries, filter, gateInSort, dateRange, filterGateInNo, filterVehicleNo]);
+
+  const uniqueGateInNos = useMemo(() => {
+    return Array.from(new Set(entries.map((entry) => entry.gate_in_no)));
+  }, [entries]);
   const mooredVessels = vessels.filter((v) =>
     ["PLANNED", "MOORED", "BERTHED"].includes(v.status),
   );
@@ -455,6 +483,51 @@ const GatePage: React.FC = () => {
             {s.replace(/_/g, " ")}
           </button>
         ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-end', background: 'var(--bg2)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '150px', maxWidth: '200px' }}>
+          <Input 
+            label="Start Date" 
+            type="date" 
+            value={dateRange.start} 
+            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} 
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: '150px', maxWidth: '200px' }}>
+          <Input 
+            label="End Date" 
+            type="date" 
+            value={dateRange.end} 
+            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} 
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: '200px', maxWidth: '300px' }}>
+          <SearchableSelect
+            label="Gate-In No"
+            placeholder="All Gate-In Nos"
+            options={[{ value: "", label: "All Gate-In Nos" }, ...uniqueGateInNos.map(no => ({ value: no, label: no }))]}
+            value={filterGateInNo}
+            onChange={(val) => setFilterGateInNo(val)}
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: '150px', maxWidth: '250px' }}>
+          <Input 
+            label="Vehicle No" 
+            placeholder="Search Vehicle No" 
+            value={filterVehicleNo} 
+            onChange={(e) => setFilterVehicleNo(e.target.value)} 
+          />
+        </div>
+        <div>
+          <Button variant="ghost" onClick={() => {
+            setDateRange({ start: defaultStartDate, end: defaultEndDate });
+            setFilterGateInNo("");
+            setFilterVehicleNo("");
+          }}>
+            CLEAR
+          </Button>
+        </div>
       </div>
 
       <div className="table-wrap">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { authService } from "@/services/authService";
-import { GlobalLoader, Button, Modal } from "@/components/ui";
+import { GlobalLoader, Button, Modal, Input } from "@/components/ui";
 
 interface UserProfile {
   id: number;
@@ -28,6 +28,62 @@ const SettingsPage: React.FC = () => {
     vessel_statuses: [],
     gate_operations: []
   });
+
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [regForm, setRegForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [regErrors, setRegErrors] = useState<Record<string, string>>({});
+  const [regGlobalError, setRegGlobalError] = useState<string | null>(null);
+
+  const handleRegChange = (field: string, value: string) => {
+    setRegForm((prev) => ({ ...prev, [field]: value }));
+    if (regErrors[field]) setRegErrors(prev => ({ ...prev, [field]: "" }));
+    setRegGlobalError(null);
+  };
+
+  const handleRegisterSubmit = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!regForm.name.trim()) newErrors.name = "Full Name is required";
+    if (!regForm.phone.trim()) newErrors.phone = "Phone number is required";
+    if (!regForm.email.trim()) newErrors.email = "Email is required";
+    if (!regForm.password) {
+      newErrors.password = "Password is required";
+    } else if (regForm.password !== regForm.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setRegErrors(newErrors);
+      return;
+    }
+    try {
+      setLoading(true);
+      const payload = {
+        username: regForm.email.split('@')[0], 
+        password: regForm.password,
+        full_name: regForm.name,
+        mobile: regForm.phone,
+        email: regForm.email
+      };
+      const res = await authService.registerUser(payload);
+      alert(res.message || "User registered successfully");
+      setIsAddUserModalOpen(false);
+      setRegForm({ name: "", phone: "", email: "", password: "", confirmPassword: "" });
+      
+      const updatedRes = await authService.getAllUsers();
+      const userList = Array.isArray(updatedRes) ? updatedRes : updatedRes.data || [];
+      setUsers(userList);
+    } catch (err: any) {
+      console.error("Registration failed:", err);
+      setRegGlobalError(err.response?.data?.message || "An error occurred during registration");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEditUser = async (user: UserProfile) => {
     try {
@@ -78,6 +134,9 @@ const SettingsPage: React.FC = () => {
 
       <div className="section-head">
         <span className="section-title">USER ADMINISTRATION</span>
+        <Button variant="light" onClick={() => setIsAddUserModalOpen(true)}>
+          + ADD USER
+        </Button>
       </div>
 
       {error ? (
@@ -346,6 +405,37 @@ const SettingsPage: React.FC = () => {
               )}
             </div>
 
+          </div>
+        </Modal>
+      )}
+
+      {isAddUserModalOpen && (
+        <Modal
+          title="REGISTER NEW USER"
+          onClose={() => setIsAddUserModalOpen(false)}
+          width={480}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setIsAddUserModalOpen(false)}>
+                CANCEL
+              </Button>
+              <Button variant="primary" onClick={handleRegisterSubmit}>
+                REGISTER
+              </Button>
+            </>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "8px 0" }}>
+            {regGlobalError && (
+              <div style={{ padding: "12px", backgroundColor: "rgba(230, 57, 70, 0.1)", border: "1px solid #e63946", borderRadius: "8px", color: "#e63946", fontSize: "14px", textAlign: "center", fontWeight: "bold" }}>
+                {regGlobalError}
+              </div>
+            )}
+            <Input label="Full Name *" placeholder="John Doe" value={regForm.name} onChange={(e) => handleRegChange("name", e.target.value)} error={regErrors.name} />
+            <Input label="Phone Number *" placeholder="+1 (555) 000-0000" value={regForm.phone} onChange={(e) => handleRegChange("phone", e.target.value)} error={regErrors.phone} />
+            <Input label="Email Address *" placeholder="name@domain.com" type="email" value={regForm.email} onChange={(e) => handleRegChange("email", e.target.value)} error={regErrors.email} />
+            <Input label="Create Password *" placeholder="••••••••" type="password" value={regForm.password} onChange={(e) => handleRegChange("password", e.target.value)} error={regErrors.password} />
+            <Input label="Confirm Password *" placeholder="••••••••" type="password" value={regForm.confirmPassword} onChange={(e) => handleRegChange("confirmPassword", e.target.value)} error={regErrors.confirmPassword} />
           </div>
         </Modal>
       )}

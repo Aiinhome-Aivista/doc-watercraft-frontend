@@ -59,6 +59,12 @@ const VesselsPage: React.FC = () => {
   const [createdAtSort, setCreatedAtSort] = useState<"latest" | "oldest">(
     "latest",
   );
+
+  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultEndDate = new Date().toISOString().split("T")[0];
+
+  const [dateRange, setDateRange] = useState({ start: defaultStartDate, end: defaultEndDate });
+  const [filterVesselName, setFilterVesselName] = useState<string>("");
   const [modal, setModal] = useState<
     "create" | "berth" | "moor" | "survey" | "unberth" | "detail" | null
   >(null);
@@ -79,16 +85,36 @@ const VesselsPage: React.FC = () => {
   const getDateMs = (v: string | null | undefined) =>
     v ? new Date(v.includes("T") ? v : v.replace(" ", "T")).getTime() : 0;
 
+  const uniqueVesselNames = useMemo(() => {
+    return Array.from(new Set(vessels.map((v) => v.vessel_name)));
+  }, [vessels]);
+
   const filtered = useMemo(() => {
-    return [
-      ...(filter === "ALL"
-        ? vessels
-        : vessels.filter((v) => v.status === filter)),
-    ].sort((a, b) => {
+    let result = filter === "ALL" ? vessels : vessels.filter((v) => v.status === filter);
+
+    if (dateRange.start || dateRange.end) {
+      result = result.filter(v => {
+        const createdMs = getDateMs(v.created_at);
+        const berthingMs = getDateMs(v.berthing_datetime);
+        const startMs = dateRange.start ? new Date(dateRange.start).getTime() : 0;
+        const endMs = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity;
+
+        const createdInRange = createdMs >= startMs && createdMs <= endMs;
+        const berthingInRange = berthingMs >= startMs && berthingMs <= endMs;
+
+        return createdInRange || berthingInRange;
+      });
+    }
+
+    if (filterVesselName) {
+      result = result.filter(v => v.vessel_name === filterVesselName);
+    }
+
+    return result.sort((a, b) => {
       const diff = getDateMs(a.created_at) - getDateMs(b.created_at);
       return createdAtSort === "latest" ? -diff : diff;
     });
-  }, [vessels, filter, createdAtSort]);
+  }, [vessels, filter, createdAtSort, dateRange, filterVesselName]);
 
   const nowDt = () => getCurrentISTDateTimeLocalValue();
 
@@ -244,6 +270,42 @@ const VesselsPage: React.FC = () => {
             {s}
           </button>
         ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-end', background: 'var(--bg2)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+        <div style={{ flex: 1, maxWidth: 200 }}>
+          <Input 
+            label="Start Date" 
+            type="date" 
+            value={dateRange.start} 
+            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} 
+          />
+        </div>
+        <div style={{ flex: 1, maxWidth: 200 }}>
+          <Input 
+            label="End Date" 
+            type="date" 
+            value={dateRange.end} 
+            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} 
+          />
+        </div>
+        <div style={{ flex: 1, maxWidth: 300 }}>
+          <SearchableSelect
+            label="Vessel Name"
+            placeholder="All Vessels"
+            options={[{ value: "", label: "All Vessels" }, ...uniqueVesselNames.map(name => ({ value: name, label: name }))]}
+            value={filterVesselName}
+            onChange={(val) => setFilterVesselName(val)}
+          />
+        </div>
+        <div>
+          <Button variant="ghost" onClick={() => {
+            setDateRange({ start: defaultStartDate, end: defaultEndDate });
+            setFilterVesselName("");
+          }}>
+            CLEAR
+          </Button>
+        </div>
       </div>
 
       <div className="table-wrap">
