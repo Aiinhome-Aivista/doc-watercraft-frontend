@@ -117,11 +117,11 @@ const FinancePage: React.FC = () => {
       
       const res = await billingService.generateBill(payload);
       
-      if (res.success && res.bill) {
+      if (res.success && res.details) {
         // Map the activities for the single newly generated vessel
         const vesselDetails = res.details.filter((d: any) => d.vessel_id === vessel.vessel_id);
         const mappedActs = vesselDetails.map((d: any) => ({
-          activity: d.activity_name,
+          activity: d.activity,
           qty: d.qty,
           rate: d.rate,
           amount: d.amount,
@@ -142,7 +142,7 @@ const FinancePage: React.FC = () => {
         ]);
         
         setVesselName('');
-        toast.success(`${vessel.vessel_name} added successfully! Voucher No: ${res.bill.voucher_number}`);
+        toast.success(`${vessel.vessel_name} added successfully! Voucher No: ${vchNo}`);
       }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to generate billing activities');
