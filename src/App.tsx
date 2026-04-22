@@ -12,7 +12,7 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <BrowserRouter>
+      <BrowserRouter basename="/dock_mgmt">
         <AppRouter />
       </BrowserRouter>
       {isLoading && <GlobalLoader />}
