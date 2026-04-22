@@ -164,6 +164,15 @@ const FinancePage: React.FC = () => {
   const fmtNum = (n: number | string | null | undefined) =>
     n != null ? Number(n).toLocaleString('en-IN') : '—';
 
+  const grandTotalAmt = billingLines.reduce(
+    (acc, line) => acc + line.activities.reduce((sum, a) => sum + (a.amount || 0), 0),
+    0
+  );
+  const grandTotalGst = billingLines.reduce(
+    (acc, line) => acc + line.activities.reduce((sum, a) => sum + (a.gstAmount || 0), 0),
+    0
+  );
+
   return (
     <>
       {/* ── Page header ── */}
@@ -291,10 +300,12 @@ const FinancePage: React.FC = () => {
                 placeholder="Select a completed vessel..."
                 value={vesselName}
                 onChange={(v) => setVesselName(v)}
-                options={billingVessels.map((v) => ({
-                  value: v.vessel_auto_id,
-                  label: v.vessel_name,
-                }))}
+                options={billingVessels
+                  .filter((v) => !billingLines.some((l) => l.vessel_id === v.vessel_id))
+                  .map((v) => ({
+                    value: v.vessel_name,
+                    label: v.vessel_name,
+                  }))}
               />
             </div>
             <Button variant="primary" onClick={handleAddToBilling} disabled={loadingGenerate}>
@@ -426,6 +437,33 @@ const FinancePage: React.FC = () => {
                   </React.Fragment>
                 );
               })
+            )}
+
+            {/* Service Total / Grand Total */}
+            {billingLines.length > 0 && (
+              <>
+                <tr style={{ background: 'var(--bg)', borderTop: '3px double var(--border)' }}>
+                  <td colSpan={2} style={{ textAlign: 'left', fontSize: '15px', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', padding: '12px 10px' }}>
+                    Service Total
+                  </td>
+                  <td colSpan={3} style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 800, color: 'var(--text)', padding: '12px 10px' }}>
+                    {fmtNum(grandTotalAmt)}
+                  </td>
+                  <td colSpan={2} style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 800, color: 'var(--green)', padding: '12px 10px' }}>
+                    {fmtNum(grandTotalGst)}
+                  </td>
+                  <td></td>
+                </tr>
+                <tr style={{ background: 'rgba(0,194,255,0.05)', borderBottom: '2px solid var(--border)' }}>
+                  <td colSpan={5} style={{ textAlign: 'start', fontSize: '16px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', padding: '12px 10px' }}>
+                    Nett Total (Amt + GST)
+                  </td>
+                  <td colSpan={2} style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 900, color: 'var(--accent)', padding: '12px 10px' }}>
+                    {fmtNum(grandTotalAmt + grandTotalGst)}
+                  </td>
+                  <td></td>
+                </tr>
+              </>
             )}
           </tbody>
         </table>
