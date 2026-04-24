@@ -292,6 +292,7 @@ const SettingsPage: React.FC = () => {
             {[
               { value: "DASHBOARD", label: "DASHBOARD" },
               { value: "PARTY_MASTER", label: "PARTY MASTER" },
+              { value: "VEHICLE_MASTER", label: "VEHICLE MASTER" },
               { value: "REPORTS_BILLING", label: "REPORTS & BILLING" },
               { value: "WEIGHBRIDGE_TERMINAL", label: "WEIGHBRIDGE TERMINAL" },
               { value: "SETTINGS", label: "SETTINGS" },
@@ -307,7 +308,7 @@ const SettingsPage: React.FC = () => {
                   style={{ width: 15, height: 15, accentColor: "var(--accent)", cursor: "pointer" }}
                 />
                 <span className="material-symbols-outlined" style={{ fontSize: 15, color: userPermissions.modules.includes(mod.value) ? "var(--accent)" : "var(--text3)" }}>
-                  {mod.value === "DASHBOARD" ? "dashboard" : mod.value === "PARTY_MASTER" ? "groups" : mod.value === "REPORTS_BILLING" ? "receipt_long" : mod.value === "WEIGHBRIDGE_TERMINAL" ? "scale" : "settings"}
+                  {mod.value === "DASHBOARD" ? "dashboard" : mod.value === "PARTY_MASTER" ? "groups" : mod.value === "VEHICLE_MASTER" ? "local_shipping" : mod.value === "REPORTS_BILLING" ? "receipt_long" : mod.value === "WEIGHBRIDGE_TERMINAL" ? "scale" : "settings"}
                 </span>
                 {mod.label}
               </label>

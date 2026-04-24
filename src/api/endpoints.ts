@@ -36,4 +36,7 @@ export const ENDPOINTS = {
     VESSELS: '/billing/vessels',
     GENERATE: '/billing/generate',
   },
+  VEHICLE_MASTER: {
+    BASE: '/vehiclemasters',
+  },
 } as const;

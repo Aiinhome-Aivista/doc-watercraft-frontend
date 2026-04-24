@@ -87,6 +87,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const allNavItems = [
     { module: 'DASHBOARD', label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
     { module: 'PARTY_MASTER', label: 'PARTY MASTER', icon: <Users size={18} />, path: '/party-master' },
+    { module: 'VEHICLE_MASTER', label: 'VEHICLE MASTER', icon: <Truck size={18} />, path: '/vehicle-master' },
     { module: 'VESSEL_OPS', label: 'VESSEL OPS', icon: <Anchor size={18} />, path: '/vessels' },
     { module: 'VEHICLE_LOGISTICS', label: 'VEHICLE LOGISTICS', icon: <Truck size={18} />, path: '/vehicles' },
     { module: 'WEIGHBRIDGE_TERMINAL', label: 'WEIGHBRIDGE TERMINAL', icon: <Scale size={18} />, path: '/weighbridge' },

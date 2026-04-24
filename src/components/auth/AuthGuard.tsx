@@ -7,6 +7,7 @@ import { Navigate, useLocation, Outlet } from 'react-router-dom';
 const MODULE_ROUTE_MAP: Record<string, string> = {
   DASHBOARD: '/dashboard',
   PARTY_MASTER: '/party-master',
+  VEHICLE_MASTER: '/vehicle-master',
   VESSEL_OPS: '/vessels',
   VEHICLE_LOGISTICS: '/vehicles',
   WEIGHBRIDGE_TERMINAL: '/weighbridge',

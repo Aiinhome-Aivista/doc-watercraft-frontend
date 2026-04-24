@@ -7,6 +7,7 @@ import GatePage from '@/features/vehicle/GatePage';
 import WeighbridgeTerminalPage from '@/features/weighbridge/WeighbridgeTerminalPage';
 import FinancePage from '@/features/finance/FinancePage';
 import PartyMasterPage from '@/features/party/PartyMasterPage';
+import VehicleMasterPage from '@/features/vehicle/VehicleMasterPage';
 import AuthPage from '@/features/auth/AuthPage';
 import AuthGuard from '@/components/auth/AuthGuard';
 import SettingsPage from '@/features/settings/SettingsPage';
@@ -27,6 +28,7 @@ const AppRouter: React.FC = () => {
               <Route path="/weighbridge" element={<WeighbridgeTerminalPage />} />
               <Route path="/finance" element={<FinancePage />} />
               <Route path="/party-master" element={<PartyMasterPage />} />
+              <Route path="/vehicle-master" element={<VehicleMasterPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<div>Page Not Found</div>} />
             </Routes>
