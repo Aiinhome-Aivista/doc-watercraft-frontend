@@ -57,7 +57,7 @@ const VehicleMasterPage: React.FC = () => {
     setForm({
       vehicleNo: v.vehicle_no || "",
       transporterName: v.transporter_name || "",
-      status: v.status || "active",
+      status: v.active === 1 ? "active" : "inactive",
     });
     setErrors({});
     setIsModalOpen(true);
@@ -99,7 +99,7 @@ const VehicleMasterPage: React.FC = () => {
     const payload = {
       vehicle_no: form.vehicleNo,
       transporter_name: form.transporterName,
-      status: form.status as 'active' | 'inactive',
+      active: form.status === 'active' ? 1 : 0,
     };
 
     dispatch({ type: 'vehicleMaster/save/pending' });
@@ -172,7 +172,7 @@ const VehicleMasterPage: React.FC = () => {
                   <td className="td-primary font-mono" style={{ fontSize: 13 }}>{v.vehicle_no}</td>
                   <td>{v.transporter_name}</td>
                   <td>
-                    <StatusBadge status={v.status} />
+                    <StatusBadge status={v.active === 1 ? "active" : "inactive"} />
                   </td>
                   <td>
                     <div className="action-group">
