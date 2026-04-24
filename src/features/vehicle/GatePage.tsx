@@ -19,6 +19,7 @@ import {
 } from "@/utils/dateTime";
 import { useAccessRights } from "@/hooks/useAccessRights";
 import toast from "react-hot-toast";
+import { vehicleMasterService } from "@/services/vehicleMasterService";
 
 const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -30,6 +31,7 @@ const GatePage: React.FC = () => {
     dispatch(fetchGateEntries());
     dispatch(fetchVessels());
   }, [dispatch]);
+
 
   const [filter, setFilter] = useState<
     GateStatus | "ALL" | "LOADING/UNLOADING"
@@ -45,6 +47,16 @@ const GatePage: React.FC = () => {
   const [modal, setModal] = useState<
     "create" | "operation" | "detail" | "wbin" | "wbout" | "gateout" | null
   >(null);
+
+  const [vehiclesList, setVehiclesList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (modal === "create") {
+      vehicleMasterService.getVehicleMasters().then((res) => {
+        setVehiclesList(Array.isArray(res) ? res : res.data || []);
+      }).catch(console.error);
+    }
+  }, [modal]);
   const [operationMode, setOperationMode] = useState<"record" | "update">(
     "record",
   );
@@ -145,7 +157,7 @@ const GatePage: React.FC = () => {
             : getOperationTypeByDirection(entry.direction),
       });
     } else {
-      setForm({ datetime: nowDt(), gate_in_datetime: nowDt() });
+      setForm({ datetime: nowDt(), gate_in_datetime: nowDt(), wbin_datetime: nowDt(), direction: "IMPORT", own_weighbridge: "0" });
     }
     setModal(type);
     setErrors({});
@@ -159,30 +171,33 @@ const GatePage: React.FC = () => {
     setErrors({});
   };
 
-  const handleVesselChange = (vesselId: string) => {
-    const selectedVessel = vessels.find((v) => v.id === Number(vesselId));
-    const direction = selectedVessel?.direction || "";
-    setForm({
-      ...form,
-      vessel_id: vesselId,
-      direction: direction,
-      consignor_name: selectedVessel?.party_name || "Poddar Imports",
-      own_weighbridge: direction === "IMPORT" ? "0" : (form.own_weighbridge || "0"),
-    });
+  const handleVehicleChange = (vehicleNo: string) => {
+    const v = vehiclesList.find(x => x.vehicle_no === vehicleNo);
+    setForm((prev: any) => ({
+      ...prev,
+      vehicle_no: vehicleNo,
+      transporter_name: v ? v.transporter_name : prev.transporter_name,
+    }));
+    if (errors.vehicle_no) setErrors(prev => ({ ...prev, vehicle_no: "" }));
   };
 
   const handleCreate = async () => {
     const newErrors: Record<string, string> = {};
 
-    if (!form.vessel_id) {
-      newErrors.vessel_id = "Please select a vessel";
-    }
+    if (!form.direction) newErrors.direction = "Direction is required";
+    if (!form.vehicle_no) newErrors.vehicle_no = "Vehicle No is required";
 
     const ownWb = parseInt(form.own_weighbridge || "0") as 0 | 1;
     const grossWeight = Number(form.gross_weight || 0);
 
-    if (ownWb === 1 && grossWeight <= 60) {
+    if (ownWb === 1 && form.direction === "EXPORT" && grossWeight <= 60) {
       newErrors.gross_weight = "Gross weight must be greater than 60 for own weighbridge";
+    }
+
+    if (ownWb === 0) {
+      if (!form.wbin_datetime) newErrors.wbin_datetime = "WBIN Date & Time is required";
+      if (form.direction === "IMPORT" && !form.wbin_tare_weight) newErrors.wbin_tare_weight = "Tare Weight is required";
+      if (form.direction === "EXPORT" && !form.wbin_gross_weight) newErrors.wbin_gross_weight = "Gross Weight is required";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -191,7 +206,7 @@ const GatePage: React.FC = () => {
     }
 
     const payload = {
-      vessel_id: parseInt(form.vessel_id),
+      direction: form.direction,
       consignor_name: form.consignor_name || "",
       challan_invoice_no: form.challan_invoice_no || "",
       vehicle_no: form.vehicle_no || "",
@@ -203,7 +218,18 @@ const GatePage: React.FC = () => {
     };
 
     try {
-      await dispatch(createGateEntryThunk(payload)).unwrap();
+      const res = await dispatch(createGateEntryThunk(payload)).unwrap();
+      
+      if (ownWb === 0) {
+        await dispatch(recordWbinThunk({
+           gate_entry_id: res.id,
+           weighment_slip_no: form.weighment_slip_no || "",
+           wbin_datetime: form.wbin_datetime + ":00",
+           gross_weight: form.direction === "EXPORT" ? Number(form.wbin_gross_weight) : undefined,
+           tare_weight: form.direction === "IMPORT" ? Number(form.wbin_tare_weight) : undefined,
+        })).unwrap();
+      }
+
       closeModal();
       toast.success("Gate-In recorded successfully");
     } catch (err: any) {
@@ -712,22 +738,15 @@ const GatePage: React.FC = () => {
               </div>
             )}
             <Select
-              label="Vessel *"
-              value={form.vessel_id || ""}
-              onChange={(e) => {
-                handleVesselChange(e.target.value);
-                if (errors.vessel_id) setErrors(prev => ({...prev, vessel_id: ""}));
-              }}
-              error={errors.vessel_id}
+              label="Direction *"
+              value={form.direction || "IMPORT"}
+              onChange={(e) => handleChange("direction", e.target.value)}
+              error={errors.direction}
               options={[
-                { value: "", label: "Select Vessel" },
-                ...mooredVessels.map((v) => ({
-                  value: v.id,
-                  label: `${v.vessel_name} | ${v.cargo_type} | ${v.party_name}`,
-                })),
+                { value: "IMPORT", label: "IMPORT" },
+                { value: "EXPORT", label: "EXPORT" },
               ]}
             />
-            <Input label="Direction" value={form.direction || ""} readOnly />
             <Input
               label="Gate-In Date & Time"
               type="datetime-local"
@@ -744,11 +763,16 @@ const GatePage: React.FC = () => {
               value={form.challan_invoice_no || ""}
               onChange={(e) => handleChange("challan_invoice_no", e.target.value)}
             />
-            <Input
-              label="Vehicle No"
+            <SearchableSelect
+              label="Vehicle No *"
               value={form.vehicle_no || ""}
-              onChange={(e) => handleChange("vehicle_no", e.target.value)}
+              onChange={handleVehicleChange}
               error={errors.vehicle_no}
+              options={[
+                { value: "", label: "Select Vehicle No" },
+                ...vehiclesList.filter(v => v.active === 1).map(v => ({ value: v.vehicle_no, label: v.vehicle_no }))
+              ]}
+              placeholder="Select Vehicle No"
             />
             <Input
               label="Transporter Name"
@@ -756,7 +780,7 @@ const GatePage: React.FC = () => {
               onChange={(e) => handleChange("transporter_name", e.target.value)}
             />
             <Input
-              label="Weighment Slip No"
+              label="Outside Weighment Slip No"
               value={form.weighment_slip_no || ""}
               onChange={(e) => handleChange("weighment_slip_no", e.target.value)}
             />
@@ -770,7 +794,7 @@ const GatePage: React.FC = () => {
                 { value: "1", label: "Yes — Skip to WBOUT" },
               ]}
             />
-            {form.own_weighbridge === "1" && (
+            {form.own_weighbridge === "1" && form.direction === "EXPORT" && (
               <Input
                 label="Gross Weight *"
                 type="number"
@@ -778,6 +802,37 @@ const GatePage: React.FC = () => {
                 onChange={(e) => handleChange("gross_weight", e.target.value)}
                 error={errors.gross_weight}
               />
+            )}
+            {form.own_weighbridge === "0" && (
+              <>
+                <div style={{ gridColumn: "1 / -1", fontWeight: "bold", marginTop: 10, borderBottom: "1px solid var(--border)", paddingBottom: 5 }}>
+                  WBIN Details
+                </div>
+                <Input
+                  label="WBIN Date & Time *"
+                  type="datetime-local"
+                  value={form.wbin_datetime || ""}
+                  onChange={(e) => handleChange("wbin_datetime", e.target.value)}
+                  error={errors.wbin_datetime}
+                />
+                {form.direction === "IMPORT" ? (
+                  <Input
+                    label="Tare Weight *"
+                    type="number"
+                    value={form.wbin_tare_weight || ""}
+                    onChange={(e) => handleChange("wbin_tare_weight", e.target.value)}
+                    error={errors.wbin_tare_weight}
+                  />
+                ) : (
+                  <Input
+                    label="Gross Weight *"
+                    type="number"
+                    value={form.wbin_gross_weight || ""}
+                    onChange={(e) => handleChange("wbin_gross_weight", e.target.value)}
+                    error={errors.wbin_gross_weight}
+                  />
+                )}
+              </>
             )}
           </div>
         </Modal>

@@ -8,7 +8,8 @@ export interface GetGateEntriesResponse {
 }
 
 export interface CreateGateEntryPayload {
-  vessel_id: number;
+  vessel_id?: number | null;
+  direction?: string;
   consignor_name: string;
   challan_invoice_no: string;
   vehicle_no: string;
