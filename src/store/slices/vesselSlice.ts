@@ -38,6 +38,18 @@ export const createVesselThunk = createAsyncThunk(
   }
 );
 
+export const updateVesselThunk = createAsyncThunk(
+  'vessels/updateVessel',
+  async ({ id, payload }: { id: number | string; payload: any }, { rejectWithValue }) => {
+    try {
+      const data = await VesselService.updateVessel(id, payload);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update vessel');
+    }
+  }
+);
+
 export const berthVesselThunk = createAsyncThunk(
   'vessels/berthVessel',
   async ({ id, payload }: { id: number | string; payload: BerthVesselPayload }, { rejectWithValue }) => {
@@ -148,6 +160,22 @@ const vesselSlice = createSlice({
         state.items.push(action.payload);
       })
       .addCase(createVesselThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Update
+      .addCase(updateVesselThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateVesselThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.items.findIndex(v => v.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      .addCase(updateVesselThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

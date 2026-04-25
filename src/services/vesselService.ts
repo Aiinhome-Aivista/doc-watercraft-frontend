@@ -73,6 +73,14 @@ export const VesselService = {
   },
 
   /**
+   * Update an existing vessel
+   */
+  updateVessel: async (id: number | string, payload: any): Promise<Vessel> => {
+    const response = await apiClient.post<CreateVesselResponse>(`${ENDPOINTS.VESSEL.BASE}/${id}`, payload);
+    return response.data.data;
+  },
+
+  /**
    * Berth a vessel
    */
   berthVessel: async (id: number | string, payload: BerthVesselPayload): Promise<GenericStatusResponse> => {

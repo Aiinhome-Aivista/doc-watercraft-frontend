@@ -6,6 +6,7 @@ import {
   updateSurveyReport,
   fetchVessels,
   createVesselThunk,
+  updateVesselThunk,
   berthVesselThunk,
   moorVesselThunk,
   surveyVesselThunk,
@@ -68,7 +69,7 @@ const VesselsPage: React.FC = () => {
   const [filterVesselName, setFilterVesselName] = useState<string>("");
   const [deleteDialog, setDeleteDialog] = useState<{isOpen: boolean, idx: number | null}>({isOpen: false, idx: null});
   const [modal, setModal] = useState<
-    "create" | "berth" | "moor" | "survey" | "unberth" | "detail" | null
+    "create" | "edit" | "berth" | "moor" | "survey" | "unberth" | "detail" | null
   >(null);
   const [selected, setSelected] = useState<Vessel | null>(null);
   const [form, setForm] = useState<any>({});
@@ -118,7 +119,19 @@ const VesselsPage: React.FC = () => {
 
   const openModal = (type: any, vessel: Vessel | null = null) => {
     setSelected(vessel);
-    setForm({ datetime: nowDt() });
+    if (type === "edit" && vessel) {
+      setForm({
+        vessel_name: vessel.vessel_name,
+        party_name: vessel.party_name,
+        cargo_type: vessel.cargo_type,
+        quantity: vessel.quantity,
+        direction: vessel.direction,
+        expected_date: vessel.expected_date,
+        status: vessel.status,
+      });
+    } else {
+      setForm({ datetime: nowDt() });
+    }
     setModal(type);
     if (type === "create") {
       setChargeLines([...defaultChargeLines]);
@@ -155,10 +168,16 @@ const VesselsPage: React.FC = () => {
       return;
     }
 
-    const party = parties.find(p => p.party_name === form.party_name);
-    const party_id = party ? party.id : null;
+    let party_id: number | null = null;
+    const numericVal = parseInt(form.party_name, 10);
+    if (!isNaN(numericVal) && parties.some(p => p.id === numericVal)) {
+      party_id = numericVal;
+    } else {
+      const party = parties.find(p => p.party_name === form.party_name);
+      party_id = party ? party.id : null;
+    }
 
-    if (!party_id || isNaN(party_id)) {
+    if (!party_id) {
       toast.error("Please select a valid party from the list");
       return;
     }
@@ -188,6 +207,46 @@ const VesselsPage: React.FC = () => {
       toast.success(`Vessel ${payload.vessel_name} created successfully`);
     } catch (err: any) {
       toast.error(err || "Failed to create vessel");
+    }
+  };
+
+  const handleEditVessel = async () => {
+    if (!selected) return;
+    if (!form.vessel_name || !form.party_name) {
+      toast.error("Vessel name and Party are required");
+      return;
+    }
+
+    let party_id: number | null = null;
+    const numericVal = parseInt(form.party_name, 10);
+    if (!isNaN(numericVal) && parties.some(p => p.id === numericVal)) {
+      party_id = numericVal;
+    } else {
+      const party = parties.find(p => p.party_name === form.party_name);
+      party_id = party ? party.id : null;
+    }
+
+    if (!party_id) {
+      toast.error("Please select a valid party from the list");
+      return;
+    }
+
+    const payload = {
+      vessel_name: form.vessel_name,
+      party_id,
+      cargo_type: form.cargo_type || "FLYASH",
+      quantity: parseFloat(form.quantity) || 0,
+      direction: form.direction || "IMPORT",
+      expected_date: form.expected_date || getCurrentISTDateValue(),
+      status: form.status || selected.status,
+    };
+
+    try {
+      await dispatch(updateVesselThunk({ id: selected.id, payload })).unwrap();
+      closeModal();
+      toast.success(`Vessel ${form.vessel_name} updated successfully`);
+    } catch (err: any) {
+      toast.error(err || "Failed to update vessel");
     }
   };
 
@@ -404,6 +463,13 @@ const VesselsPage: React.FC = () => {
                       >
                         VIEW
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal("edit", v)}
+                      >
+                        EDIT
+                      </Button>
                       {v.status === "PLANNED" && canVesselStatus("PLANNED") && (
                         <Button
                           variant="amber"
@@ -591,6 +657,69 @@ const VesselsPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {modal === "edit" && selected && (
+        <Modal
+          title={`EDIT VESSEL — ${selected.vessel_auto_id}`}
+          onClose={closeModal}
+          width="600px"
+          footer={
+            <>
+              <Button variant="ghost" onClick={closeModal}>
+                CANCEL
+              </Button>
+              <Button onClick={handleEditVessel}>SAVE CHANGES</Button>
+            </>
+          }
+        >
+          <div className="form-grid">
+            <Input
+              label="Vessel Name"
+              placeholder="M.V. Example"
+              value={form.vessel_name || ""}
+              onChange={(e) =>
+                setForm({ ...form, vessel_name: e.target.value })
+              }
+            />
+            <SearchableSelect
+              label="Party Name *"
+              placeholder="Party / Client Name"
+              value={form.party_name || ""}
+              onChange={(value) => setForm({ ...form, party_name: value })}
+              options={parties.map(p => ({ value: String(p.id), label: p.party_name }))}
+            />
+            <Input
+              label="Cargo Type"
+              placeholder="FLYASH / COAL / etc."
+              value={form.cargo_type || ""}
+              onChange={(e) => setForm({ ...form, cargo_type: e.target.value })}
+            />
+            <Input
+              label="Expected Quantity (MT)"
+              type="number"
+              placeholder="0.00"
+              value={form.quantity || ""}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+            />
+            <Select
+              label="Direction"
+              value={form.direction || "IMPORT"}
+              onChange={(e) => setForm({ ...form, direction: e.target.value })}
+              options={[
+                { value: "IMPORT", label: "Import" },
+                { value: "EXPORT", label: "Export" },
+              ]}
+            />
+
+            <Select
+              label="Status"
+              value={form.status || ""}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              options={vesselStatuses.map((s: string) => ({ value: s, label: s }))}
+            />
           </div>
         </Modal>
       )}
