@@ -28,13 +28,6 @@ export const partyService = {
     return response.data;
   },
   /**
-   * Fetch a single party master record by ID.
-   */
-  getPartyMasterById: async (id: number | string) => {
-    const response = await apiClient.get(`${ENDPOINTS.PARTY_MASTER.BASE}/${id}`);
-    return response.data;
-  },
-  /**
    * Delete a party master record by ID.
    */
   deletePartyMaster: async (id: number | string) => {

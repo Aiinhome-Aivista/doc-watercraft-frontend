@@ -99,33 +99,26 @@ const PartyMasterPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleEdit = async (p: any) => {
-    try {
-      const res = await partyService.getPartyMasterById(p.id);
-      const fullData = res.data || res;
-      setEditId(fullData.id);
-      setForm({
-        partyName: fullData.party_name || "",
-        partyCode: fullData.party_code || "",
-        address: fullData.address || "",
-        state: fullData.state || "",
-        country: fullData.country || "",
-        pincode: fullData.pincode || "",
-      });
+  const handleEdit = (p: any) => {
+    setEditId(p.id);
+    setForm({
+      partyName: p.party_name || "",
+      partyCode: p.party_code || "",
+      address: p.address || "",
+      state: p.state || "",
+      country: p.country || "",
+      pincode: p.pincode || "",
+    });
 
-      let mList = fullData.mobiles;
-      let eList = fullData.emails;
-      try { if (typeof mList === 'string') mList = JSON.parse(mList); } catch {}
-      try { if (typeof eList === 'string') eList = JSON.parse(eList); } catch {}
-      
-      setMobiles(Array.isArray(mList) && mList.length > 0 ? mList : [""]);
-      setEmails(Array.isArray(eList) && eList.length > 0 ? eList : [""]);
-      setErrors({});
-      setIsModalOpen(true);
-    } catch (err) {
-      toast.error("Failed to fetch party details");
-      console.error(err);
-    }
+    let mList = p.mobiles;
+    let eList = p.emails;
+    try { if (typeof mList === 'string') mList = JSON.parse(mList); } catch {}
+    try { if (typeof eList === 'string') eList = JSON.parse(eList); } catch {}
+    
+    setMobiles(Array.isArray(mList) && mList.length > 0 ? mList : [""]);
+    setEmails(Array.isArray(eList) && eList.length > 0 ? eList : [""]);
+    setErrors({});
+    setIsModalOpen(true);
   };
 
   const confirmDelete = (id: number | string) => {
@@ -257,14 +250,19 @@ const PartyMasterPage: React.FC = () => {
             <tr>
               <th>Party Name</th>
               <th>Party Code</th>
+              <th>Address</th>
               <th>State</th>
+              <th>Country</th>
+              <th>Pincode</th>
+              <th>Mobiles</th>
+              <th>Emails</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {parties.length === 0 ? (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={9}>
                   <div className="empty">
                     <div className="empty-icon">
                       <span
@@ -291,7 +289,12 @@ const PartyMasterPage: React.FC = () => {
                   <tr key={p.id || p.party_code}>
                     <td className="td-primary">{p.party_name}</td>
                     <td className="font-mono" style={{ fontSize: 13 }}>{p.party_code}</td>
+                    <td>{p.address}</td>
                     <td>{p.state}</td>
+                    <td>{p.country}</td>
+                    <td>{p.pincode}</td>
+                    <td>{Array.isArray(mList) ? mList.join(', ') : mList}</td>
+                    <td>{Array.isArray(eList) ? eList.join(', ') : eList}</td>
                     <td>
                       <div className="action-group">
                         <Button
