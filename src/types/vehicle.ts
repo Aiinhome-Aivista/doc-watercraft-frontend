@@ -19,8 +19,10 @@ export interface GateEntry {
   consignor_name: string;
   challan_invoice_no: string;
   compressor_no?: string | null;
+  vehicle_id?: number;
   vehicle_no: string;
   transporter_name: string;
+  outside_payment_slip?: string | null;
   weighment_slip_no: string | null;
   own_weighbridge: 0 | 1; // 0 for No, 1 for Yes
   status: GateStatus;
