@@ -268,6 +268,7 @@ const GatePage: React.FC = () => {
             end_datetime: operationDateTime + ":00",
             compressor_no: form.compressor_no || "",
             remarks: form.remarks || "",
+            vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
           };
 
           await dispatch(recordCargoOpThunk(payload)).unwrap();
@@ -283,6 +284,7 @@ const GatePage: React.FC = () => {
           start_datetime: operationDateTime + ":00",
           compressor_no: form.compressor_no || "",
           remarks: form.remarks || "",
+          vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
         };
         await dispatch(recordCargoOpThunk(payload)).unwrap();
         closeModal();
@@ -737,6 +739,23 @@ const GatePage: React.FC = () => {
                 {errors.global}
               </div>
             )}
+
+             <SearchableSelect
+              label="Vehicle No *"
+              value={form.vehicle_no || ""}
+              onChange={handleVehicleChange}
+              error={errors.vehicle_no}
+              options={[
+                { value: "", label: "Select Vehicle No" },
+                ...vehiclesList.filter(v => v.active === 1).map(v => ({ value: v.vehicle_no, label: v.vehicle_no }))
+              ]}
+              placeholder="Select Vehicle No"
+            />
+            <Input
+              label="Transporter Name"
+              value={form.transporter_name || ""}
+              onChange={(e) => handleChange("transporter_name", e.target.value)}
+            />
             <Select
               label="Direction *"
               value={form.direction || "IMPORT"}
@@ -763,22 +782,8 @@ const GatePage: React.FC = () => {
               value={form.challan_invoice_no || ""}
               onChange={(e) => handleChange("challan_invoice_no", e.target.value)}
             />
-            <SearchableSelect
-              label="Vehicle No *"
-              value={form.vehicle_no || ""}
-              onChange={handleVehicleChange}
-              error={errors.vehicle_no}
-              options={[
-                { value: "", label: "Select Vehicle No" },
-                ...vehiclesList.filter(v => v.active === 1).map(v => ({ value: v.vehicle_no, label: v.vehicle_no }))
-              ]}
-              placeholder="Select Vehicle No"
-            />
-            <Input
-              label="Transporter Name"
-              value={form.transporter_name || ""}
-              onChange={(e) => handleChange("transporter_name", e.target.value)}
-            />
+           
+            
             <Input
               label="Outside Weighment Slip No"
               value={form.weighment_slip_no || ""}
@@ -854,6 +859,19 @@ const GatePage: React.FC = () => {
           }
         >
           <div className="form-grid">
+            <SearchableSelect
+              label="Vessel"
+              value={form.vessel_id || ""}
+              onChange={(val) => setForm({ ...form, vessel_id: val })}
+              options={[
+                { value: "", label: "Select Vessel" },
+                ...vessels.map((v) => ({
+                  value: v.id.toString(),
+                  label: `${v.vessel_name} | ${v.party_name} | ${v.direction}`,
+                })),
+              ]}
+              placeholder="Select Vessel"
+            />
             <Input
               label="Direction"
               value={form.direction || selected.direction || ""}
@@ -894,7 +912,7 @@ const GatePage: React.FC = () => {
               }
             />
             <Input
-              label="Remarks"
+              label="Remarks (Optional)"
               value={form.remarks || ""}
               onChange={(e) => setForm({ ...form, remarks: e.target.value })}
             />

@@ -54,6 +54,7 @@ export interface RecordCargoOpPayload {
   end_datetime?: string;
   compressor_no?: string;
   remarks?: string;
+  vessel_id?: number;
 }
 
 export interface UpdateCargoOpPayload {
@@ -63,6 +64,7 @@ export interface UpdateCargoOpPayload {
   end_datetime: string;
   compressor_no?: string;
   remarks?: string;
+  vessel_id?: number;
 }
 
 export interface GenericStatusResponse {
