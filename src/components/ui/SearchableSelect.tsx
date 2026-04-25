@@ -27,8 +27,13 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setSearch(value);
-  }, [value]);
+    const selectedOpt = options.find(o => String(o.value) === String(value));
+    if (selectedOpt && selectedOpt.value !== "") {
+      setSearch(selectedOpt.label);
+    } else {
+      setSearch(value);
+    }
+  }, [value, options]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -109,7 +114,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 onClick={() => {
                   setSearch(opt.label);
-                  onChange(opt.label);
+                  onChange(opt.value);
                   setIsOpen(false);
                 }}
               >

@@ -214,7 +214,7 @@ const GatePage: React.FC = () => {
       vehicle_id: vehicleId,
       gate_in_datetime: form.gate_in_datetime + ":00",
       weighment_slip_no: form.weighment_slip_no || null,
-      outside_payment_slip: form.outside_payment_slip || null,
+      outside_payment_slip: null,
       own_weighbridge: ownWb,
       direction: "IN",
     };
@@ -225,7 +225,7 @@ const GatePage: React.FC = () => {
       if (ownWb === 0) {
         await dispatch(recordWbinThunk({
            gate_entry_id: res.id,
-           weighment_slip_no: form.weighment_slip_no || "",
+           weighment_slip_no: form.wbin_weighment_slip_no || "",
            wbin_datetime: form.wbin_datetime + ":00",
            gross_weight: form.direction === "IMPORT" ? Number(form.wbin_gross_weight) : undefined,
            tare_weight: form.direction === "EXPORT" ? Number(form.wbin_tare_weight) : undefined,
@@ -785,17 +785,13 @@ const GatePage: React.FC = () => {
               onChange={(e) => handleChange("challan_invoice_no", e.target.value)}
             />
            
-            
+
             <Input
               label="Outside Weighment Slip No"
               value={form.weighment_slip_no || ""}
               onChange={(e) => handleChange("weighment_slip_no", e.target.value)}
             />
-            <Input
-              label="Outside Payment Slip"
-              value={form.outside_payment_slip || ""}
-              onChange={(e) => handleChange("outside_payment_slip", e.target.value)}
-            />
+           
             <Select
               label="Own Weighbridge? (≥60T skips WBIN)"
               value={form.direction === "IMPORT" ? "0" : (form.own_weighbridge || "0")}
@@ -820,6 +816,11 @@ const GatePage: React.FC = () => {
                 <div style={{ gridColumn: "1 / -1", fontWeight: "bold", marginTop: 10, borderBottom: "1px solid var(--border)", paddingBottom: 5 }}>
                   WBIN Details
                 </div>
+                <Input
+                  label="Weighment Slip No"
+                  value={form.wbin_weighment_slip_no || ""}
+                  onChange={(e) => handleChange("wbin_weighment_slip_no", e.target.value)}
+                />
                 <Input
                   label="WBIN Date & Time *"
                   type="datetime-local"
@@ -869,7 +870,16 @@ const GatePage: React.FC = () => {
             <SearchableSelect
               label="Vessel"
               value={form.vessel_id || ""}
-              onChange={(val) => setForm({ ...form, vessel_id: val })}
+              onChange={(val) => {
+                const selectedVessel = vessels.find(v => v.id.toString() === val);
+                const newDir = selectedVessel ? selectedVessel.direction : (form.direction || selected.direction || "");
+                setForm({ 
+                  ...form, 
+                  vessel_id: val,
+                  direction: newDir,
+                  op_type: getOperationTypeByDirection(newDir)
+                });
+              }}
               options={[
                 { value: "", label: "Select Vessel" },
                 ...vessels.map((v) => ({
@@ -887,7 +897,7 @@ const GatePage: React.FC = () => {
             <Input
               label="Operation Type"
               value={
-                form.op_type || getOperationTypeByDirection(selected.direction)
+                form.op_type || getOperationTypeByDirection(form.direction || selected.direction || "")
               }
               readOnly
             />
