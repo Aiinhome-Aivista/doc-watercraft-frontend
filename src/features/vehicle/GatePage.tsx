@@ -196,8 +196,8 @@ const GatePage: React.FC = () => {
 
     if (ownWb === 0) {
       if (!form.wbin_datetime) newErrors.wbin_datetime = "WBIN Date & Time is required";
-      if (form.direction === "IMPORT" && !form.wbin_gross_weight) newErrors.wbin_gross_weight = "Gross Weight is required";
-      if (form.direction === "EXPORT" && !form.wbin_tare_weight) newErrors.wbin_tare_weight = "Tare Weight is required";
+      if (form.direction === "IMPORT" && !form.wbin_tare_weight) newErrors.wbin_tare_weight = "Tare Weight is required";
+      if (form.direction === "EXPORT" && !form.wbin_gross_weight) newErrors.wbin_gross_weight = "Gross Weight is required";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -227,8 +227,8 @@ const GatePage: React.FC = () => {
            gate_entry_id: res.id,
            weighment_slip_no: form.wbin_weighment_slip_no || "",
            wbin_datetime: form.wbin_datetime + ":00",
-           gross_weight: form.direction === "IMPORT" ? Number(form.wbin_gross_weight) : undefined,
-           tare_weight: form.direction === "EXPORT" ? Number(form.wbin_tare_weight) : undefined,
+           tare_weight: form.direction === "IMPORT" ? Number(form.wbin_tare_weight) : undefined,
+           gross_weight: form.direction === "EXPORT" ? Number(form.wbin_gross_weight) : undefined,
         })).unwrap();
       }
 
@@ -313,13 +313,13 @@ const GatePage: React.FC = () => {
     const grossWeight = Number(form.gross_weight || 0);
     const tareWeight = Number(form.tare_weight || 0);
 
-    if (isImport && (!form.gross_weight || grossWeight <= 0)) {
-      toast.error("Please provide Gross Wt for IMPORT WBIN");
+    if (isImport && (!form.tare_weight || tareWeight <= 0)) {
+      toast.error("Please provide Tare Wt for IMPORT WBIN");
       return;
     }
 
-    if (isExport && (!form.tare_weight || tareWeight <= 0)) {
-      toast.error("Please provide Tare Wt for EXPORT WBIN");
+    if (isExport && (!form.gross_weight || grossWeight <= 0)) {
+      toast.error("Please provide Gross Wt for EXPORT WBIN");
       return;
     }
 
@@ -329,8 +329,8 @@ const GatePage: React.FC = () => {
           gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || "",
           wbin_datetime: form.datetime + ":00",
-          gross_weight: isImport ? grossWeight : undefined,
-          tare_weight: isExport ? tareWeight : undefined,
+          tare_weight: isImport ? tareWeight : undefined,
+          gross_weight: isExport ? grossWeight : undefined,
         }),
       ).unwrap();
       closeModal();
@@ -355,13 +355,13 @@ const GatePage: React.FC = () => {
     const grossWeight = Number(form.wbout_gross_weight || 0);
     const tareWeight = Number(form.wbout_tare_weight || 0);
 
-    if (isImport && (!form.wbout_tare_weight || tareWeight <= 0)) {
-      toast.error("Please provide Tare Wt for IMPORT WBOUT");
+    if (isImport && (!form.wbout_gross_weight || grossWeight <= 0)) {
+      toast.error("Please provide Gross Wt for IMPORT WBOUT");
       return;
     }
 
-    if (isExport && (!form.wbout_gross_weight || grossWeight <= 0)) {
-      toast.error("Please provide Gross Wt for EXPORT WBOUT");
+    if (isExport && (!form.wbout_tare_weight || tareWeight <= 0)) {
+      toast.error("Please provide Tare Wt for EXPORT WBOUT");
       return;
     }
 
@@ -371,8 +371,8 @@ const GatePage: React.FC = () => {
           gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || "",
           wbout_datetime: form.datetime + ":00",
-          gross_weight: isExport ? grossWeight : undefined,
-          tare_weight: isImport ? tareWeight : undefined,
+          gross_weight: isImport ? grossWeight : undefined,
+          tare_weight: isExport ? tareWeight : undefined,
         }),
       ).unwrap();
       closeModal();
@@ -830,19 +830,19 @@ const GatePage: React.FC = () => {
                 />
                 {form.direction === "IMPORT" ? (
                   <Input
-                    label="Gross Weight *"
-                    type="number"
-                    value={form.wbin_gross_weight || ""}
-                    onChange={(e) => handleChange("wbin_gross_weight", e.target.value)}
-                    error={errors.wbin_gross_weight}
-                  />
-                ) : (
-                  <Input
                     label="Tare Weight *"
                     type="number"
                     value={form.wbin_tare_weight || ""}
                     onChange={(e) => handleChange("wbin_tare_weight", e.target.value)}
                     error={errors.wbin_tare_weight}
+                  />
+                ) : (
+                  <Input
+                    label="Gross Weight *"
+                    type="number"
+                    value={form.wbin_gross_weight || ""}
+                    onChange={(e) => handleChange("wbin_gross_weight", e.target.value)}
+                    error={errors.wbin_gross_weight}
                   />
                 )}
               </>
@@ -1062,12 +1062,12 @@ const GatePage: React.FC = () => {
               form.direction || selected.direction || "",
             ).toUpperCase() === "IMPORT" && (
               <Input
-                label="Gross Wt *"
+                label="Tare Wt *"
                 type="number"
                 min={0}
-                value={form.gross_weight || ""}
+                value={form.tare_weight || ""}
                 onChange={(e) =>
-                  setForm({ ...form, gross_weight: e.target.value })
+                  setForm({ ...form, tare_weight: e.target.value })
                 }
               />
             )}
@@ -1075,12 +1075,12 @@ const GatePage: React.FC = () => {
               form.direction || selected.direction || "",
             ).toUpperCase() === "EXPORT" && (
               <Input
-                label="Tare Wt *"
+                label="Gross Wt *"
                 type="number"
                 min={0}
-                value={form.tare_weight || ""}
+                value={form.gross_weight || ""}
                 onChange={(e) =>
-                  setForm({ ...form, tare_weight: e.target.value })
+                  setForm({ ...form, gross_weight: e.target.value })
                 }
               />
             )}
@@ -1121,12 +1121,12 @@ const GatePage: React.FC = () => {
               form.direction || selected.direction || "",
             ).toUpperCase() === "IMPORT" && (
               <Input
-                label="Tare Wt *"
+                label="Gross Wt *"
                 type="number"
                 min={0}
-                value={form.wbout_tare_weight || ""}
+                value={form.wbout_gross_weight || ""}
                 onChange={(e) =>
-                  setForm({ ...form, wbout_tare_weight: e.target.value })
+                  setForm({ ...form, wbout_gross_weight: e.target.value })
                 }
               />
             )}
@@ -1134,12 +1134,12 @@ const GatePage: React.FC = () => {
               form.direction || selected.direction || "",
             ).toUpperCase() === "EXPORT" && (
               <Input
-                label="Gross Wt *"
+                label="Tare Wt *"
                 type="number"
                 min={0}
-                value={form.wbout_gross_weight || ""}
+                value={form.wbout_tare_weight || ""}
                 onChange={(e) =>
-                  setForm({ ...form, wbout_gross_weight: e.target.value })
+                  setForm({ ...form, wbout_tare_weight: e.target.value })
                 }
               />
             )}
