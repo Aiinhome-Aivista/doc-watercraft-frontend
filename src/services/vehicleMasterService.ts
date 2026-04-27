@@ -24,4 +24,8 @@ export const vehicleMasterService = {
     const response = await apiClient.put(`${ENDPOINTS.VEHICLE.BASE}/${id}`, payload);
     return response.data;
   },
+  toggleVehicleStatus: async (id: number | string) => {
+    const response = await apiClient.patch(`${ENDPOINTS.VEHICLE.BASE}/${id}/toggle`);
+    return response.data;
+  },
 };

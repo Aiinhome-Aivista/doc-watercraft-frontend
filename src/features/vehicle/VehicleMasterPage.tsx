@@ -84,6 +84,20 @@ const VehicleMasterPage: React.FC = () => {
     }
   };
 
+  const handleToggleStatus = async (id: number | string) => {
+    dispatch({ type: 'vehicleMaster/toggle/pending' });
+    try {
+      await vehicleMasterService.toggleVehicleStatus(id);
+      dispatch({ type: 'vehicleMaster/toggle/fulfilled' });
+      toast.success("Vehicle status toggled successfully");
+      fetchVehicles();
+    } catch (error: any) {
+      dispatch({ type: 'vehicleMaster/toggle/rejected' });
+      console.error("Failed to toggle vehicle status:", error);
+      toast.error(error?.response?.data?.message || "Failed to toggle vehicle status");
+    }
+  };
+
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
 
@@ -172,7 +186,29 @@ const VehicleMasterPage: React.FC = () => {
                   <td className="td-primary font-mono" style={{ fontSize: 13 }}>{v.vehicle_no}</td>
                   <td>{v.transporter_name}</td>
                   <td>
-                    <StatusBadge status={v.active === 1 ? "active" : "inactive"} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '36px', height: '20px', cursor: 'pointer', margin: 0 }}>
+                        <input 
+                          type="checkbox" 
+                          checked={v.active === 1} 
+                          onChange={() => handleToggleStatus(v.id)} 
+                          style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }} 
+                        />
+                        <div style={{ 
+                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                          backgroundColor: v.active === 1 ? 'var(--green)' : 'var(--border2)', 
+                          transition: '.3s', borderRadius: '20px' 
+                        }}>
+                          <div style={{
+                            position: 'absolute', height: '14px', width: '14px', left: '3px', bottom: '3px',
+                            backgroundColor: '#fff', transition: '.3s', borderRadius: '50%',
+                            transform: v.active === 1 ? 'translateX(16px)' : 'translateX(0)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                          }} />
+                        </div>
+                      </label>
+                      <StatusBadge status={v.active === 1 ? "active" : "inactive"} />
+                    </div>
                   </td>
                   <td>
                     <div className="action-group">
