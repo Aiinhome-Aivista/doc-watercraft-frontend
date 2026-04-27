@@ -14,7 +14,15 @@ import {
 } from "@/store/slices/vesselSlice";
 import { Vessel, VesselStatus } from "@/types/vessel";
 import { partyService } from "@/services/partyService";
-import { Modal, Input, Select, Button, StatusBadge, SearchableSelect, ConfirmDialog } from "@/components/ui";
+import {
+  Modal,
+  Input,
+  Select,
+  Button,
+  StatusBadge,
+  SearchableSelect,
+  ConfirmDialog,
+} from "@/components/ui";
 import {
   formatDateTimeIST,
   getCurrentISTDateTimeLocalValue,
@@ -24,16 +32,86 @@ import { useAccessRights } from "@/hooks/useAccessRights";
 import toast from "react-hot-toast";
 
 const defaultChargeLines = [
-  { activity: 'Terminal Services',   formula: 'Logic1', rate: 46,   gst_rate: 18, min_qty: 0,    max_qty: 0 },
-  { activity: 'Handling service',    formula: 'Logic1', rate: 170,  gst_rate: 18, min_qty: 0,    max_qty: 0 },
-  { activity: 'Berthing charges',    formula: 'Logic3', rate: 3000, gst_rate: 18, min_qty: 0,    max_qty: 0 },
-  { activity: 'Mooring charges',     formula: 'Logic4', rate: 4000, gst_rate: 12, min_qty: 0,    max_qty: 0 },
-  { activity: 'Truck entry charges', formula: 'Logic2', rate: 100,  gst_rate: 18, min_qty: 0,    max_qty: 0 },
-  { activity: 'Weighment charges',   formula: 'Logic6', rate: 250,  gst_rate: 18, min_qty: 0,    max_qty: 0 },
-  { activity: 'Parking charges',     formula: 'Logic7', rate: 100,  gst_rate: 5,  min_qty: 0,    max_qty: 0 },
-  { activity: 'Berthing Assistance', formula: 'Logic5', rate: 2000, gst_rate: 18, min_qty: 1,    max_qty: 1400 },
-  { activity: 'Berthing Assistance', formula: 'Logic5', rate: 4000, gst_rate: 18, min_qty: 1401, max_qty: 2100 },
-  { activity: 'Berthing Assistance', formula: 'Logic5', rate: 5500, gst_rate: 18, min_qty: 2101, max_qty: 10000 },
+  {
+    activity: "Terminal Services",
+    formula: "Logic1",
+    rate: 46,
+    gst_rate: 18,
+    min_qty: 0,
+    max_qty: 0,
+  },
+  {
+    activity: "Handling service",
+    formula: "Logic1",
+    rate: 170,
+    gst_rate: 18,
+    min_qty: 0,
+    max_qty: 0,
+  },
+  {
+    activity: "Berthing charges",
+    formula: "Logic3",
+    rate: 3000,
+    gst_rate: 18,
+    min_qty: 0,
+    max_qty: 0,
+  },
+  {
+    activity: "Mooring charges",
+    formula: "Logic4",
+    rate: 4000,
+    gst_rate: 12,
+    min_qty: 0,
+    max_qty: 0,
+  },
+  {
+    activity: "Truck entry charges",
+    formula: "Logic2",
+    rate: 100,
+    gst_rate: 18,
+    min_qty: 0,
+    max_qty: 0,
+  },
+  {
+    activity: "Weighment charges",
+    formula: "Logic6",
+    rate: 250,
+    gst_rate: 18,
+    min_qty: 0,
+    max_qty: 0,
+  },
+  {
+    activity: "Parking charges",
+    formula: "Logic7",
+    rate: 100,
+    gst_rate: 5,
+    min_qty: 0,
+    max_qty: 0,
+  },
+  {
+    activity: "Berthing Assistance",
+    formula: "Logic5",
+    rate: 2000,
+    gst_rate: 18,
+    min_qty: 1,
+    max_qty: 1400,
+  },
+  {
+    activity: "Berthing Assistance",
+    formula: "Logic5",
+    rate: 4000,
+    gst_rate: 18,
+    min_qty: 1401,
+    max_qty: 2100,
+  },
+  {
+    activity: "Berthing Assistance",
+    formula: "Logic5",
+    rate: 5500,
+    gst_rate: 18,
+    min_qty: 2101,
+    max_qty: 10000,
+  },
 ];
 
 const VesselsPage: React.FC = () => {
@@ -62,14 +140,29 @@ const VesselsPage: React.FC = () => {
     "latest",
   );
 
-  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
   const defaultEndDate = new Date().toISOString().split("T")[0];
 
-  const [dateRange, setDateRange] = useState({ start: defaultStartDate, end: defaultEndDate });
+  const [dateRange, setDateRange] = useState({
+    start: defaultStartDate,
+    end: defaultEndDate,
+  });
   const [filterVesselName, setFilterVesselName] = useState<string>("");
-  const [deleteDialog, setDeleteDialog] = useState<{isOpen: boolean, idx: number | null}>({isOpen: false, idx: null});
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    idx: number | null;
+  }>({ isOpen: false, idx: null });
   const [modal, setModal] = useState<
-    "create" | "edit" | "berth" | "moor" | "survey" | "unberth" | "detail" | null
+    | "create"
+    | "edit"
+    | "berth"
+    | "moor"
+    | "survey"
+    | "unberth"
+    | "detail"
+    | null
   >(null);
   const [selected, setSelected] = useState<Vessel | null>(null);
   const [form, setForm] = useState<any>({});
@@ -89,14 +182,19 @@ const VesselsPage: React.FC = () => {
   }, [vessels]);
 
   const filtered = useMemo(() => {
-    let result = filter === "ALL" ? vessels : vessels.filter((v) => v.status === filter);
+    let result =
+      filter === "ALL" ? vessels : vessels.filter((v) => v.status === filter);
 
     if (dateRange.start || dateRange.end) {
-      result = result.filter(v => {
+      result = result.filter((v) => {
         const createdMs = getDateMs(v.created_at);
         const berthingMs = getDateMs(v.berthing_datetime);
-        const startMs = dateRange.start ? new Date(dateRange.start).getTime() : 0;
-        const endMs = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity;
+        const startMs = dateRange.start
+          ? new Date(dateRange.start).getTime()
+          : 0;
+        const endMs = dateRange.end
+          ? new Date(dateRange.end).getTime() + 86400000
+          : Infinity;
 
         const createdInRange = createdMs >= startMs && createdMs <= endMs;
         const berthingInRange = berthingMs >= startMs && berthingMs <= endMs;
@@ -106,7 +204,7 @@ const VesselsPage: React.FC = () => {
     }
 
     if (filterVesselName) {
-      result = result.filter(v => v.vessel_name === filterVesselName);
+      result = result.filter((v) => v.vessel_name === filterVesselName);
     }
 
     return result.sort((a, b) => {
@@ -170,10 +268,10 @@ const VesselsPage: React.FC = () => {
 
     let party_id: number | null = null;
     const numericVal = parseInt(form.party_name, 10);
-    if (!isNaN(numericVal) && parties.some(p => p.id === numericVal)) {
+    if (!isNaN(numericVal) && parties.some((p) => p.id === numericVal)) {
       party_id = numericVal;
     } else {
-      const party = parties.find(p => p.party_name === form.party_name);
+      const party = parties.find((p) => p.party_name === form.party_name);
       party_id = party ? party.id : null;
     }
 
@@ -184,25 +282,26 @@ const VesselsPage: React.FC = () => {
 
     const rates = chargeLines.map((line: any) => ({
       activity: line.activity,
-      formula:  line.formula,
-      rate:     parseFloat(line.rate)     || 0,
+      formula: line.formula,
+      rate: parseFloat(line.rate) || 0,
       gst_rate: parseFloat(line.gst_rate) || 0,
-      min_qty:  parseFloat(line.min_qty)  || 0,
-      max_qty:  parseFloat(line.max_qty)  || 0,
+      min_qty: parseFloat(line.min_qty) || 0,
+      max_qty: parseFloat(line.max_qty) || 0,
     }));
 
     const payload = {
-      vessel_name:   form.vessel_name,
+      vessel_name: form.vessel_name,
       party_id,
-      cargo_type:    form.cargo_type || "FLYASH",
-      quantity:      parseFloat(form.quantity) || 0,
-      direction:     (form.direction as any) || "IMPORT",
+      cargo_type: form.cargo_type || "FLYASH",
+      quantity: parseFloat(form.quantity) || 0,
+      direction: (form.direction as any) || "IMPORT",
       expected_date: form.expected_date || getCurrentISTDateValue(),
       rates,
     };
 
     try {
       await dispatch(createVesselThunk(payload)).unwrap();
+      await dispatch(fetchVessels());
       closeModal();
       toast.success(`Vessel ${payload.vessel_name} created successfully`);
     } catch (err: any) {
@@ -219,10 +318,10 @@ const VesselsPage: React.FC = () => {
 
     let party_id: number | null = null;
     const numericVal = parseInt(form.party_name, 10);
-    if (!isNaN(numericVal) && parties.some(p => p.id === numericVal)) {
+    if (!isNaN(numericVal) && parties.some((p) => p.id === numericVal)) {
       party_id = numericVal;
     } else {
-      const party = parties.find(p => p.party_name === form.party_name);
+      const party = parties.find((p) => p.party_name === form.party_name);
       party_id = party ? party.id : null;
     }
 
@@ -262,6 +361,7 @@ const VesselsPage: React.FC = () => {
             payload: { berthing_datetime: datetime },
           }),
         ).unwrap();
+        await dispatch(fetchVessels());
         toast.success("Berthing operation recorded successfully");
       } else if (action === "moor") {
         const datetime = form.datetime + ":00";
@@ -271,6 +371,7 @@ const VesselsPage: React.FC = () => {
             payload: { mooring_datetime: datetime },
           }),
         ).unwrap();
+        await dispatch(fetchVessels());
         toast.success("Mooring operation recorded successfully");
       } else if (action === "survey") {
         const datetime = form.datetime + ":00";
@@ -281,6 +382,7 @@ const VesselsPage: React.FC = () => {
             payload: { survey_datetime: datetime, survey_quantity: qty },
           }),
         ).unwrap();
+        await dispatch(fetchVessels());
         toast.success("Survey operation recorded successfully");
       } else if (action === "unberth") {
         const datetime = form.datetime + ":00";
@@ -290,6 +392,7 @@ const VesselsPage: React.FC = () => {
             payload: { sailing_datetime: datetime },
           }),
         ).unwrap();
+        await dispatch(fetchVessels());
         toast.success("Unberthing operation recorded successfully");
       }
 
@@ -318,47 +421,70 @@ const VesselsPage: React.FC = () => {
         {["ALL", "PLANNED", "BERTHED", "MOORED", "COMPLETED"]
           .filter((s) => s === "ALL" || vesselStatuses.includes(s))
           .map((s) => (
-          <button
-            key={s}
-            className={`filter-tab ${filter === s ? "active" : ""}`}
-            onClick={() => setFilter(s as any)}
-          >
-            {s}
-          </button>
-        ))}
+            <button
+              key={s}
+              className={`filter-tab ${filter === s ? "active" : ""}`}
+              onClick={() => setFilter(s as any)}
+            >
+              {s}
+            </button>
+          ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '4px', alignItems: 'flex-end', background: 'var(--bg2)', padding: '16px', border: '1px solid var(--border)' }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "16px",
+          marginBottom: "4px",
+          alignItems: "flex-end",
+          background: "var(--bg2)",
+          padding: "16px",
+          border: "1px solid var(--border)",
+        }}
+      >
         <div style={{ flex: 1, maxWidth: 200 }}>
-          <Input 
-            label="Start Date" 
-            type="date" 
-            value={dateRange.start} 
-            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} 
+          <Input
+            label="Start Date"
+            type="date"
+            value={dateRange.start}
+            onChange={(e) =>
+              setDateRange((prev) => ({ ...prev, start: e.target.value }))
+            }
           />
         </div>
         <div style={{ flex: 1, maxWidth: 200 }}>
-          <Input 
-            label="End Date" 
-            type="date" 
-            value={dateRange.end} 
-            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} 
+          <Input
+            label="End Date"
+            type="date"
+            value={dateRange.end}
+            onChange={(e) =>
+              setDateRange((prev) => ({ ...prev, end: e.target.value }))
+            }
           />
         </div>
         <div style={{ flex: 1, maxWidth: 300 }}>
           <SearchableSelect
             label="Vessel Name"
             placeholder="All Vessels"
-            options={[{ value: "", label: "All Vessels" }, ...uniqueVesselNames.map(name => ({ value: name, label: name }))]}
+            options={[
+              { value: "", label: "All Vessels" },
+              ...uniqueVesselNames.map((name) => ({
+                value: name,
+                label: name,
+              })),
+            ]}
             value={filterVesselName}
             onChange={(val) => setFilterVesselName(val)}
           />
         </div>
         <div>
-          <Button variant="ghost" onClick={() => {
-            setDateRange({ start: defaultStartDate, end: defaultEndDate });
-            setFilterVesselName("");
-          }}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDateRange({ start: defaultStartDate, end: defaultEndDate });
+              setFilterVesselName("");
+            }}
+          >
             CLEAR
           </Button>
         </div>
@@ -498,15 +624,16 @@ const VesselsPage: React.FC = () => {
                         </Button>
                       )}
                       {["BERTHED", "MOORED"].includes(v.status) &&
-                        (canVesselStatus("BERTHED") || canVesselStatus("MOORED")) && (
-                        <Button
-                          variant="green"
-                          size="sm"
-                          onClick={() => openModal("unberth", v)}
-                        >
-                          UNBERTH
-                        </Button>
-                      )}
+                        (canVesselStatus("BERTHED") ||
+                          canVesselStatus("MOORED")) && (
+                          <Button
+                            variant="green"
+                            size="sm"
+                            onClick={() => openModal("unberth", v)}
+                          >
+                            UNBERTH
+                          </Button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -544,7 +671,10 @@ const VesselsPage: React.FC = () => {
               placeholder="Party / Client Name"
               value={form.party_name || ""}
               onChange={(value) => setForm({ ...form, party_name: value })}
-              options={parties.map(p => ({ value: String(p.id), label: p.party_name }))}
+              options={parties.map((p) => ({
+                value: String(p.id),
+                label: p.party_name,
+              }))}
             />
             <Input
               label="Cargo Type"
@@ -578,13 +708,23 @@ const VesselsPage: React.FC = () => {
             />
           </div>
 
-          <div style={{ marginTop: '24px' }}>
+          <div style={{ marginTop: "24px" }}>
             {/* <div style={{ color: '#e63946', fontSize: '0.85rem', marginBottom: '8px' }}>
               This section To appear as default in Vessel INFO ( with editable info) user may chang any SLAB QTY/RATE/ GST RATE or remove a row if desired
             </div> */}
-            <div className="table-wrap" style={{ maxHeight: '250px', overflowY: 'auto' }}>
-              <table style={{ margin: 0, width: '100%' }}>
-                <thead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: 'var(--bg2)' }}>
+            <div
+              className="table-wrap"
+              style={{ maxHeight: "250px", overflowY: "auto" }}
+            >
+              <table style={{ margin: 0, width: "100%" }}>
+                <thead
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1,
+                    backgroundColor: "var(--bg2)",
+                  }}
+                >
                   <tr>
                     <th>Activity</th>
                     <th>Formula</th>
@@ -604,52 +744,105 @@ const VesselsPage: React.FC = () => {
                         <input
                           type="number"
                           className="form-input"
-                          style={{ padding: '4px 8px', height: '32px' }}
+                          style={{ padding: "4px 8px", height: "32px" }}
                           value={line.rate}
-                          onChange={(e) => updateChargeLine(idx, 'rate', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "rate",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
                         />
                       </td>
                       <td>
                         <input
                           type="number"
                           className="form-input"
-                          style={{ padding: '4px 8px', height: '32px' }}
+                          style={{ padding: "4px 8px", height: "32px" }}
                           value={line.gst_rate}
-                          onChange={(e) => updateChargeLine(idx, 'gst_rate', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "gst_rate",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
                         />
                       </td>
                       <td>
                         <input
                           type="number"
                           className="form-input"
-                          style={{ padding: '4px 8px', height: '32px' }}
+                          style={{ padding: "4px 8px", height: "32px" }}
                           value={line.min_qty}
-                          onChange={(e) => updateChargeLine(idx, 'min_qty', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "min_qty",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
                         />
                       </td>
                       <td>
                         <input
                           type="number"
                           className="form-input"
-                          style={{ padding: '4px 8px', height: '32px' }}
+                          style={{ padding: "4px 8px", height: "32px" }}
                           value={line.max_qty}
-                          onChange={(e) => updateChargeLine(idx, 'max_qty', e.target.value !== '' ? parseFloat(e.target.value) : '')}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "max_qty",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
                         />
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td style={{ textAlign: "center" }}>
                         <button
                           type="button"
                           onClick={() => confirmRemoveChargeLine(idx)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e63946', padding: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#e63946",
+                            padding: "4px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: "18px" }}
+                          >
+                            delete
+                          </span>
                         </button>
                       </td>
                     </tr>
                   ))}
                   {chargeLines.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '16px', color: '#666' }}>
+                      <td
+                        colSpan={7}
+                        style={{
+                          textAlign: "center",
+                          padding: "16px",
+                          color: "#666",
+                        }}
+                      >
                         No charges available.
                       </td>
                     </tr>
@@ -689,7 +882,10 @@ const VesselsPage: React.FC = () => {
               placeholder="Party / Client Name"
               value={form.party_name || ""}
               onChange={(value) => setForm({ ...form, party_name: value })}
-              options={parties.map(p => ({ value: String(p.id), label: p.party_name }))}
+              options={parties.map((p) => ({
+                value: String(p.id),
+                label: p.party_name,
+              }))}
             />
             <Input
               label="Cargo Type"
@@ -718,7 +914,10 @@ const VesselsPage: React.FC = () => {
               label="Status"
               value={form.status || ""}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              options={vesselStatuses.map((s: string) => ({ value: s, label: s }))}
+              options={vesselStatuses.map((s: string) => ({
+                value: s,
+                label: s,
+              }))}
             />
           </div>
         </Modal>
