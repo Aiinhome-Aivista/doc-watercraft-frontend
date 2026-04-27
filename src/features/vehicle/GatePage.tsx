@@ -151,6 +151,7 @@ const GatePage: React.FC = () => {
         tare_weight: entry.tare_weight?.toString() || "",
         wbout_gross_weight: "",
         wbout_tare_weight: "",
+        vessel_id: entry.vessel_id ? String(entry.vessel_id) : "",
         op_type:
           statusText === "LOADING" || statusText === "UNLOADING"
             ? statusText
@@ -231,6 +232,7 @@ const GatePage: React.FC = () => {
            gross_weight: form.direction === "EXPORT" ? Number(form.wbin_gross_weight) : undefined,
         })).unwrap();
       }
+      dispatch(fetchGateEntries());
 
       closeModal();
       toast.success("Gate-In recorded successfully");
@@ -274,6 +276,7 @@ const GatePage: React.FC = () => {
           };
 
           await dispatch(recordCargoOpThunk(payload)).unwrap();
+          dispatch(fetchGateEntries());
           closeModal();
           toast.success("Cargo operation recorded successfully");
           return;
@@ -289,6 +292,7 @@ const GatePage: React.FC = () => {
           vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
         };
         await dispatch(recordCargoOpThunk(payload)).unwrap();
+        dispatch(fetchGateEntries());
         closeModal();
         toast.success("Cargo operation recorded successfully");
         return;
