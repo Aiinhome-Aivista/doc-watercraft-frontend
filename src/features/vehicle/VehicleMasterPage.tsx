@@ -187,6 +187,11 @@ const VehicleMasterPage: React.FC = () => {
                   <td>{v.transporter_name}</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <StatusBadge status={v.active === 1 ? "active" : "inactive"} />
+                    </div>
+                  </td>
+                  <td>
+                    <div className="action-group">
                       <label style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '36px', height: '20px', cursor: 'pointer', margin: 0 }}>
                         <input 
                           type="checkbox" 
@@ -207,11 +212,6 @@ const VehicleMasterPage: React.FC = () => {
                           }} />
                         </div>
                       </label>
-                      <StatusBadge status={v.active === 1 ? "active" : "inactive"} />
-                    </div>
-                  </td>
-                  <td>
-                    <div className="action-group">
                       <Button
                         variant="ghost"
                         size="sm"
