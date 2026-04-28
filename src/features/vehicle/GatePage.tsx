@@ -444,13 +444,13 @@ const GatePage: React.FC = () => {
       {
         key: "PENDING_WBOUT",
         label: "Awaiting WBOUT",
-        time: "Pending",
+        time: "-",
         icon: "receipt_long",
       },
       {
         key: "GATE_OUT",
         label: "Awaiting Gate-Out",
-        time: "Pending",
+        time: "-",
         icon: "directions_car",
       },
       {
@@ -978,7 +978,7 @@ const GatePage: React.FC = () => {
               ["Vehicle No", selected.vehicle_no],
               ["Vessel", selected.vessel_name],
               ["Direction", selected.direction],
-              ["Party", selected.party_name],
+              // ["Party", selected.party_name],
               ["Consignor", selected.consignor_name],
               ["Challan / Invoice", selected.challan_invoice_no, true],
               ["Transporter", selected.transporter_name || "—"],

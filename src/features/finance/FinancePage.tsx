@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '@/api/axios.client';
 import { useAppSelector } from '@/store/hooks';
 import { partyService } from '@/services/partyService';
 import { billingService, BillingVesselDTO } from '@/services/billingService';
 import { Button, SearchableSelect, Input } from '@/components/ui';
+import { getCurrentISTDateValue } from '@/utils/dateTime';
 import toast from 'react-hot-toast';
 
 const generateVchNo = () => {
@@ -38,7 +40,7 @@ const FinancePage: React.FC = () => {
 
   // Header form state
   const [vchNo]            = useState(() => generateVchNo());
-  const [date, setDate]    = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate]    = useState(() => getCurrentISTDateValue());
   const [partyName, setPartyName] = useState('');
   const [periodFrom, setPeriodFrom] = useState('');
   const [periodTo,   setPeriodTo]   = useState('');
@@ -48,6 +50,7 @@ const FinancePage: React.FC = () => {
   const [billingLines, setBillingLines] = useState<BillingLine[]>([]);
   const [billingVessels, setBillingVessels] = useState<BillingVesselDTO[]>([]);
   const [loadingGenerate, setLoadingGenerate] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   useEffect(() => {
     partyService.getPartyMasters().then((res) => {
@@ -116,12 +119,12 @@ const FinancePage: React.FC = () => {
       };
       
       const res = await billingService.generateBill(payload);
-      
+
       if (res.success && res.details) {
         // Map the activities for the single newly generated vessel
         const vesselDetails = res.details.filter((d: any) => d.vessel_id === vessel.vessel_id);
         const mappedActs = vesselDetails.map((d: any) => ({
-          activity: d.activity,
+          activity: d.activity ?? d.activity_name,
           qty: d.qty,
           rate: d.rate,
           amount: d.amount,
@@ -152,9 +155,66 @@ const FinancePage: React.FC = () => {
   };
 
   const handleGenerateInvoice = async () => {
-    // If they click "GENERATE INVOICE" at the bottom, just pretend it prints or triggers something else, since the API was already hit.
-    if (billingLines.length === 0) return;
-    toast.success('Invoice generation process complete. Ready to print.');
+    if (billingLines.length === 0) {
+      toast.error('Add at least one billing line before generating the invoice');
+      return;
+    }
+
+    const party = parties.find((p) => p.party_name === partyName);
+    if (!party?.id) {
+      toast.error('Party ID is missing. Please select a valid party.');
+      return;
+    }
+
+    if (!periodFrom || !periodTo) {
+      toast.error('Billing period is missing. Please select Period From and Period To.');
+      return;
+    }
+
+    const vesselIds = billingLines.map((line) => line.vessel_id);
+    if (vesselIds.length === 0) {
+      toast.error('No vessel IDs found for invoice generation.');
+      return;
+    }
+
+    setLoadingPdf(true);
+    try {
+      const res = await billingService.pdfBill({
+        party_id: party.id,
+        vessel_ids: vesselIds,
+        period_start: periodFrom,
+        period_end: periodTo,
+      });
+      if (res.success) {
+        if (res.download_url) {
+          const pdfResponse = await apiClient.get(res.download_url, {
+            responseType: 'blob',
+          });
+
+          if (!pdfResponse.data) {
+            throw new Error('Failed to download generated PDF');
+          }
+
+          const pdfBlob = pdfResponse.data as Blob;
+          const downloadUrl = window.URL.createObjectURL(pdfBlob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = downloadUrl;
+          downloadLink.download = res.file_name || `${res.voucher_number || 'invoice'}.pdf`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          window.URL.revokeObjectURL(downloadUrl);
+        }
+
+        toast.success(res.message || 'Invoice PDF generated successfully');
+      } else {
+        toast.error(res.message || 'Failed to generate invoice PDF');
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to generate invoice PDF');
+    } finally {
+      setLoadingPdf(false);
+    }
   };
 
   const removeLine = (id: number) => {
@@ -482,11 +542,11 @@ const FinancePage: React.FC = () => {
             <Button variant="ghost" onClick={() => setBillingLines([])}>
               CLEAR ALL
             </Button>
-            <Button variant="light" onClick={handleGenerateInvoice} disabled={loadingGenerate}>
+            <Button variant="light" onClick={handleGenerateInvoice} disabled={loadingGenerate || loadingPdf}>
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                 print
               </span>
-              {loadingGenerate ? 'GENERATING...' : 'GENERATE INVOICE'}
+              {loadingPdf ? 'GENERATING...' : 'GENERATE INVOICE'}
             </Button>
           </div>
         )}

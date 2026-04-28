@@ -35,6 +35,7 @@ export const ENDPOINTS = {
   BILLING: {
     VESSELS: '/billing/vessels',
     GENERATE: '/billing/generate',
+    PDF_BILL: 'v1/pdf-bill',
   },
   VEHICLE_MASTER: {
     BASE: '/vehiclemasters',
