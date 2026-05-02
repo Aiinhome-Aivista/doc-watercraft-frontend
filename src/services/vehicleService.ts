@@ -8,11 +8,12 @@ export interface GetGateEntriesResponse {
 }
 
 export interface CreateGateEntryPayload {
-  consignor_name: string;
+  party_id: number;
   challan_invoice_no: string;
   vehicle_id: number;
   gate_in_datetime: string;
   weighment_slip_no: string | null;
+  outside_weight?: number;
   outside_payment_slip: string | null;
   own_weighbridge: 1 | 0;
   direction?: string;

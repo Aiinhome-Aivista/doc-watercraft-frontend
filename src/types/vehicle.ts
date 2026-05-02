@@ -24,6 +24,7 @@ export interface GateEntry {
   transporter_name: string;
   outside_payment_slip?: string | null;
   weighment_slip_no: string | null;
+  outside_weight?: number;
   own_weighbridge: 0 | 1; // 0 for No, 1 for Yes
   status: GateStatus;
   gate_in_datetime: string;

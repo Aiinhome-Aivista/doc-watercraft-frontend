@@ -20,6 +20,7 @@ import {
 import { useAccessRights } from "@/hooks/useAccessRights";
 import toast from "react-hot-toast";
 import { vehicleMasterService } from "@/services/vehicleMasterService";
+import { partyService } from "@/services/partyService";
 
 const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -49,11 +50,15 @@ const GatePage: React.FC = () => {
   >(null);
 
   const [vehiclesList, setVehiclesList] = useState<any[]>([]);
+  const [partiesList, setPartiesList] = useState<any[]>([]);
 
   useEffect(() => {
     if (modal === "create") {
       vehicleMasterService.getVehicleMasters().then((res) => {
         setVehiclesList(Array.isArray(res) ? res : res.data || []);
+      }).catch(console.error);
+      partyService.getPartyMasters().then((res) => {
+        setPartiesList(Array.isArray(res) ? res : res.data || []);
       }).catch(console.error);
     }
   }, [modal]);
@@ -187,6 +192,7 @@ const GatePage: React.FC = () => {
 
     if (!form.direction) newErrors.direction = "Direction is required";
     if (!form.vehicle_no) newErrors.vehicle_no = "Vehicle No is required";
+    if (!form.party_id) newErrors.party_id = "Consignor / Party is required";
 
     const ownWb = parseInt(form.own_weighbridge || "0") as 0 | 1;
     const grossWeight = Number(form.gross_weight || 0);
@@ -210,11 +216,12 @@ const GatePage: React.FC = () => {
     const vehicleId = vehicle ? vehicle.id : 0;
 
     const payload = {
-      consignor_name: form.consignor_name || "",
+      party_id: Number(form.party_id),
       challan_invoice_no: form.challan_invoice_no || "",
       vehicle_id: vehicleId,
       gate_in_datetime: form.gate_in_datetime + ":00",
       weighment_slip_no: form.weighment_slip_no || null,
+      outside_weight: form.outside_weight ? Number(form.outside_weight) : undefined,
       outside_payment_slip: null,
       own_weighbridge: ownWb,
       direction: "IN",
@@ -778,10 +785,19 @@ const GatePage: React.FC = () => {
               value={form.gate_in_datetime || ""}
               onChange={(e) => handleChange("gate_in_datetime", e.target.value)}
             />
-            <Input
-              label="Consignor Name"
-              value={form.consignor_name || ""}
-              onChange={(e) => handleChange("consignor_name", e.target.value)}
+            <SearchableSelect
+              label="Consignor Name *"
+              placeholder="Select Consignor / Party"
+              value={form.party_id ? String(form.party_id) : ""}
+              onChange={(value) => handleChange("party_id", value)}
+              error={errors.party_id}
+              options={[
+                { value: "", label: "Select Consignor / Party" },
+                ...partiesList.map((p) => ({
+                  value: String(p.id),
+                  label: p.party_name,
+                })),
+              ]}
             />
             <Input
               label="Challan / Invoice No"
@@ -794,6 +810,12 @@ const GatePage: React.FC = () => {
               label="Outside Weighment Slip No"
               value={form.weighment_slip_no || ""}
               onChange={(e) => handleChange("weighment_slip_no", e.target.value)}
+            />
+            <Input
+              label="Outside Weighment weight"
+              type="number"
+              value={form.outside_weight || ""}
+              onChange={(e) => handleChange("outside_weight", e.target.value)}
             />
            
             <Select
