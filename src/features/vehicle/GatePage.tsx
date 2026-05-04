@@ -219,12 +219,12 @@ const GatePage: React.FC = () => {
       party_id: Number(form.party_id),
       challan_invoice_no: form.challan_invoice_no || "",
       vehicle_id: vehicleId,
-      gate_in_datetime: form.gate_in_datetime + ":00",
+      gate_in_datetime: (form.gate_in_datetime || "").replace("T", " ") + ((form.gate_in_datetime || "").split(":").length === 2 ? ":00" : ""),
       weighment_slip_no: form.weighment_slip_no || null,
       outside_weight: form.outside_weight ? Number(form.outside_weight) : undefined,
       outside_payment_slip: null,
       own_weighbridge: ownWb,
-      direction: "IN",
+      direction: form.direction,
     };
 
     try {
@@ -234,7 +234,7 @@ const GatePage: React.FC = () => {
         await dispatch(recordWbinThunk({
            gate_entry_id: res.id,
            weighment_slip_no: form.wbin_weighment_slip_no || "",
-           wbin_datetime: form.wbin_datetime + ":00",
+           wbin_datetime: (form.wbin_datetime || "").replace("T", " ") + ((form.wbin_datetime || "").split(":").length === 2 ? ":00" : ""),
            tare_weight: form.direction === "IMPORT" ? Number(form.wbin_tare_weight) : undefined,
            gross_weight: form.direction === "EXPORT" ? Number(form.wbin_gross_weight) : undefined,
         })).unwrap();
@@ -276,7 +276,7 @@ const GatePage: React.FC = () => {
             gate_entry_id: selected.id,
             operation_type:
               form.op_type || getOperationTypeByDirection(selected.direction),
-            end_datetime: operationDateTime + ":00",
+            end_datetime: (operationDateTime || "").replace("T", " ") + ((operationDateTime || "").split(":").length === 2 ? ":00" : ""),
             compressor_no: form.compressor_no || "",
             remarks: form.remarks || "",
             vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
@@ -293,7 +293,7 @@ const GatePage: React.FC = () => {
           gate_entry_id: selected.id,
           operation_type:
             form.op_type || getOperationTypeByDirection(selected.direction),
-          start_datetime: operationDateTime + ":00",
+          start_datetime: (operationDateTime || "").replace("T", " ") + ((operationDateTime || "").split(":").length === 2 ? ":00" : ""),
           compressor_no: form.compressor_no || "",
           remarks: form.remarks || "",
           vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
@@ -381,7 +381,7 @@ const GatePage: React.FC = () => {
         recordWboutThunk({
           gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || "",
-          wbout_datetime: form.datetime + ":00",
+          wbout_datetime: (form.datetime || "").replace("T", " ") + ((form.datetime || "").split(":").length === 2 ? ":00" : ""),
           gross_weight: isImport ? grossWeight : undefined,
           tare_weight: isExport ? tareWeight : undefined,
         }),
@@ -403,7 +403,7 @@ const GatePage: React.FC = () => {
       await dispatch(
         recordGateOutThunk({
           gate_entry_id: selected.id,
-          gate_out_datetime: form.datetime + ":00",
+          gate_out_datetime: (form.datetime || "").replace("T", " ") + ((form.datetime || "").split(":").length === 2 ? ":00" : ""),
         }),
       ).unwrap();
       closeModal();
@@ -908,10 +908,12 @@ const GatePage: React.FC = () => {
               }}
               options={[
                 { value: "", label: "Select Vessel" },
-                ...vessels.map((v) => ({
-                  value: v.id.toString(),
-                  label: `${v.vessel_name} | ${v.party_name} | ${v.direction}`,
-                })),
+                ...vessels
+                  .filter((v) => String(v.direction).toUpperCase() === String(selected.direction).toUpperCase())
+                  .map((v) => ({
+                    value: v.id.toString(),
+                    label: `${v.vessel_name} | ${v.party_name} | ${v.direction}`,
+                  })),
               ]}
               placeholder="Select Vessel"
             />
@@ -962,6 +964,7 @@ const GatePage: React.FC = () => {
           </div>
         </Modal>
       )}
+      
 
       {modal === "gateout" && selected && (
         <Modal
