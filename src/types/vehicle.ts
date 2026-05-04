@@ -11,29 +11,34 @@ export type GateStatus =
 
 export interface GateEntry {
   id: number;
-  cargo_operation_id?: number;
+  cargo_operation_id?: number | null;
   gate_in_no: string;
-  vessel_id: number;
-  vessel_name: string;
-  party_name: string;
-  consignor_name: string;
+  vessel_id?: number | null;
+  vessel_name?: string | null;
+  party_id?: number | null;
+  party_code?: string | null;
+  party_name?: string | null;
+  consignor_name?: string | null;
   challan_invoice_no: string;
   compressor_no?: string | null;
-  vehicle_id?: number;
+  vehicle_id?: number | null;
   vehicle_no: string;
-  transporter_name: string;
+  transporter_name?: string | null;
   outside_payment_slip?: string | null;
-  weighment_slip_no: string | null;
-  outside_weight?: number;
-  own_weighbridge: 0 | 1; // 0 for No, 1 for Yes
+  weighment_slip_no?: string | null;
+  outside_weight?: number | string | null;
+  own_weighbridge: 0 | 1;
   status: GateStatus;
   gate_in_datetime: string;
   wbin_datetime?: string | null;
-  gate_out_datetime: string | null;
-  direction: Direction;
-  gross_weight?: number;
-  tare_weight?: number;
-  net_weight?: number;
+  gate_out_datetime?: string | null;
+  direction: Direction | string;
+  vessel_direction?: string | null;
+  gross_weight?: number | null;
+  tare_weight?: number | null;
+  net_weight?: number | null;
+  berthing_datetime?: string | null;
+  mooring_datetime?: string | null;
   created_at?: string;
   updated_at?: string;
 }

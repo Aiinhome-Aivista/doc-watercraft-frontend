@@ -179,39 +179,49 @@ const FinancePage: React.FC = () => {
 
     setLoadingPdf(true);
     try {
-      const res = await billingService.pdfBill({
-        party_id: party.id,
-        vessel_ids: vesselIds,
-        period_start: periodFrom,
-        period_end: periodTo,
-      });
-      if (res.success) {
-        if (res.download_url) {
-          const pdfResponse = await apiClient.get(res.download_url, {
+      const params = new URLSearchParams();
+      params.append('party_id', party.id.toString());
+      vesselIds.forEach((id) => params.append('vessel_id', id.toString()));
+      params.append('period_start', periodFrom);
+      params.append('period_end', periodTo);
+
+      const res = await apiClient.get(`/export/full-report?${params.toString()}`);
+      
+      if (res.data && res.data.success) {
+        if (res.data.download_url) {
+          let downloadUrlPath = res.data.download_url;
+          if (downloadUrlPath.startsWith('/api/v1')) {
+            downloadUrlPath = downloadUrlPath.substring(7);
+          }
+
+          const fileResponse = await apiClient.get(downloadUrlPath, {
             responseType: 'blob',
           });
 
-          if (!pdfResponse.data) {
-            throw new Error('Failed to download generated PDF');
+          if (!fileResponse.data) {
+            throw new Error('Failed to download generated report');
           }
 
-          const pdfBlob = pdfResponse.data as Blob;
-          const downloadUrl = window.URL.createObjectURL(pdfBlob);
+          const fileBlob = fileResponse.data as Blob;
+          const downloadUrl = window.URL.createObjectURL(fileBlob);
           const downloadLink = document.createElement('a');
           downloadLink.href = downloadUrl;
-          downloadLink.download = res.file_name || `${res.voucher_number || 'invoice'}.pdf`;
+          
+          const fileName = res.data.download_url.split('/').pop() || 'Full_Report.xlsx';
+          downloadLink.download = fileName;
+          
           document.body.appendChild(downloadLink);
           downloadLink.click();
           downloadLink.remove();
           window.URL.revokeObjectURL(downloadUrl);
         }
 
-        toast.success(res.message || 'Invoice PDF generated successfully');
+        toast.success(res.data.message || 'Report generated successfully');
       } else {
-        toast.error(res.message || 'Failed to generate invoice PDF');
+        toast.error(res.data.message || 'Failed to generate report');
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to generate invoice PDF');
+      toast.error(err?.response?.data?.message || 'Failed to generate report');
     } finally {
       setLoadingPdf(false);
     }

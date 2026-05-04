@@ -413,7 +413,7 @@ const GatePage: React.FC = () => {
     }
   };
 
-  const fmt = (v: string | null) => (v ? formatDateTimeIST(v) : "—");
+  const fmt = (v: string | null | undefined) => (v ? formatDateTimeIST(v) : "—");
 
   const getWorkflowSteps = (entry: GateEntry) => {
     const statusOrder = [
@@ -581,7 +581,7 @@ const GatePage: React.FC = () => {
               <th>Gate-In No</th>
               <th>Vehicle</th>
               <th>Vessel</th>
-              <th>Consignor</th>
+              <th>Party</th>
               <th>Challan</th>
               <th>Transporter</th>
               <th>
@@ -639,8 +639,8 @@ const GatePage: React.FC = () => {
                 <tr key={e.id}>
                   <td className="td-mono">{e.gate_in_no}</td>
                   <td className="td-primary">{e.vehicle_no}</td>
-                  <td style={{ fontSize: 12 }}>{e.vessel_name}</td>
-                  <td style={{ fontSize: 12 }}>{e.consignor_name}</td>
+                  <td style={{ fontSize: 12 }}>{e.vessel_name || "—"}</td>
+                  <td style={{ fontSize: 12 }}>{e.party_name || e.consignor_name || "—"}</td>
                   <td className="font-mono" style={{ fontSize: 12 }}>
                     {e.challan_invoice_no}
                   </td>
@@ -998,10 +998,9 @@ const GatePage: React.FC = () => {
             {[
               ["Gate-In No", selected.gate_in_no, true],
               ["Vehicle No", selected.vehicle_no],
-              ["Vessel", selected.vessel_name],
+              ["Vessel", selected.vessel_name || "—"],
               ["Direction", selected.direction],
-              // ["Party", selected.party_name],
-              ["Consignor", selected.consignor_name],
+              ["Party", selected.party_name || selected.consignor_name || "—"],
               ["Challan / Invoice", selected.challan_invoice_no, true],
               ["Transporter", selected.transporter_name || "—"],
               ["Weighment Slip", selected.weighment_slip_no || "—", true],
