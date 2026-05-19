@@ -26,7 +26,9 @@ export interface GateEntry {
   transporter_name?: string | null;
   outside_payment_slip?: string | null;
   weighment_slip_no?: string | null;
-  outside_weight?: number | string | null;
+  outside_gross_weight?: number | string | null;
+  outside_tare_weight?: number | string | null;
+  outside_net_weight?: number | string | null;
   own_weighbridge: 0 | 1;
   status: GateStatus;
   gate_in_datetime: string;

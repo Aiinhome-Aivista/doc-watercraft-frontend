@@ -13,7 +13,9 @@ export interface CreateGateEntryPayload {
   vehicle_id: number;
   gate_in_datetime: string;
   weighment_slip_no: string | null;
-  outside_weight?: number;
+  outside_gross_weight?: number;
+  outside_tare_weight?: number;
+  outside_net_weight?: number;
   outside_payment_slip: string | null;
   own_weighbridge: 1 | 0;
   direction?: string;

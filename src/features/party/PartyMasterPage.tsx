@@ -35,6 +35,8 @@ const PartyMasterPage: React.FC = () => {
     state: "",
     country: "",
     pincode: "",
+    panNumber: "",
+    gstNumber: "",
   });
 
   const [mobiles, setMobiles] = useState<string[]>([""]);
@@ -92,6 +94,8 @@ const PartyMasterPage: React.FC = () => {
       state: "",
       country: "",
       pincode: "",
+      panNumber: "",
+      gstNumber: "",
     });
     setMobiles([""]);
     setEmails([""]);
@@ -108,6 +112,8 @@ const PartyMasterPage: React.FC = () => {
       state: p.state || "",
       country: p.country || "",
       pincode: p.pincode || "",
+      panNumber: p.pan_number || "",
+      gstNumber: p.gst_number || "",
     });
 
     let mList = p.mobiles;
@@ -197,6 +203,8 @@ const PartyMasterPage: React.FC = () => {
       state: form.state,
       country: form.country,
       pincode: form.pincode,
+      pan_number: form.panNumber || null,
+      gst_number: form.gstNumber || null,
       mobiles: formMobiles,
       emails: formEmails,
     };
@@ -222,6 +230,8 @@ const PartyMasterPage: React.FC = () => {
         state: "",
         country: "",
         pincode: "",
+        panNumber: "",
+        gstNumber: "",
       });
       setMobiles([""]);
       setEmails([""]);
@@ -394,6 +404,18 @@ const PartyMasterPage: React.FC = () => {
               value={form.pincode}
               onChange={(e) => handleChange("pincode", e.target.value)}
               error={errors.pincode}
+            />
+            <Input
+              label="PAN Number"
+              placeholder="Enter PAN number"
+              value={form.panNumber}
+              onChange={(e) => handleChange("panNumber", e.target.value)}
+            />
+            <Input
+              label="GST Number"
+              placeholder="Enter GST number"
+              value={form.gstNumber}
+              onChange={(e) => handleChange("gstNumber", e.target.value)}
             />
           </div>
 

@@ -163,7 +163,7 @@ const GatePage: React.FC = () => {
             : getOperationTypeByDirection(entry.direction),
       });
     } else {
-      setForm({ datetime: nowDt(), gate_in_datetime: nowDt(), wbin_datetime: nowDt(), direction: "IMPORT", own_weighbridge: "0" });
+      setForm({ datetime: nowDt(), gate_in_datetime: nowDt(), direction: "IMPORT", own_weighbridge: "0" });
     }
     setModal(type);
     setErrors({});
@@ -201,12 +201,6 @@ const GatePage: React.FC = () => {
       newErrors.gross_weight = "Gross weight must be greater than 60 for own weighbridge";
     }
 
-    if (ownWb === 0) {
-      if (!form.wbin_datetime) newErrors.wbin_datetime = "WBIN Date & Time is required";
-      if (form.direction === "IMPORT" && !form.wbin_tare_weight) newErrors.wbin_tare_weight = "Tare Weight is required";
-      if (form.direction === "EXPORT" && !form.wbin_gross_weight) newErrors.wbin_gross_weight = "Gross Weight is required";
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -215,14 +209,24 @@ const GatePage: React.FC = () => {
     const vehicle = vehiclesList.find(x => x.vehicle_no === form.vehicle_no);
     const vehicleId = vehicle ? vehicle.id : 0;
 
+    const outsideGross = form.outside_gross_weight ? Number(form.outside_gross_weight) : undefined;
+    const outsideTare = form.outside_tare_weight ? Number(form.outside_tare_weight) : undefined;
+    const outsideNet = form.outside_net_weight
+      ? Number(form.outside_net_weight)
+      : outsideGross !== undefined && outsideTare !== undefined
+        ? Number((outsideGross - outsideTare).toFixed(2))
+        : undefined;
+
     const payload = {
       party_id: Number(form.party_id),
       challan_invoice_no: form.challan_invoice_no || "",
       vehicle_id: vehicleId,
       gate_in_datetime: (form.gate_in_datetime || "").replace("T", " ") + ((form.gate_in_datetime || "").split(":").length === 2 ? ":00" : ""),
       weighment_slip_no: form.weighment_slip_no || null,
-      outside_weight: form.outside_weight ? Number(form.outside_weight) : undefined,
-      outside_payment_slip: null,
+      outside_gross_weight: outsideGross,
+      outside_tare_weight: outsideTare,
+      outside_net_weight: outsideNet,
+      outside_payment_slip: form.outside_payment_slip || null,
       own_weighbridge: ownWb,
       direction: form.direction,
     };
@@ -230,15 +234,6 @@ const GatePage: React.FC = () => {
     try {
       const res = await dispatch(createGateEntryThunk(payload)).unwrap();
       
-      if (ownWb === 0) {
-        await dispatch(recordWbinThunk({
-           gate_entry_id: res.id,
-           weighment_slip_no: form.wbin_weighment_slip_no || "",
-           wbin_datetime: (form.wbin_datetime || "").replace("T", " ") + ((form.wbin_datetime || "").split(":").length === 2 ? ":00" : ""),
-           tare_weight: form.direction === "IMPORT" ? Number(form.wbin_tare_weight) : undefined,
-           gross_weight: form.direction === "EXPORT" ? Number(form.wbin_gross_weight) : undefined,
-        })).unwrap();
-      }
       dispatch(fetchGateEntries());
 
       closeModal();
@@ -812,10 +807,40 @@ const GatePage: React.FC = () => {
               onChange={(e) => handleChange("weighment_slip_no", e.target.value)}
             />
             <Input
-              label="Outside Weighment weight"
+              label="Outside Gross Weight"
               type="number"
-              value={form.outside_weight || ""}
-              onChange={(e) => handleChange("outside_weight", e.target.value)}
+              value={form.outside_gross_weight || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                const gross = Number(value || 0);
+                const tare = Number(form.outside_tare_weight || 0);
+                setForm((prev: any) => ({
+                  ...prev,
+                  outside_gross_weight: value,
+                  outside_net_weight: gross && tare ? (gross - tare).toFixed(2) : "",
+                }));
+              }}
+            />
+            <Input
+              label="Outside Tare Weight"
+              type="number"
+              value={form.outside_tare_weight || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                const gross = Number(form.outside_gross_weight || 0);
+                const tare = Number(value || 0);
+                setForm((prev: any) => ({
+                  ...prev,
+                  outside_tare_weight: value,
+                  outside_net_weight: gross && tare ? (gross - tare).toFixed(2) : "",
+                }));
+              }}
+            />
+            <Input
+              label="Outside Net Weight"
+              type="number"
+              value={form.outside_net_weight || ""}
+              readOnly
             />
            
             <Select
@@ -836,42 +861,6 @@ const GatePage: React.FC = () => {
                 onChange={(e) => handleChange("gross_weight", e.target.value)}
                 error={errors.gross_weight}
               />
-            )}
-            {form.own_weighbridge === "0" && (
-              <>
-                <div style={{ gridColumn: "1 / -1", fontWeight: "bold", marginTop: 10, borderBottom: "1px solid var(--border)", paddingBottom: 5 }}>
-                  WBIN Details
-                </div>
-                <Input
-                  label="Weighment Slip No"
-                  value={form.wbin_weighment_slip_no || ""}
-                  onChange={(e) => handleChange("wbin_weighment_slip_no", e.target.value)}
-                />
-                <Input
-                  label="WBIN Date & Time *"
-                  type="datetime-local"
-                  value={form.wbin_datetime || ""}
-                  onChange={(e) => handleChange("wbin_datetime", e.target.value)}
-                  error={errors.wbin_datetime}
-                />
-                {form.direction === "IMPORT" ? (
-                  <Input
-                    label="Tare Weight *"
-                    type="number"
-                    value={form.wbin_tare_weight || ""}
-                    onChange={(e) => handleChange("wbin_tare_weight", e.target.value)}
-                    error={errors.wbin_tare_weight}
-                  />
-                ) : (
-                  <Input
-                    label="Gross Weight *"
-                    type="number"
-                    value={form.wbin_gross_weight || ""}
-                    onChange={(e) => handleChange("wbin_gross_weight", e.target.value)}
-                    error={errors.wbin_gross_weight}
-                  />
-                )}
-              </>
             )}
           </div>
         </Modal>
