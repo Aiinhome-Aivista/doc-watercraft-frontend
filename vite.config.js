@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     babel({ presets: [reactCompilerPreset()] })
   ],
-  base: '/dock_mgmt/',
+  base: '/dock_mgmt_v1/',
   resolve: {
     alias: {
       '@': '/src'
