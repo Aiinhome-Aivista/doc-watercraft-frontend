@@ -248,7 +248,12 @@ const PartyMasterPage: React.FC = () => {
   return (
     <>
       <div className="section-head">
-        <span className="section-title">PARTY MASTER</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="section-title">PARTY MASTER</span>
+          <span className="tag">
+            {parties.length} {parties.length === 1 ? "PARTY" : "PARTIES"}
+          </span>
+        </div>
         <Button variant="light" onClick={openAddModal}>
           + ADD PARTY
         </Button>
@@ -260,10 +265,12 @@ const PartyMasterPage: React.FC = () => {
             <tr>
               <th>Party Name</th>
               <th>Party Code</th>
-              <th>Address</th>
+              {/* <th>Address</th> */}
               <th>State</th>
               <th>Country</th>
               <th>Pincode</th>
+              <th>PAN Number</th>
+              <th>GST Number</th>
               <th>Mobiles</th>
               <th>Emails</th>
               <th>Actions</th>
@@ -272,7 +279,7 @@ const PartyMasterPage: React.FC = () => {
           <tbody>
             {parties.length === 0 ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={11}>
                   <div className="empty">
                     <div className="empty-icon">
                       <span
@@ -299,10 +306,12 @@ const PartyMasterPage: React.FC = () => {
                   <tr key={p.id || p.party_code}>
                     <td className="td-primary">{p.party_name}</td>
                     <td className="font-mono" style={{ fontSize: 13 }}>{p.party_code}</td>
-                    <td>{p.address}</td>
+                    {/* <td>{p.address}</td> */}
                     <td>{p.state}</td>
                     <td>{p.country}</td>
                     <td>{p.pincode}</td>
+                    <td className="font-mono" style={{ fontSize: 13 }}>{p.pan_number || "-"}</td>
+                    <td className="font-mono" style={{ fontSize: 13 }}>{p.gst_number || "-"}</td>
                     <td>{Array.isArray(mList) ? mList.join(', ') : mList}</td>
                     <td>{Array.isArray(eList) ? eList.join(', ') : eList}</td>
                     <td>

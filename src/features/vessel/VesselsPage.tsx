@@ -117,12 +117,20 @@ const defaultChargeLines = [
 const VesselsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const vessels = useAppSelector((state) => state.vessels.items);
+  const pagination = useAppSelector((state) => state.vessels.pagination);
   const loading = useAppSelector((state) => state.vessels.loading);
   const [parties, setParties] = useState<any[]>([]);
   const { canVesselStatus, vesselStatuses } = useAccessRights();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
+  // Fetch page from server whenever page or perPage changes
   useEffect(() => {
-    dispatch(fetchVessels());
+    dispatch(fetchVessels({ page: currentPage, per_page: perPage }));
+  }, [dispatch, currentPage, perPage]);
+
+  useEffect(() => {
     const fetchParties = async () => {
       try {
         const res = await partyService.getPartyMasters();
@@ -133,7 +141,7 @@ const VesselsPage: React.FC = () => {
       }
     };
     fetchParties();
-  }, [dispatch]);
+  }, []);
 
   const [filter, setFilter] = useState<VesselStatus | "ALL">("ALL");
   const [createdAtSort, setCreatedAtSort] = useState<"latest" | "oldest">(
@@ -168,6 +176,12 @@ const VesselsPage: React.FC = () => {
   const [form, setForm] = useState<any>({});
   const [chargeLines, setChargeLines] = useState<any[]>([]);
 
+  const handlePageChange = (newPage: number) => {
+    if (pagination && newPage >= 1 && newPage <= pagination.total_pages) {
+      setCurrentPage(newPage);
+    }
+  };
+
   const fmtDateOnly = (v: string | null | undefined) => {
     if (!v) return "—";
     const formatted = formatDateTimeIST(v);
@@ -181,6 +195,7 @@ const VesselsPage: React.FC = () => {
     return Array.from(new Set(vessels.map((v) => v.vessel_name)));
   }, [vessels]);
 
+  // Client-side filtering/sorting on the server-returned page
   const filtered = useMemo(() => {
     let result =
       filter === "ALL" ? vessels : vessels.filter((v) => v.status === filter);
@@ -301,7 +316,7 @@ const VesselsPage: React.FC = () => {
 
     try {
       await dispatch(createVesselThunk(payload)).unwrap();
-      await dispatch(fetchVessels());
+      await dispatch(fetchVessels({ page: currentPage, per_page: perPage }));
       closeModal();
       toast.success(`Vessel ${payload.vessel_name} created successfully`);
     } catch (err: any) {
@@ -342,6 +357,7 @@ const VesselsPage: React.FC = () => {
 
     try {
       await dispatch(updateVesselThunk({ id: selected.id, payload })).unwrap();
+      await dispatch(fetchVessels({ page: currentPage, per_page: perPage }));
       closeModal();
       toast.success(`Vessel ${form.vessel_name} updated successfully`);
     } catch (err: any) {
@@ -361,7 +377,7 @@ const VesselsPage: React.FC = () => {
             payload: { berthing_datetime: datetime },
           }),
         ).unwrap();
-        await dispatch(fetchVessels());
+        await dispatch(fetchVessels({ page: currentPage, per_page: perPage }));
         toast.success("Berthing operation recorded successfully");
       } else if (action === "moor") {
         const datetime = form.datetime + ":00";
@@ -371,7 +387,7 @@ const VesselsPage: React.FC = () => {
             payload: { mooring_datetime: datetime },
           }),
         ).unwrap();
-        await dispatch(fetchVessels());
+        await dispatch(fetchVessels({ page: currentPage, per_page: perPage }));
         toast.success("Mooring operation recorded successfully");
       } else if (action === "survey") {
         const datetime = form.datetime + ":00";
@@ -382,7 +398,7 @@ const VesselsPage: React.FC = () => {
             payload: { survey_datetime: datetime, survey_quantity: qty },
           }),
         ).unwrap();
-        await dispatch(fetchVessels());
+        await dispatch(fetchVessels({ page: currentPage, per_page: perPage }));
         toast.success("Survey operation recorded successfully");
       } else if (action === "unberth") {
         const datetime = form.datetime + ":00";
@@ -392,7 +408,7 @@ const VesselsPage: React.FC = () => {
             payload: { sailing_datetime: datetime },
           }),
         ).unwrap();
-        await dispatch(fetchVessels());
+        await dispatch(fetchVessels({ page: currentPage, per_page: perPage }));
         toast.success("Unberthing operation recorded successfully");
       }
 
@@ -411,7 +427,12 @@ const VesselsPage: React.FC = () => {
   return (
     <>
       <div className="section-head">
-        <span className="section-title">VESSEL MANAGEMENT</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="section-title">VESSEL MANAGEMENT</span>
+          <span className="tag">
+            {pagination ? pagination.total : vessels.length} {(pagination ? pagination.total : vessels.length) === 1 ? "VESSEL" : "VESSELS"}
+          </span>
+        </div>
         <Button variant="light" onClick={() => openModal("create")}>
           + NEW VESSEL
         </Button>
@@ -642,6 +663,76 @@ const VesselsPage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {pagination && pagination.total > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg2)', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ color: 'var(--text2)', fontSize: '13px' }}>
+              Showing page <strong style={{ color: 'var(--text)' }}>{pagination.page}</strong> of <strong style={{ color: 'var(--text)' }}>{pagination.total_pages}</strong> ({pagination.total} total items)
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Per Page:</span>
+              <select
+                value={perPage}
+                onChange={(e) => {
+                  setPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                style={{
+                  background: 'var(--bg3)',
+                  border: '1px solid var(--border2)',
+                  color: 'var(--text)',
+                  padding: '2px 8px',
+                  fontSize: '12px',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {[5, 10, 20, 50].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pagination.page <= 1}
+              onClick={() => handlePageChange(pagination.page - 1)}
+            >
+              PREVIOUS
+            </Button>
+            {Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === pagination.total_pages || Math.abs(p - pagination.page) <= 1)
+              .map((p, idx, arr) => {
+                const prev = arr[idx - 1];
+                const showEllipsis = prev && p - prev > 1;
+                return (
+                  <React.Fragment key={p}>
+                    {showEllipsis && <span style={{ padding: '4px 8px', color: 'var(--text3)' }}>...</span>}
+                    <Button
+                      variant={pagination.page === p ? "primary" : "ghost"}
+                      size="sm"
+                      style={{ minWidth: '32px', padding: '4px' }}
+                      onClick={() => handlePageChange(p)}
+                    >
+                      {p}
+                    </Button>
+                  </React.Fragment>
+                );
+              })}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pagination.page >= pagination.total_pages}
+              onClick={() => handlePageChange(pagination.page + 1)}
+            >
+              NEXT
+            </Button>
+          </div>
+        </div>
+      )}
 
       {modal === "create" && (
         <Modal

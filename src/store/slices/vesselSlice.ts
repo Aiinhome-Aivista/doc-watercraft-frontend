@@ -1,24 +1,26 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Vessel, VesselStatus } from '@/types/vessel';
-import { VesselService, CreateVesselPayload, BerthVesselPayload, MoorVesselPayload, SurveyVesselPayload, UnberthVesselPayload } from '@/services/vesselService';
+import { VesselService, CreateVesselPayload, BerthVesselPayload, MoorVesselPayload, SurveyVesselPayload, UnberthVesselPayload, PaginationInfo } from '@/services/vesselService';
 
 interface VesselState {
   items: Vessel[];
+  pagination: PaginationInfo | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: VesselState = {
   items: [],
+  pagination: null,
   loading: false,
   error: null,
 };
 
 export const fetchVessels = createAsyncThunk(
   'vessels/fetchVessels',
-  async (_, { rejectWithValue }) => {
+  async (params: { page?: number; per_page?: number } | undefined, { rejectWithValue }) => {
     try {
-      const data = await VesselService.getAllVessels();
+      const data = await VesselService.getAllVessels(params);
       return data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch vessels');
@@ -144,7 +146,8 @@ const vesselSlice = createSlice({
       })
       .addCase(fetchVessels.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        state.items = action.payload.data;
+        state.pagination = action.payload.pagination ?? null;
       })
       .addCase(fetchVessels.rejected, (state, action) => {
         state.loading = false;

@@ -25,14 +25,9 @@ import { partyService } from "@/services/partyService";
 const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.vehicles.entries);
+  const pagination = useAppSelector((state) => state.vehicles.pagination);
   const vessels = useAppSelector((state) => state.vessels.items);
   const { canGateOp, gateOperations } = useAccessRights();
-
-  useEffect(() => {
-    dispatch(fetchGateEntries());
-    dispatch(fetchVessels());
-  }, [dispatch]);
-
 
   const [filter, setFilter] = useState<
     GateStatus | "ALL" | "LOADING/UNLOADING"
@@ -51,6 +46,40 @@ const GatePage: React.FC = () => {
 
   const [vehiclesList, setVehiclesList] = useState<any[]>([]);
   const [partiesList, setPartiesList] = useState<any[]>([]);
+  const [operationMode, setOperationMode] = useState<"record" | "update">(
+    "record",
+  );
+  const [selected, setSelected] = useState<GateEntry | null>(null);
+  const [form, setForm] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev: any) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (pagination && newPage >= 1 && newPage <= pagination.total_pages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // Fetch from server — only page + per_page (backend does not support date/status filtering)
+  useEffect(() => {
+    dispatch(
+      fetchGateEntries({
+        page: currentPage,
+        per_page: perPage,
+      })
+    );
+  }, [dispatch, currentPage, perPage]);
+
+  useEffect(() => {
+    dispatch(fetchVessels());
+  }, [dispatch]);
 
   useEffect(() => {
     if (modal === "create") {
@@ -62,17 +91,6 @@ const GatePage: React.FC = () => {
       }).catch(console.error);
     }
   }, [modal]);
-  const [operationMode, setOperationMode] = useState<"record" | "update">(
-    "record",
-  );
-  const [selected, setSelected] = useState<GateEntry | null>(null);
-  const [form, setForm] = useState<any>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleChange = (field: string, value: string) => {
-    setForm((prev: any) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
-  };
 
   const getDateMs = (value: string | null | undefined) => {
     if (!value) return 0;
@@ -112,8 +130,7 @@ const GatePage: React.FC = () => {
     }
 
     return [...base].sort((a, b) => {
-      const diff =
-        getDateMs(a.gate_in_datetime) - getDateMs(b.gate_in_datetime);
+      const diff = getDateMs(a.gate_in_datetime) - getDateMs(b.gate_in_datetime);
       return gateInSort === "latest" ? -diff : diff;
     });
   }, [entries, filter, gateInSort, dateRange, filterGateInNo, filterVehicleNo]);
@@ -234,8 +251,7 @@ const GatePage: React.FC = () => {
     try {
       const res = await dispatch(createGateEntryThunk(payload)).unwrap();
       
-      dispatch(fetchGateEntries());
-
+      dispatch(fetchGateEntries({ page: currentPage, per_page: perPage }));
       closeModal();
       toast.success("Gate-In recorded successfully");
     } catch (err: any) {
@@ -278,7 +294,7 @@ const GatePage: React.FC = () => {
           };
 
           await dispatch(recordCargoOpThunk(payload)).unwrap();
-          dispatch(fetchGateEntries());
+          dispatch(fetchGateEntries({ page: currentPage, per_page: perPage }));
           closeModal();
           toast.success("Cargo operation recorded successfully");
           return;
@@ -294,7 +310,7 @@ const GatePage: React.FC = () => {
           vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
         };
         await dispatch(recordCargoOpThunk(payload)).unwrap();
-        dispatch(fetchGateEntries());
+        dispatch(fetchGateEntries({ page: currentPage, per_page: perPage }));
         closeModal();
         toast.success("Cargo operation recorded successfully");
         return;
@@ -476,7 +492,12 @@ const GatePage: React.FC = () => {
   return (
     <>
       <div className="section-head">
-        <span className="section-title">VEHICLE GATE MANAGEMENT</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="section-title">VEHICLE GATE MANAGEMENT</span>
+          <span className="tag">
+            {pagination ? pagination.total : entries.length} {(pagination ? pagination.total : entries.length) === 1 ? "ENTRY" : "ENTRIES"}
+          </span>
+        </div>
         <Button variant="light" onClick={() => openModal("create")}>
           + GATE IN
         </Button>
@@ -726,6 +747,77 @@ const GatePage: React.FC = () => {
             )}
           </tbody>
         </table>
+        {pagination && pagination.total > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg2)', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ color: 'var(--text2)', fontSize: '13px' }}>
+                Showing page <strong style={{ color: 'var(--text)' }}>{pagination.page}</strong> of <strong style={{ color: 'var(--text)' }}>{pagination.total_pages}</strong> ({pagination.total} total items)
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Per Page:</span>
+                <select
+                  value={perPage}
+                  onChange={(e) => {
+                    setPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    background: 'var(--bg3)',
+                    border: '1px solid var(--border2)',
+                    color: 'var(--text)',
+                    padding: '2px 8px',
+                    fontSize: '12px',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {[5, 10, 20, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pagination.page <= 1}
+                onClick={() => handlePageChange(pagination.page - 1)}
+              >
+                PREVIOUS
+              </Button>
+              {Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === pagination.total_pages || Math.abs(p - pagination.page) <= 1)
+                .map((p, idx, arr) => {
+                  const prev = arr[idx - 1];
+                  const showEllipsis = prev && p - prev > 1;
+                  return (
+                    <React.Fragment key={p}>
+                      {showEllipsis && <span style={{ padding: '4px 8px', color: 'var(--text3)' }}>...</span>}
+                      <Button
+                        variant={pagination.page === p ? "primary" : "ghost"}
+                        size="sm"
+                        style={{ minWidth: '32px', padding: '4px' }}
+                        onClick={() => handlePageChange(p)}
+                      >
+                        {p}
+                      </Button>
+                    </React.Fragment>
+                  );
+                })}
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pagination.page >= pagination.total_pages}
+                onClick={() => handlePageChange(pagination.page + 1)}
+              >
+                NEXT
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {modal === "create" && (

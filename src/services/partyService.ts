@@ -10,6 +10,8 @@ export interface PartyMasterPayload {
   pincode: string;
   mobiles: string[];
   emails: string[];
+  pan_number?: string | null;
+  gst_number?: string | null;
 }
 
 export const partyService = {

@@ -145,7 +145,12 @@ const VehicleMasterPage: React.FC = () => {
   return (
     <>
       <div className="section-head">
-        <span className="section-title">VEHICLE MASTER</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="section-title">VEHICLE MASTER</span>
+          <span className="tag">
+            {vehicles.length} {vehicles.length === 1 ? "VEHICLE" : "VEHICLES"}
+          </span>
+        </div>
         <Button variant="light" onClick={openAddModal}>
           + ADD VEHICLE
         </Button>

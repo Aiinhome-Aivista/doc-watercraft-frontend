@@ -2,9 +2,17 @@ import { apiClient } from '../api/axios.client';
 import { ENDPOINTS } from '../api/endpoints';
 import { Vessel } from '../types/vessel';
 
+export interface PaginationInfo {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
 export interface GetVesselsResponse {
   success: boolean;
   data: Vessel[];
+  pagination: PaginationInfo;
 }
 
 export interface VesselRate {
@@ -58,10 +66,9 @@ export const VesselService = {
   /**
    * Fetch all vessels
    */
-  getAllVessels: async (): Promise<Vessel[]> => {
-    // We request from ENDPOINTS.VESSEL.BASE
-    const response = await apiClient.get<GetVesselsResponse>(ENDPOINTS.VESSEL.BASE);
-    return response.data.data;
+  getAllVessels: async (params?: { page?: number; per_page?: number }): Promise<{ data: Vessel[]; pagination: PaginationInfo }> => {
+    const response = await apiClient.get<GetVesselsResponse>(ENDPOINTS.VESSEL.BASE, { params });
+    return { data: response.data.data, pagination: response.data.pagination };
   },
 
   /**

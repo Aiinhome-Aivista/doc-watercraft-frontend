@@ -2,23 +2,44 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { GateEntry, GateStatus } from '@/types/vehicle';
 import { VehicleService, CreateGateEntryPayload, CreateWbinPayload, RecordCargoOpPayload, UpdateCargoOpPayload, CreateWboutPayload, RecordGateOutPayload } from '@/services/vehicleService';
 
+export interface PaginationInfo {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
 interface VehicleState {
   entries: GateEntry[];
+  pagination: PaginationInfo | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: VehicleState = {
   entries: [],
+  pagination: null,
   loading: false,
   error: null,
 };
 
 export const fetchGateEntries = createAsyncThunk(
   'vehicles/fetchGateEntries',
-  async (_, { rejectWithValue }) => {
+  async (
+    params: {
+      page?: number;
+      per_page?: number;
+      status?: string;
+      start_date?: string;
+      end_date?: string;
+      gate_in_no?: string;
+      vehicle_no?: string;
+      sort?: string;
+    } | undefined,
+    { rejectWithValue }
+  ) => {
     try {
-      const data = await VehicleService.getAllGateEntries();
+      const data = await VehicleService.getAllGateEntries(params);
       return data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch gate entries');
@@ -146,9 +167,15 @@ const vehicleSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchGateEntries.fulfilled, (state, action) => {
+      .addCase(fetchGateEntries.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.entries = action.payload;
+        if (action.payload && typeof action.payload === 'object' && 'data' in action.payload) {
+          state.entries = action.payload.data || [];
+          state.pagination = action.payload.pagination || null;
+        } else if (Array.isArray(action.payload)) {
+          state.entries = action.payload;
+          state.pagination = null;
+        }
       })
       .addCase(fetchGateEntries.rejected, (state, action) => {
         state.loading = false;

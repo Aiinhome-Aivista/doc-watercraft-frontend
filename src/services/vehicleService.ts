@@ -2,9 +2,17 @@ import { apiClient } from '../api/axios.client';
 import { ENDPOINTS } from '../api/endpoints';
 import { GateEntry } from '../types/vehicle';
 
+export interface PaginationInfo {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
 export interface GetGateEntriesResponse {
   success: boolean;
   data: GateEntry[];
+  pagination?: PaginationInfo;
 }
 
 export interface CreateGateEntryPayload {
@@ -77,9 +85,18 @@ export const VehicleService = {
   /**
    * Fetch all gate entries
    */
-  getAllGateEntries: async (): Promise<GateEntry[]> => {
-    const response = await apiClient.get<GetGateEntriesResponse>(ENDPOINTS.VEHICLE.GATE_ENTRIES);
-    return response.data.data;
+  getAllGateEntries: async (params?: {
+    page?: number;
+    per_page?: number;
+    status?: string;
+    start_date?: string;
+    end_date?: string;
+    gate_in_no?: string;
+    vehicle_no?: string;
+    sort?: string;
+  }): Promise<GetGateEntriesResponse> => {
+    const response = await apiClient.get<GetGateEntriesResponse>(ENDPOINTS.VEHICLE.GATE_ENTRIES, { params });
+    return response.data;
   },
 
   /**
