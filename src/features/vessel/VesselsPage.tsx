@@ -430,7 +430,10 @@ const VesselsPage: React.FC = () => {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span className="section-title">VESSEL MANAGEMENT</span>
           <span className="tag">
-            {pagination ? pagination.total : vessels.length} {(pagination ? pagination.total : vessels.length) === 1 ? "VESSEL" : "VESSELS"}
+            {pagination ? pagination.total : vessels.length}{" "}
+            {(pagination ? pagination.total : vessels.length) === 1
+              ? "VESSEL"
+              : "VESSELS"}
           </span>
         </div>
         <Button variant="light" onClick={() => openModal("create")}>
@@ -665,13 +668,34 @@ const VesselsPage: React.FC = () => {
       </div>
 
       {pagination && pagination.total > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg2)', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ color: 'var(--text2)', fontSize: '13px' }}>
-              Showing page <strong style={{ color: 'var(--text)' }}>{pagination.page}</strong> of <strong style={{ color: 'var(--text)' }}>{pagination.total_pages}</strong> ({pagination.total} total items)
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "12px 20px",
+            borderTop: "1px solid var(--border)",
+            background: "var(--bg2)",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ color: "var(--text2)", fontSize: "13px" }}>
+              Showing page{" "}
+              <strong style={{ color: "var(--text)" }}>
+                {pagination.page}
+              </strong>{" "}
+              of{" "}
+              <strong style={{ color: "var(--text)" }}>
+                {pagination.total_pages}
+              </strong>{" "}
+              ({pagination.total} total items)
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Per Page:</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "12px", color: "var(--text3)" }}>
+                Per Page:
+              </span>
               <select
                 value={perPage}
                 onChange={(e) => {
@@ -679,22 +703,24 @@ const VesselsPage: React.FC = () => {
                   setCurrentPage(1);
                 }}
                 style={{
-                  background: 'var(--bg3)',
-                  border: '1px solid var(--border2)',
-                  color: 'var(--text)',
-                  padding: '2px 8px',
-                  fontSize: '12px',
-                  outline: 'none',
-                  cursor: 'pointer'
+                  background: "var(--bg3)",
+                  border: "1px solid var(--border2)",
+                  color: "var(--text)",
+                  padding: "2px 8px",
+                  fontSize: "12px",
+                  outline: "none",
+                  cursor: "pointer",
                 }}
               >
                 {[5, 10, 20, 50].map((size) => (
-                  <option key={size} value={size}>{size}</option>
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <Button
               variant="ghost"
               size="sm"
@@ -704,17 +730,29 @@ const VesselsPage: React.FC = () => {
               PREVIOUS
             </Button>
             {Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
-              .filter(p => p === 1 || p === pagination.total_pages || Math.abs(p - pagination.page) <= 1)
+              .filter(
+                (p) =>
+                  p === 1 ||
+                  p === pagination.total_pages ||
+                  Math.abs(p - pagination.page) <= 1,
+              )
               .map((p, idx, arr) => {
                 const prev = arr[idx - 1];
                 const showEllipsis = prev && p - prev > 1;
                 return (
                   <React.Fragment key={p}>
-                    {showEllipsis && <span style={{ padding: '4px 8px', color: 'var(--text3)' }}>...</span>}
+                    {showEllipsis && (
+                      <span
+                        style={{ padding: "4px 8px", color: "var(--text3)" }}
+                      >
+                        ...
+                      </span>
+                    )}
                     <Button
+                      className="flex justify-center items-center"
                       variant={pagination.page === p ? "primary" : "ghost"}
                       size="sm"
-                      style={{ minWidth: '32px', padding: '4px' }}
+                      style={{ minWidth: "32px", padding: "4px" }}
                       onClick={() => handlePageChange(p)}
                     >
                       {p}

@@ -12,7 +12,14 @@ import {
 } from "@/store/slices/vehicleSlice";
 import { fetchVessels } from "@/store/slices/vesselSlice";
 import { GateEntry, GateStatus } from "@/types/vehicle";
-import { Modal, Input, Select, Button, StatusBadge, SearchableSelect } from "@/components/ui";
+import {
+  Modal,
+  Input,
+  Select,
+  Button,
+  StatusBadge,
+  SearchableSelect,
+} from "@/components/ui";
 import {
   formatDateTimeIST,
   getCurrentISTDateTimeLocalValue,
@@ -34,10 +41,15 @@ const GatePage: React.FC = () => {
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
 
-  const defaultStartDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultStartDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
   const defaultEndDate = new Date().toISOString().split("T")[0];
 
-  const [dateRange, setDateRange] = useState({ start: defaultStartDate, end: defaultEndDate });
+  const [dateRange, setDateRange] = useState({
+    start: defaultStartDate,
+    end: defaultEndDate,
+  });
   const [filterGateInNo, setFilterGateInNo] = useState<string>("");
   const [filterVehicleNo, setFilterVehicleNo] = useState<string>("");
   const [modal, setModal] = useState<
@@ -73,7 +85,7 @@ const GatePage: React.FC = () => {
       fetchGateEntries({
         page: currentPage,
         per_page: perPage,
-      })
+      }),
     );
   }, [dispatch, currentPage, perPage]);
 
@@ -83,12 +95,18 @@ const GatePage: React.FC = () => {
 
   useEffect(() => {
     if (modal === "create") {
-      vehicleMasterService.getVehicleMasters().then((res) => {
-        setVehiclesList(Array.isArray(res) ? res : res.data || []);
-      }).catch(console.error);
-      partyService.getPartyMasters().then((res) => {
-        setPartiesList(Array.isArray(res) ? res : res.data || []);
-      }).catch(console.error);
+      vehicleMasterService
+        .getVehicleMasters()
+        .then((res) => {
+          setVehiclesList(Array.isArray(res) ? res : res.data || []);
+        })
+        .catch(console.error);
+      partyService
+        .getPartyMasters()
+        .then((res) => {
+          setPartiesList(Array.isArray(res) ? res : res.data || []);
+        })
+        .catch(console.error);
     }
   }, [modal]);
 
@@ -113,24 +131,31 @@ const GatePage: React.FC = () => {
     });
 
     if (dateRange.start || dateRange.end) {
-      base = base.filter(entry => {
+      base = base.filter((entry) => {
         const entryMs = getDateMs(entry.gate_in_datetime);
-        const startMs = dateRange.start ? new Date(dateRange.start).getTime() : 0;
-        const endMs = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity;
+        const startMs = dateRange.start
+          ? new Date(dateRange.start).getTime()
+          : 0;
+        const endMs = dateRange.end
+          ? new Date(dateRange.end).getTime() + 86400000
+          : Infinity;
         return entryMs >= startMs && entryMs <= endMs;
       });
     }
 
     if (filterGateInNo) {
-      base = base.filter(entry => entry.gate_in_no === filterGateInNo);
+      base = base.filter((entry) => entry.gate_in_no === filterGateInNo);
     }
 
     if (filterVehicleNo) {
-      base = base.filter(entry => entry.vehicle_no.toLowerCase().includes(filterVehicleNo.toLowerCase()));
+      base = base.filter((entry) =>
+        entry.vehicle_no.toLowerCase().includes(filterVehicleNo.toLowerCase()),
+      );
     }
 
     return [...base].sort((a, b) => {
-      const diff = getDateMs(a.gate_in_datetime) - getDateMs(b.gate_in_datetime);
+      const diff =
+        getDateMs(a.gate_in_datetime) - getDateMs(b.gate_in_datetime);
       return gateInSort === "latest" ? -diff : diff;
     });
   }, [entries, filter, gateInSort, dateRange, filterGateInNo, filterVehicleNo]);
@@ -157,7 +182,10 @@ const GatePage: React.FC = () => {
   ) => {
     setSelected(entry);
     if (
-      (type === "operation" || type === "wbin" || type === "wbout" || type === "gateout") &&
+      (type === "operation" ||
+        type === "wbin" ||
+        type === "wbout" ||
+        type === "gateout") &&
       entry
     ) {
       const statusText = String(entry.status || "").toUpperCase();
@@ -180,7 +208,12 @@ const GatePage: React.FC = () => {
             : getOperationTypeByDirection(entry.direction),
       });
     } else {
-      setForm({ datetime: nowDt(), gate_in_datetime: nowDt(), direction: "IMPORT", own_weighbridge: "0" });
+      setForm({
+        datetime: nowDt(),
+        gate_in_datetime: nowDt(),
+        direction: "IMPORT",
+        own_weighbridge: "0",
+      });
     }
     setModal(type);
     setErrors({});
@@ -195,13 +228,13 @@ const GatePage: React.FC = () => {
   };
 
   const handleVehicleChange = (vehicleNo: string) => {
-    const v = vehiclesList.find(x => x.vehicle_no === vehicleNo);
+    const v = vehiclesList.find((x) => x.vehicle_no === vehicleNo);
     setForm((prev: any) => ({
       ...prev,
       vehicle_no: vehicleNo,
       transporter_name: v ? v.transporter_name : prev.transporter_name,
     }));
-    if (errors.vehicle_no) setErrors(prev => ({ ...prev, vehicle_no: "" }));
+    if (errors.vehicle_no) setErrors((prev) => ({ ...prev, vehicle_no: "" }));
   };
 
   const handleCreate = async () => {
@@ -212,22 +245,21 @@ const GatePage: React.FC = () => {
     if (!form.party_id) newErrors.party_id = "Consignor / Party is required";
 
     const ownWb = parseInt(form.own_weighbridge || "0") as 0 | 1;
-    const grossWeight = Number(form.gross_weight || 0);
-
-    if (ownWb === 1 && form.direction === "EXPORT" && grossWeight <= 60) {
-      newErrors.gross_weight = "Gross weight must be greater than 60 for own weighbridge";
-    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    const vehicle = vehiclesList.find(x => x.vehicle_no === form.vehicle_no);
+    const vehicle = vehiclesList.find((x) => x.vehicle_no === form.vehicle_no);
     const vehicleId = vehicle ? vehicle.id : 0;
 
-    const outsideGross = form.outside_gross_weight ? Number(form.outside_gross_weight) : undefined;
-    const outsideTare = form.outside_tare_weight ? Number(form.outside_tare_weight) : undefined;
+    const outsideGross = form.outside_gross_weight
+      ? Number(form.outside_gross_weight)
+      : undefined;
+    const outsideTare = form.outside_tare_weight
+      ? Number(form.outside_tare_weight)
+      : undefined;
     const outsideNet = form.outside_net_weight
       ? Number(form.outside_net_weight)
       : outsideGross !== undefined && outsideTare !== undefined
@@ -238,7 +270,9 @@ const GatePage: React.FC = () => {
       party_id: Number(form.party_id),
       challan_invoice_no: form.challan_invoice_no || "",
       vehicle_id: vehicleId,
-      gate_in_datetime: (form.gate_in_datetime || "").replace("T", " ") + ((form.gate_in_datetime || "").split(":").length === 2 ? ":00" : ""),
+      gate_in_datetime:
+        (form.gate_in_datetime || "").replace("T", " ") +
+        ((form.gate_in_datetime || "").split(":").length === 2 ? ":00" : ""),
       weighment_slip_no: form.weighment_slip_no || null,
       outside_gross_weight: outsideGross,
       outside_tare_weight: outsideTare,
@@ -250,7 +284,7 @@ const GatePage: React.FC = () => {
 
     try {
       const res = await dispatch(createGateEntryThunk(payload)).unwrap();
-      
+
       dispatch(fetchGateEntries({ page: currentPage, per_page: perPage }));
       closeModal();
       toast.success("Gate-In recorded successfully");
@@ -270,7 +304,7 @@ const GatePage: React.FC = () => {
           toast.error(
             operationMode === "update"
               ? "Please provide End Date & Time"
-              : "Please provide Start Date & Time"
+              : "Please provide Start Date & Time",
           );
           return;
         }
@@ -287,7 +321,9 @@ const GatePage: React.FC = () => {
             gate_entry_id: selected.id,
             operation_type:
               form.op_type || getOperationTypeByDirection(selected.direction),
-            end_datetime: (operationDateTime || "").replace("T", " ") + ((operationDateTime || "").split(":").length === 2 ? ":00" : ""),
+            end_datetime:
+              (operationDateTime || "").replace("T", " ") +
+              ((operationDateTime || "").split(":").length === 2 ? ":00" : ""),
             compressor_no: form.compressor_no || "",
             remarks: form.remarks || "",
             vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
@@ -304,7 +340,9 @@ const GatePage: React.FC = () => {
           gate_entry_id: selected.id,
           operation_type:
             form.op_type || getOperationTypeByDirection(selected.direction),
-          start_datetime: (operationDateTime || "").replace("T", " ") + ((operationDateTime || "").split(":").length === 2 ? ":00" : ""),
+          start_datetime:
+            (operationDateTime || "").replace("T", " ") +
+            ((operationDateTime || "").split(":").length === 2 ? ":00" : ""),
           compressor_no: form.compressor_no || "",
           remarks: form.remarks || "",
           vessel_id: form.vessel_id ? Number(form.vessel_id) : undefined,
@@ -392,7 +430,9 @@ const GatePage: React.FC = () => {
         recordWboutThunk({
           gate_entry_id: selected.id,
           weighment_slip_no: form.weighment_slip_no || "",
-          wbout_datetime: (form.datetime || "").replace("T", " ") + ((form.datetime || "").split(":").length === 2 ? ":00" : ""),
+          wbout_datetime:
+            (form.datetime || "").replace("T", " ") +
+            ((form.datetime || "").split(":").length === 2 ? ":00" : ""),
           gross_weight: isImport ? grossWeight : undefined,
           tare_weight: isExport ? tareWeight : undefined,
         }),
@@ -414,7 +454,9 @@ const GatePage: React.FC = () => {
       await dispatch(
         recordGateOutThunk({
           gate_entry_id: selected.id,
-          gate_out_datetime: (form.datetime || "").replace("T", " ") + ((form.datetime || "").split(":").length === 2 ? ":00" : ""),
+          gate_out_datetime:
+            (form.datetime || "").replace("T", " ") +
+            ((form.datetime || "").split(":").length === 2 ? ":00" : ""),
         }),
       ).unwrap();
       closeModal();
@@ -424,7 +466,8 @@ const GatePage: React.FC = () => {
     }
   };
 
-  const fmt = (v: string | null | undefined) => (v ? formatDateTimeIST(v) : "—");
+  const fmt = (v: string | null | undefined) =>
+    v ? formatDateTimeIST(v) : "—";
 
   const getWorkflowSteps = (entry: GateEntry) => {
     const statusOrder = [
@@ -495,7 +538,10 @@ const GatePage: React.FC = () => {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span className="section-title">VEHICLE GATE MANAGEMENT</span>
           <span className="tag">
-            {pagination ? pagination.total : entries.length} {(pagination ? pagination.total : entries.length) === 1 ? "ENTRY" : "ENTRIES"}
+            {pagination ? pagination.total : entries.length}{" "}
+            {(pagination ? pagination.total : entries.length) === 1
+              ? "ENTRY"
+              : "ENTRIES"}
           </span>
         </div>
         <Button variant="light" onClick={() => openModal("create")}>
@@ -535,56 +581,77 @@ const GatePage: React.FC = () => {
             return gateOperations.includes(apiKey);
           })
           .map((s) => (
-          <button
-            key={s}
-            className={`filter-tab ${filter === s ? "active" : ""}`}
-            onClick={() => setFilter(s as any)}
-          >
-            {s.replace(/_/g, " ")}
-          </button>
-        ))}
+            <button
+              key={s}
+              className={`filter-tab ${filter === s ? "active" : ""}`}
+              onClick={() => setFilter(s as any)}
+            >
+              {s.replace(/_/g, " ")}
+            </button>
+          ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end',marginBottom: '4px', background: 'var(--bg2)', padding: '16px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '150px', maxWidth: '200px' }}>
-          <Input 
-            label="Start Date" 
-            type="date" 
-            value={dateRange.start} 
-            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} 
+      <div
+        style={{
+          display: "flex",
+          gap: "16px",
+          alignItems: "flex-end",
+          marginBottom: "4px",
+          background: "var(--bg2)",
+          padding: "16px",
+          border: "1px solid var(--border)",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: "150px", maxWidth: "200px" }}>
+          <Input
+            label="Start Date"
+            type="date"
+            value={dateRange.start}
+            onChange={(e) =>
+              setDateRange((prev) => ({ ...prev, start: e.target.value }))
+            }
           />
         </div>
-        <div style={{ flex: 1, minWidth: '150px', maxWidth: '200px' }}>
-          <Input 
-            label="End Date" 
-            type="date" 
-            value={dateRange.end} 
-            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} 
+        <div style={{ flex: 1, minWidth: "150px", maxWidth: "200px" }}>
+          <Input
+            label="End Date"
+            type="date"
+            value={dateRange.end}
+            onChange={(e) =>
+              setDateRange((prev) => ({ ...prev, end: e.target.value }))
+            }
           />
         </div>
-        <div style={{ flex: 1, minWidth: '200px', maxWidth: '300px' }}>
+        <div style={{ flex: 1, minWidth: "200px", maxWidth: "300px" }}>
           <SearchableSelect
             label="Gate-In No"
             placeholder="All Gate-In Nos"
-            options={[{ value: "", label: "All Gate-In Nos" }, ...uniqueGateInNos.map(no => ({ value: no, label: no }))]}
+            options={[
+              { value: "", label: "All Gate-In Nos" },
+              ...uniqueGateInNos.map((no) => ({ value: no, label: no })),
+            ]}
             value={filterGateInNo}
             onChange={(val) => setFilterGateInNo(val)}
           />
         </div>
-        <div style={{ flex: 1, minWidth: '150px', maxWidth: '250px' }}>
-          <Input 
-            label="Vehicle No" 
-            placeholder="Search Vehicle No" 
-            value={filterVehicleNo} 
-            onChange={(e) => setFilterVehicleNo(e.target.value)} 
+        <div style={{ flex: 1, minWidth: "150px", maxWidth: "250px" }}>
+          <Input
+            label="Vehicle No"
+            placeholder="Search Vehicle No"
+            value={filterVehicleNo}
+            onChange={(e) => setFilterVehicleNo(e.target.value)}
           />
         </div>
         <div>
-          <Button variant="ghost" onClick={() => {
-            setDateRange({ start: defaultStartDate, end: defaultEndDate });
-            setFilterGateInNo("");
-            setFilterVehicleNo("");
-          }}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDateRange({ start: defaultStartDate, end: defaultEndDate });
+              setFilterGateInNo("");
+              setFilterVehicleNo("");
+            }}
+          >
             CLEAR
           </Button>
         </div>
@@ -656,7 +723,9 @@ const GatePage: React.FC = () => {
                   <td className="td-mono">{e.gate_in_no}</td>
                   <td className="td-primary">{e.vehicle_no}</td>
                   <td style={{ fontSize: 12 }}>{e.vessel_name || "—"}</td>
-                  <td style={{ fontSize: 12 }}>{e.party_name || e.consignor_name || "—"}</td>
+                  <td style={{ fontSize: 12 }}>
+                    {e.party_name || e.consignor_name || "—"}
+                  </td>
                   <td className="font-mono" style={{ fontSize: 12 }}>
                     {e.challan_invoice_no}
                   </td>
@@ -685,33 +754,36 @@ const GatePage: React.FC = () => {
                           RECORD OP
                         </Button>
                       )}
-                      {(e.status === "LOADING" || e.status === "UNLOADING") && canGateOp("UNLOADING") && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => openModal("operation", e, "update")}
-                        >
-                          UPDATE OP
-                        </Button>
-                      )}
-                      {e.status === "PENDING_WBIN" && canGateOp("PENDING_WBIN") && (
-                        <Button
-                          variant="amber"
-                          size="sm"
-                          onClick={() => openModal("wbin", e)}
-                        >
-                          WBIN
-                        </Button>
-                      )}
-                      {e.status === "PENDING_WBOUT" && canGateOp("PENDING_WBOUT") && (
-                        <Button
-                          variant="green"
-                          size="sm"
-                          onClick={() => openModal("wbout", e)}
-                        >
-                          WBOUT
-                        </Button>
-                      )}
+                      {(e.status === "LOADING" || e.status === "UNLOADING") &&
+                        canGateOp("UNLOADING") && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => openModal("operation", e, "update")}
+                          >
+                            UPDATE OP
+                          </Button>
+                        )}
+                      {e.status === "PENDING_WBIN" &&
+                        canGateOp("PENDING_WBIN") && (
+                          <Button
+                            variant="amber"
+                            size="sm"
+                            onClick={() => openModal("wbin", e)}
+                          >
+                            WBIN
+                          </Button>
+                        )}
+                      {e.status === "PENDING_WBOUT" &&
+                        canGateOp("PENDING_WBOUT") && (
+                          <Button
+                            variant="green"
+                            size="sm"
+                            onClick={() => openModal("wbout", e)}
+                          >
+                            WBOUT
+                          </Button>
+                        )}
                       {e.status === "GATE_OUT" && canGateOp("GATE_OUT") && (
                         <Button
                           variant="primary"
@@ -748,13 +820,36 @@ const GatePage: React.FC = () => {
           </tbody>
         </table>
         {pagination && pagination.total > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg2)', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ color: 'var(--text2)', fontSize: '13px' }}>
-                Showing page <strong style={{ color: 'var(--text)' }}>{pagination.page}</strong> of <strong style={{ color: 'var(--text)' }}>{pagination.total_pages}</strong> ({pagination.total} total items)
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "12px 20px",
+              borderTop: "1px solid var(--border)",
+              background: "var(--bg2)",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <div style={{ color: "var(--text2)", fontSize: "13px" }}>
+                Showing page{" "}
+                <strong style={{ color: "var(--text)" }}>
+                  {pagination.page}
+                </strong>{" "}
+                of{" "}
+                <strong style={{ color: "var(--text)" }}>
+                  {pagination.total_pages}
+                </strong>{" "}
+                ({pagination.total} total items)
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Per Page:</span>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                <span style={{ fontSize: "12px", color: "var(--text3)" }}>
+                  Per Page:
+                </span>
                 <select
                   value={perPage}
                   onChange={(e) => {
@@ -762,13 +857,13 @@ const GatePage: React.FC = () => {
                     setCurrentPage(1);
                   }}
                   style={{
-                    background: 'var(--bg3)',
-                    border: '1px solid var(--border2)',
-                    color: 'var(--text)',
-                    padding: '2px 8px',
-                    fontSize: '12px',
-                    outline: 'none',
-                    cursor: 'pointer'
+                    background: "var(--bg3)",
+                    border: "1px solid var(--border2)",
+                    color: "var(--text)",
+                    padding: "2px 8px",
+                    fontSize: "12px",
+                    outline: "none",
+                    cursor: "pointer",
                   }}
                 >
                   {[5, 10, 20, 50].map((size) => (
@@ -779,7 +874,7 @@ const GatePage: React.FC = () => {
                 </select>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -789,17 +884,29 @@ const GatePage: React.FC = () => {
                 PREVIOUS
               </Button>
               {Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === pagination.total_pages || Math.abs(p - pagination.page) <= 1)
+                .filter(
+                  (p) =>
+                    p === 1 ||
+                    p === pagination.total_pages ||
+                    Math.abs(p - pagination.page) <= 1,
+                )
                 .map((p, idx, arr) => {
                   const prev = arr[idx - 1];
                   const showEllipsis = prev && p - prev > 1;
                   return (
                     <React.Fragment key={p}>
-                      {showEllipsis && <span style={{ padding: '4px 8px', color: 'var(--text3)' }}>...</span>}
+                      {showEllipsis && (
+                        <span
+                          style={{ padding: "4px 8px", color: "var(--text3)" }}
+                        >
+                          ...
+                        </span>
+                      )}
                       <Button
                         variant={pagination.page === p ? "primary" : "ghost"}
+                        className="flex justify-center items-center"
                         size="sm"
-                        style={{ minWidth: '32px', padding: '4px' }}
+                        style={{ minWidth: "32px", padding: "4px" }}
                         onClick={() => handlePageChange(p)}
                       >
                         {p}
@@ -812,6 +919,7 @@ const GatePage: React.FC = () => {
                 size="sm"
                 disabled={pagination.page >= pagination.total_pages}
                 onClick={() => handlePageChange(pagination.page + 1)}
+                
               >
                 NEXT
               </Button>
@@ -835,19 +943,35 @@ const GatePage: React.FC = () => {
         >
           <div className="form-grid">
             {errors.global && (
-              <div style={{ gridColumn: "1 / -1", padding: "12px", backgroundColor: "rgba(230, 57, 70, 0.1)", border: "1px solid #e63946", borderRadius: "8px", color: "#e63946", fontSize: "14px", textAlign: "center", fontWeight: "bold", marginBottom: "8px", width: "100%" }}>
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  padding: "12px",
+                  backgroundColor: "rgba(230, 57, 70, 0.1)",
+                  border: "1px solid #e63946",
+                  borderRadius: "8px",
+                  color: "#e63946",
+                  fontSize: "14px",
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  marginBottom: "8px",
+                  width: "100%",
+                }}
+              >
                 {errors.global}
               </div>
             )}
 
-             <SearchableSelect
+            <SearchableSelect
               label="Vehicle No *"
               value={form.vehicle_no || ""}
               onChange={handleVehicleChange}
               error={errors.vehicle_no}
               options={[
                 { value: "", label: "Select Vehicle No" },
-                ...vehiclesList.filter(v => v.active === 1).map(v => ({ value: v.vehicle_no, label: v.vehicle_no }))
+                ...vehiclesList
+                  .filter((v) => v.active === 1)
+                  .map((v) => ({ value: v.vehicle_no, label: v.vehicle_no })),
               ]}
               placeholder="Select Vehicle No"
             />
@@ -889,14 +1013,17 @@ const GatePage: React.FC = () => {
             <Input
               label="Challan / Invoice No"
               value={form.challan_invoice_no || ""}
-              onChange={(e) => handleChange("challan_invoice_no", e.target.value)}
+              onChange={(e) =>
+                handleChange("challan_invoice_no", e.target.value)
+              }
             />
-           
 
             <Input
               label="Outside Weighment Slip No"
-              value={form.weighment_slip_no || ""}
-              onChange={(e) => handleChange("weighment_slip_no", e.target.value)}
+              value={form.outside_payment_slip || ""}
+              onChange={(e) =>
+                handleChange("outside_payment_slip", e.target.value)
+              }
             />
             <Input
               label="Outside Gross Weight"
@@ -909,7 +1036,8 @@ const GatePage: React.FC = () => {
                 setForm((prev: any) => ({
                   ...prev,
                   outside_gross_weight: value,
-                  outside_net_weight: gross && tare ? (gross - tare).toFixed(2) : "",
+                  outside_net_weight:
+                    gross && tare ? (gross - tare).toFixed(2) : "",
                 }));
               }}
             />
@@ -924,7 +1052,8 @@ const GatePage: React.FC = () => {
                 setForm((prev: any) => ({
                   ...prev,
                   outside_tare_weight: value,
-                  outside_net_weight: gross && tare ? (gross - tare).toFixed(2) : "",
+                  outside_net_weight:
+                    gross && tare ? (gross - tare).toFixed(2) : "",
                 }));
               }}
             />
@@ -934,10 +1063,12 @@ const GatePage: React.FC = () => {
               value={form.outside_net_weight || ""}
               readOnly
             />
-           
+
             <Select
               label="Own Weighbridge? (≥60T skips WBIN)"
-              value={form.direction === "IMPORT" ? "0" : (form.own_weighbridge || "0")}
+              value={
+                form.direction === "IMPORT" ? "0" : form.own_weighbridge || "0"
+              }
               disabled={form.direction === "IMPORT"}
               onChange={(e) => handleChange("own_weighbridge", e.target.value)}
               options={[
@@ -945,15 +1076,6 @@ const GatePage: React.FC = () => {
                 { value: "1", label: "Yes — Skip to WBOUT" },
               ]}
             />
-            {form.own_weighbridge === "1" && form.direction === "EXPORT" && (
-              <Input
-                label="Gross Weight *"
-                type="number"
-                value={form.gross_weight || ""}
-                onChange={(e) => handleChange("gross_weight", e.target.value)}
-                error={errors.gross_weight}
-              />
-            )}
           </div>
         </Modal>
       )}
@@ -978,19 +1100,27 @@ const GatePage: React.FC = () => {
               label="Vessel"
               value={form.vessel_id || ""}
               onChange={(val) => {
-                const selectedVessel = vessels.find(v => v.id.toString() === val);
-                const newDir = selectedVessel ? selectedVessel.direction : (form.direction || selected.direction || "");
-                setForm({ 
-                  ...form, 
+                const selectedVessel = vessels.find(
+                  (v) => v.id.toString() === val,
+                );
+                const newDir = selectedVessel
+                  ? selectedVessel.direction
+                  : form.direction || selected.direction || "";
+                setForm({
+                  ...form,
                   vessel_id: val,
                   direction: newDir,
-                  op_type: getOperationTypeByDirection(newDir)
+                  op_type: getOperationTypeByDirection(newDir),
                 });
               }}
               options={[
                 { value: "", label: "Select Vessel" },
                 ...vessels
-                  .filter((v) => String(v.direction).toUpperCase() === String(selected.direction).toUpperCase())
+                  .filter(
+                    (v) =>
+                      String(v.direction).toUpperCase() ===
+                      String(selected.direction).toUpperCase(),
+                  )
                   .map((v) => ({
                     value: v.id.toString(),
                     label: `${v.vessel_name} | ${v.party_name} | ${v.direction}`,
@@ -1006,7 +1136,10 @@ const GatePage: React.FC = () => {
             <Input
               label="Operation Type"
               value={
-                form.op_type || getOperationTypeByDirection(form.direction || selected.direction || "")
+                form.op_type ||
+                getOperationTypeByDirection(
+                  form.direction || selected.direction || "",
+                )
               }
               readOnly
             />
@@ -1045,7 +1178,6 @@ const GatePage: React.FC = () => {
           </div>
         </Modal>
       )}
-      
 
       {modal === "gateout" && selected && (
         <Modal
