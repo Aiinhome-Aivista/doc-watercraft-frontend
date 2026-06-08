@@ -9,6 +9,7 @@ import {
   recordWboutThunk,
   recordCargoOpThunk,
   recordGateOutThunk,
+  updateGateEntryThunk,
 } from "@/store/slices/vehicleSlice";
 import { fetchVessels } from "@/store/slices/vesselSlice";
 import { GateEntry, GateStatus } from "@/types/vehicle";
@@ -53,7 +54,7 @@ const GatePage: React.FC = () => {
   const [filterGateInNo, setFilterGateInNo] = useState<string>("");
   const [filterVehicleNo, setFilterVehicleNo] = useState<string>("");
   const [modal, setModal] = useState<
-    "create" | "operation" | "detail" | "wbin" | "wbout" | "gateout" | null
+    "create" | "operation" | "detail" | "wbin" | "wbout" | "gateout" | "edit" | null
   >(null);
 
   const [vehiclesList, setVehiclesList] = useState<any[]>([]);
@@ -94,7 +95,7 @@ const GatePage: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (modal === "create") {
+    if (modal === "create" || modal === "edit") {
       vehicleMasterService
         .getVehicleMasters()
         .then((res) => {
@@ -181,7 +182,26 @@ const GatePage: React.FC = () => {
     mode: "record" | "update" = "record",
   ) => {
     setSelected(entry);
-    if (
+    if (type === "edit" && entry) {
+      setForm({
+        party_id: entry.party_id ? String(entry.party_id) : "",
+        vehicle_no: entry.vehicle_no || "",
+        transporter_name: entry.transporter_name || "",
+        challan_invoice_no: entry.challan_invoice_no || "",
+        weighment_slip_no: entry.weighment_slip_no || "",
+        outside_payment_slip: entry.outside_payment_slip || "",
+        outside_gross_weight: entry.outside_gross_weight?.toString() || "",
+        outside_tare_weight: entry.outside_tare_weight?.toString() || "",
+        outside_net_weight: entry.outside_net_weight?.toString() || "",
+        own_weighbridge: entry.own_weighbridge?.toString() || "0",
+        direction: entry.direction || "IMPORT",
+        gate_in_datetime: entry.gate_in_datetime ? entry.gate_in_datetime.replace(" ", "T") : "",
+        gate_out_datetime: entry.gate_out_datetime ? entry.gate_out_datetime.replace(" ", "T") : "",
+        status: entry.status || "PENDING_WBIN",
+        vessel_id: entry.vessel_id ? String(entry.vessel_id) : "",
+        compressor_no: entry.compressor_no || "",
+      });
+    } else if (
       (type === "operation" ||
         type === "wbin" ||
         type === "wbout" ||
@@ -290,6 +310,68 @@ const GatePage: React.FC = () => {
       toast.success("Gate-In recorded successfully");
     } catch (err: any) {
       setErrors({ global: err || "Failed to record Gate-In" });
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!selected) return;
+    const newErrors: Record<string, string> = {};
+
+    if (!form.direction) newErrors.direction = "Direction is required";
+    if (!form.vehicle_no) newErrors.vehicle_no = "Vehicle No is required";
+    if (!form.party_id) newErrors.party_id = "Consignor / Party is required";
+    if (!form.challan_invoice_no) newErrors.challan_invoice_no = "Challan / Invoice No is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    const vehicle = vehiclesList.find((x) => x.vehicle_no === form.vehicle_no);
+    const vehicleId = vehicle ? vehicle.id : selected.vehicle_id;
+
+    const outsideGross = form.outside_gross_weight
+      ? Number(form.outside_gross_weight)
+      : undefined;
+    const outsideTare = form.outside_tare_weight
+      ? Number(form.outside_tare_weight)
+      : undefined;
+    const outsideNet = form.outside_net_weight
+      ? Number(form.outside_net_weight)
+      : outsideGross !== undefined && outsideTare !== undefined
+        ? Number((outsideGross - outsideTare).toFixed(2))
+        : undefined;
+
+    const formatDt = (dtStr?: string) => {
+      if (!dtStr) return null;
+      return dtStr.replace("T", " ") + (dtStr.split(":").length === 2 ? ":00" : "");
+    };
+
+    const payload = {
+      party_id: Number(form.party_id),
+      challan_invoice_no: form.challan_invoice_no,
+      vehicle_id: vehicleId,
+      gate_in_datetime: formatDt(form.gate_in_datetime),
+      gate_out_datetime: formatDt(form.gate_out_datetime),
+      weighment_slip_no: form.weighment_slip_no || null,
+      outside_payment_slip: form.outside_payment_slip || null,
+      outside_gross_weight: outsideGross,
+      outside_tare_weight: outsideTare,
+      outside_net_weight: outsideNet,
+      own_weighbridge: parseInt(form.own_weighbridge || "0"),
+      direction: form.direction,
+      status: form.status,
+      vessel_id: form.vessel_id ? Number(form.vessel_id) : null,
+      compressor_no: form.compressor_no || null,
+    };
+
+    try {
+      await dispatch(updateGateEntryThunk({ id: selected.id, payload })).unwrap();
+      dispatch(fetchGateEntries({ page: currentPage, per_page: perPage }));
+      closeModal();
+      toast.success("Gate entry updated successfully");
+    } catch (err: any) {
+      setErrors({ global: err || "Failed to update Gate entry" });
     }
   };
 
@@ -744,6 +826,13 @@ const GatePage: React.FC = () => {
                         onClick={() => openModal("detail", e)}
                       >
                         VIEW
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal("edit", e)}
+                      >
+                        EDIT
                       </Button>
                       {e.status === "WBIN_DONE" && canGateOp("WBIN_DONE") && (
                         <Button
@@ -1384,6 +1473,213 @@ const GatePage: React.FC = () => {
                 }
               />
             )}
+          </div>
+        </Modal>
+      )}
+      {modal === "edit" && selected && (
+        <Modal
+          title={`EDIT VEHICLE GATE ENTRY — ${selected.gate_in_no}`}
+          onClose={closeModal}
+          footer={
+            <>
+              <Button variant="ghost" onClick={closeModal}>
+                CANCEL
+              </Button>
+              <Button onClick={handleUpdate}>SAVE CHANGES</Button>
+            </>
+          }
+        >
+          <div className="form-grid">
+            {errors.global && (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  padding: "12px",
+                  backgroundColor: "rgba(230, 57, 70, 0.1)",
+                  border: "1px solid #e63946",
+                  borderRadius: "8px",
+                  color: "#e63946",
+                  fontSize: "14px",
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  marginBottom: "8px",
+                  width: "100%",
+                }}
+              >
+                {errors.global}
+              </div>
+            )}
+
+            <Input
+              label="Gate-In No (Read Only)"
+              value={selected.gate_in_no}
+              readOnly
+            />
+
+            <SearchableSelect
+              label="Vehicle No *"
+              value={form.vehicle_no || ""}
+              onChange={handleVehicleChange}
+              error={errors.vehicle_no}
+              options={[
+                { value: "", label: "Select Vehicle No" },
+                ...vehiclesList
+                  .filter((v) => v.active === 1 || v.vehicle_no === selected.vehicle_no)
+                  .map((v) => ({ value: v.vehicle_no, label: v.vehicle_no })),
+              ]}
+              placeholder="Select Vehicle No"
+            />
+
+            <Input
+              label="Transporter Name"
+              value={form.transporter_name || ""}
+              onChange={(e) => handleChange("transporter_name", e.target.value)}
+            />
+
+            <SearchableSelect
+              label="Consignor Name / Party *"
+              placeholder="Select Consignor / Party"
+              value={form.party_id ? String(form.party_id) : ""}
+              onChange={(value) => handleChange("party_id", value)}
+              error={errors.party_id}
+              options={[
+                { value: "", label: "Select Consignor / Party" },
+                ...partiesList.map((p) => ({
+                  value: String(p.id),
+                  label: p.party_name,
+                })),
+              ]}
+            />
+
+            <Select
+              label="Direction *"
+              value={form.direction || "IMPORT"}
+              onChange={(e) => handleChange("direction", e.target.value)}
+              error={errors.direction}
+              options={[
+                { value: "IMPORT", label: "IMPORT" },
+                { value: "EXPORT", label: "EXPORT" },
+              ]}
+            />
+
+            <SearchableSelect
+              label="Vessel"
+              value={form.vessel_id || ""}
+              onChange={(val) => handleChange("vessel_id", val)}
+              options={[
+                { value: "", label: "No Vessel" },
+                ...vessels
+                  .map((v) => ({
+                    value: v.id.toString(),
+                    label: `${v.vessel_name} | ${v.party_name} | ${v.direction}`,
+                  })),
+              ]}
+              placeholder="Select Vessel"
+            />
+
+            <Input
+              label="Challan / Invoice No *"
+              value={form.challan_invoice_no || ""}
+              onChange={(e) => handleChange("challan_invoice_no", e.target.value)}
+              error={errors.challan_invoice_no}
+            />
+
+            <Input
+              label="Weighment Slip No"
+              value={form.weighment_slip_no || ""}
+              onChange={(e) => handleChange("weighment_slip_no", e.target.value)}
+            />
+
+            <Input
+              label="Compressor No"
+              value={form.compressor_no || ""}
+              onChange={(e) => handleChange("compressor_no", e.target.value)}
+            />
+
+            <Input
+              label="Gate-In Date & Time"
+              type="datetime-local"
+              value={form.gate_in_datetime || ""}
+              onChange={(e) => handleChange("gate_in_datetime", e.target.value)}
+            />
+
+            <Input
+              label="Gate-Out Date & Time"
+              type="datetime-local"
+              value={form.gate_out_datetime || ""}
+              onChange={(e) => handleChange("gate_out_datetime", e.target.value)}
+            />
+
+            <Select
+              label="Current Status"
+              value={form.status || "PENDING_WBIN"}
+              onChange={(e) => handleChange("status", e.target.value)}
+              options={[
+                { value: "PENDING_WBIN", label: "PENDING_WBIN" },
+                { value: "WBIN_DONE", label: "WBIN_DONE" },
+                { value: "LOADING", label: "LOADING" },
+                { value: "UNLOADING", label: "UNLOADING" },
+                { value: "PENDING_WBOUT", label: "PENDING_WBOUT" },
+                { value: "GATE_OUT", label: "GATE_OUT" },
+                { value: "COMPLETED", label: "COMPLETED" },
+              ]}
+            />
+
+            <Input
+              label="Outside Weighment Slip No"
+              value={form.outside_payment_slip || ""}
+              onChange={(e) =>
+                handleChange("outside_payment_slip", e.target.value)
+              }
+            />
+            <Input
+              label="Outside Gross Weight"
+              type="number"
+              value={form.outside_gross_weight || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                const gross = Number(value || 0);
+                const tare = Number(form.outside_tare_weight || 0);
+                setForm((prev: any) => ({
+                  ...prev,
+                  outside_gross_weight: value,
+                  outside_net_weight:
+                    gross && tare ? (gross - tare).toFixed(2) : "",
+                }));
+              }}
+            />
+            <Input
+              label="Outside Tare Weight"
+              type="number"
+              value={form.outside_tare_weight || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                const gross = Number(form.outside_gross_weight || 0);
+                const tare = Number(value || 0);
+                setForm((prev: any) => ({
+                  ...prev,
+                  outside_tare_weight: value,
+                  outside_net_weight:
+                    gross && tare ? (gross - tare).toFixed(2) : "",
+                }));
+              }}
+            />
+            <Input
+              label="Outside Net Weight"
+              type="number"
+              value={form.outside_net_weight || ""}
+              readOnly
+            />
+
+            <Select
+              label="Own Weighbridge?"
+              value={form.own_weighbridge || "0"}
+              onChange={(e) => handleChange("own_weighbridge", e.target.value)}
+              options={[
+                { value: "0", label: "No — Needs WBIN" },
+                { value: "1", label: "Yes — Skip to WBOUT" },
+              ]}
+            />
           </div>
         </Modal>
       )}

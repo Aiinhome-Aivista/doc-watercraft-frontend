@@ -111,6 +111,21 @@ export const recordGateOutThunk = createAsyncThunk(
   }
 );
 
+export const updateGateEntryThunk = createAsyncThunk(
+  'vehicles/updateGateEntry',
+  async (
+    { id, payload }: { id: number | string; payload: any },
+    { rejectWithValue }
+  ) => {
+    try {
+      const data = await VehicleService.updateGateEntry(id, payload);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update gate entry');
+    }
+  }
+);
+
 const vehicleSlice = createSlice({
   name: 'vehicles',
   initialState,
@@ -272,6 +287,21 @@ const vehicleSlice = createSlice({
         }
       })
       .addCase(recordGateOutThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updateGateEntryThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateGateEntryThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.entries.findIndex((e) => e.id === action.payload.id);
+        if (index !== -1) {
+          state.entries[index] = action.payload;
+        }
+      })
+      .addCase(updateGateEntryThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

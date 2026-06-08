@@ -75,7 +75,7 @@ const AuthPage: React.FC = () => {
         <div style={{ padding: "32px" }}>
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "var(--text-primary)", letterSpacing: "0.025em", fontFamily: "monospace", margin: 0 }}>
-              WELCOME BACK
+              WELCOME
             </h2>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "8px", marginBottom: 0 }}>
               Enter your credentials to access the hub

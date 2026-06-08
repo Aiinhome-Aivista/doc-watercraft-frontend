@@ -145,4 +145,12 @@ export const VehicleService = {
     const response = await apiClient.post<GenericStatusResponse>(`/gate-entries/${gate_entry_id}/gate-out`, { gate_out_datetime });
     return response.data;
   },
+
+  /**
+   * Update a gate entry
+   */
+  updateGateEntry: async (id: number | string, payload: any): Promise<GateEntry> => {
+    const response = await apiClient.put<CreateGateEntryResponse>(`${ENDPOINTS.VEHICLE.GATE_ENTRIES}/${id}`, payload);
+    return response.data.data;
+  },
 };
