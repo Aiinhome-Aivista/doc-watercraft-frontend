@@ -47,10 +47,14 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
     };
   }, []);
 
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(search.toLowerCase()) ||
-    option.value.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredOptions = options.filter(option => {
+    const selectedOpt = options.find(o => String(o.value) === String(value));
+    if (selectedOpt && search === selectedOpt.label) {
+      return true;
+    }
+    return option.label.toLowerCase().includes(search.toLowerCase()) ||
+           option.value.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <div className="form-group" ref={dropdownRef} style={{ position: 'relative' }}>
@@ -65,7 +69,10 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             onChange(e.target.value);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={(e) => {
+            setIsOpen(true);
+            e.target.select();
+          }}
           style={{ width: '100%', paddingRight: '36px' }}
         />
         <div style={{ 
