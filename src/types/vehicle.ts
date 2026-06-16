@@ -41,6 +41,8 @@ export interface GateEntry {
   net_weight?: number | null;
   berthing_datetime?: string | null;
   mooring_datetime?: string | null;
+  driver_name?: string | null;
+  driver_mob_no?: string | null;
   created_at?: string;
   updated_at?: string;
 }

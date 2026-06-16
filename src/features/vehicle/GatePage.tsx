@@ -199,6 +199,8 @@ const GatePage: React.FC = () => {
         status: entry.status || "PENDING_WBIN",
         vessel_id: entry.vessel_id ? String(entry.vessel_id) : "",
         compressor_no: entry.compressor_no || "",
+        driver_name: entry.driver_name || "",
+        driver_mob_no: entry.driver_mob_no || "",
       });
     } else if (
       (type === "operation" ||
@@ -232,6 +234,8 @@ const GatePage: React.FC = () => {
         gate_in_datetime: nowDt(),
         direction: "IMPORT",
         own_weighbridge: "0",
+        driver_name: "",
+        driver_mob_no: "",
       });
     }
     setModal(type);
@@ -299,6 +303,8 @@ const GatePage: React.FC = () => {
       outside_payment_slip: form.outside_payment_slip || null,
       own_weighbridge: ownWb,
       direction: form.direction,
+      driver_name: form.driver_name || null,
+      driver_mob_no: form.driver_mob_no || null,
     };
 
     try {
@@ -363,6 +369,8 @@ const GatePage: React.FC = () => {
       status: form.status,
       vessel_id: form.vessel_id ? Number(form.vessel_id) : null,
       compressor_no: form.compressor_no || null,
+      driver_name: form.driver_name || null,
+      driver_mob_no: form.driver_mob_no || null,
     };
 
     try {
@@ -1093,6 +1101,16 @@ const GatePage: React.FC = () => {
               value={form.transporter_name || ""}
               onChange={(e) => handleChange("transporter_name", e.target.value)}
             />
+            <Input
+              label="Driver Name"
+              value={form.driver_name || ""}
+              onChange={(e) => handleChange("driver_name", e.target.value)}
+            />
+            <Input
+              label="Driver Mobile No"
+              value={form.driver_mob_no || ""}
+              onChange={(e) => handleChange("driver_mob_no", e.target.value)}
+            />
             <Select
               label="Direction *"
               value={form.direction || "IMPORT"}
@@ -1332,6 +1350,8 @@ const GatePage: React.FC = () => {
               ["Party", selected.party_name || selected.consignor_name || "—"],
               ["Challan / Invoice", selected.challan_invoice_no, true],
               ["Transporter", selected.transporter_name || "—"],
+              ["Driver Name", selected.driver_name || "—"],
+              ["Driver Mobile No", selected.driver_mob_no || "—"],
               ["Weighment Slip", selected.weighment_slip_no || "—", true],
               ["Compressor No", selected.compressor_no || "—"],
               ["Gate-In Time", fmt(selected.gate_in_datetime), true],
@@ -1558,6 +1578,18 @@ const GatePage: React.FC = () => {
               label="Transporter Name"
               value={form.transporter_name || ""}
               onChange={(e) => handleChange("transporter_name", e.target.value)}
+            />
+
+            <Input
+              label="Driver Name"
+              value={form.driver_name || ""}
+              onChange={(e) => handleChange("driver_name", e.target.value)}
+            />
+
+            <Input
+              label="Driver Mobile No"
+              value={form.driver_mob_no || ""}
+              onChange={(e) => handleChange("driver_mob_no", e.target.value)}
             />
 
             <SearchableSelect

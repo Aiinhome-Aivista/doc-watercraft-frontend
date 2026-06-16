@@ -32,6 +32,8 @@ export interface CreateGateEntryPayload {
   outside_payment_slip: string | null;
   own_weighbridge: 1 | 0;
   direction?: string;
+  driver_name?: string | null;
+  driver_mob_no?: string | null;
 }
 
 export interface CreateGateEntryResponse {
