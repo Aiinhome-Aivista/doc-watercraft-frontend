@@ -131,17 +131,22 @@ const VesselsPage: React.FC = () => {
     "latest",
   );
 
+  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+  const defaultEndDate = new Date().toISOString().split("T")[0];
+
   // Local search input states
   const [searchDateRange, setSearchDateRange] = useState({
-    start: "",
-    end: "",
+    start: defaultStartDate,
+    end: defaultEndDate,
   });
   const [searchVesselName, setSearchVesselName] = useState<string>("");
 
   // Applied search states (actually sent to backend)
   const [appliedDateRange, setAppliedDateRange] = useState({
-    start: "",
-    end: "",
+    start: defaultStartDate,
+    end: defaultEndDate,
   });
   const [appliedVesselName, setAppliedVesselName] = useState<string>("");
 
@@ -525,9 +530,9 @@ const VesselsPage: React.FC = () => {
           <Button
             variant="ghost"
             onClick={() => {
-              setSearchDateRange({ start: "", end: "" });
+              setSearchDateRange({ start: defaultStartDate, end: defaultEndDate });
               setSearchVesselName("");
-              setAppliedDateRange({ start: "", end: "" });
+              setAppliedDateRange({ start: defaultStartDate, end: defaultEndDate });
               setAppliedVesselName("");
               setCurrentPage(1);
             }}

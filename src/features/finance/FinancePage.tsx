@@ -87,6 +87,11 @@ const FinancePage: React.FC = () => {
     fetchVessels();
   }, [partyName, periodFrom, periodTo, parties]);
 
+  // Reset selected vessel when party or period changes
+  useEffect(() => {
+    setVesselName('');
+  }, [partyName, periodFrom, periodTo]);
+
   const handleAddToBilling = async () => {
     if (!vesselName) {
       toast.error('Please select a vessel to add to billing');

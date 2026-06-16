@@ -43,18 +43,23 @@ const GatePage: React.FC = () => {
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
 
+  const defaultStartDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+  const defaultEndDate = new Date().toISOString().split("T")[0];
+
   // Local search input states
   const [searchDateRange, setSearchDateRange] = useState({
-    start: "",
-    end: "",
+    start: defaultStartDate,
+    end: defaultEndDate,
   });
   const [searchGateInNo, setSearchGateInNo] = useState<string>("");
   const [searchVehicleNo, setSearchVehicleNo] = useState<string>("");
 
   // Applied search states (actually sent to backend)
   const [appliedDateRange, setAppliedDateRange] = useState({
-    start: "",
-    end: "",
+    start: defaultStartDate,
+    end: defaultEndDate,
   });
   const [appliedGateInNo, setAppliedGateInNo] = useState<string>("");
   const [appliedVehicleNo, setAppliedVehicleNo] = useState<string>("");
@@ -743,10 +748,10 @@ const GatePage: React.FC = () => {
           <Button
             variant="ghost"
             onClick={() => {
-              setSearchDateRange({ start: "", end: "" });
+              setSearchDateRange({ start: defaultStartDate, end: defaultEndDate });
               setSearchGateInNo("");
               setSearchVehicleNo("");
-              setAppliedDateRange({ start: "", end: "" });
+              setAppliedDateRange({ start: defaultStartDate, end: defaultEndDate });
               setAppliedGateInNo("");
               setAppliedVehicleNo("");
               setCurrentPage(1);
