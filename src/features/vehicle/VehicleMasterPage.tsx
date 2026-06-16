@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { Button, Input, Modal, ConfirmDialog, Select, StatusBadge } from "@/components/ui";
 import { vehicleMasterService } from "@/services/vehicleMasterService";
@@ -10,6 +10,17 @@ const VehicleMasterPage: React.FC = () => {
   const [deleteDialog, setDeleteDialog] = useState<number | string | null>(null);
   const [editId, setEditId] = useState<number | string | null>(null);
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredVehicles = useMemo(() => {
+    if (!searchQuery.trim()) return vehicles;
+    const q = searchQuery.toLowerCase();
+    return vehicles.filter(
+      (v) =>
+        (v.vehicle_no && v.vehicle_no.toLowerCase().includes(q)) ||
+        (v.transporter_name && v.transporter_name.toLowerCase().includes(q))
+    );
+  }, [vehicles, searchQuery]);
 
   const fetchVehicles = async () => {
     dispatch({ type: 'vehicleMaster/fetch/pending' });
@@ -148,7 +159,9 @@ const VehicleMasterPage: React.FC = () => {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span className="section-title">VEHICLE MASTER</span>
           <span className="tag">
-            {vehicles.length} {vehicles.length === 1 ? "VEHICLE" : "VEHICLES"}
+            {searchQuery.trim()
+              ? `${filteredVehicles.length} / ${vehicles.length} VEHICLES`
+              : `${vehicles.length} ${vehicles.length === 1 ? "VEHICLE" : "VEHICLES"}`}
           </span>
         </div>
         <Button variant="light" onClick={openAddModal}>
@@ -156,18 +169,85 @@ const VehicleMasterPage: React.FC = () => {
         </Button>
       </div>
 
-      <div className="table-wrap">
+      <div
+        style={{
+          display: "flex",
+          gap: "16px",
+          alignItems: "center",
+          marginBottom: "12px",
+          background: "var(--bg2)",
+          padding: "12px 16px",
+          border: "1px solid var(--border)",
+        }}
+      >
+        <div style={{ position: "relative", flex: 1, maxWidth: "320px" }}>
+          <span
+            className="material-symbols-outlined"
+            style={{
+              position: "absolute",
+              left: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              fontSize: "18px",
+              color: "var(--text3)",
+              pointerEvents: "none",
+            }}
+          >
+            search
+          </span>
+          <input
+            type="text"
+            placeholder="Search by Vehicle No or Transporter..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px 8px 38px",
+              background: "var(--bg3)",
+              border: "1px solid var(--border2)",
+              color: "var(--text)",
+              fontFamily: "var(--font-body)",
+              fontSize: "13px",
+              outline: "none",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                position: "absolute",
+                right: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "var(--text3)",
+                cursor: "pointer",
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+                close
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="table-wrap" style={{ maxHeight: "calc(100vh - 240px)", overflowY: "auto", position: "relative" }}>
         <table>
           <thead>
             <tr>
-              <th>Vehicle No</th>
-              <th>Transporter Name</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--bg2)", boxShadow: "inset 0 -1px 0 var(--border)" }}>Vehicle No</th>
+              <th style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--bg2)", boxShadow: "inset 0 -1px 0 var(--border)" }}>Transporter Name</th>
+              <th style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--bg2)", boxShadow: "inset 0 -1px 0 var(--border)" }}>Status</th>
+              <th style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--bg2)", boxShadow: "inset 0 -1px 0 var(--border)" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {vehicles.length === 0 ? (
+            {filteredVehicles.length === 0 ? (
               <tr>
                 <td colSpan={4}>
                   <div className="empty">
@@ -180,13 +260,15 @@ const VehicleMasterPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="empty-text">
-                      No vehicles found. Click + ADD VEHICLE to create one.
+                      {searchQuery.trim()
+                        ? "No matching vehicles found."
+                        : "No vehicles found. Click + ADD VEHICLE to create one."}
                     </div>
                   </div>
                 </td>
               </tr>
             ) : (
-              vehicles.map((v: any) => (
+              filteredVehicles.map((v: any) => (
                 <tr key={v.id || v.vehicle_no}>
                   <td className="td-primary font-mono" style={{ fontSize: 13 }}>{v.vehicle_no}</td>
                   <td>{v.transporter_name}</td>
