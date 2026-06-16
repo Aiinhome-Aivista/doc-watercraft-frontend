@@ -29,6 +29,7 @@ import { useAccessRights } from "@/hooks/useAccessRights";
 import toast from "react-hot-toast";
 import { vehicleMasterService } from "@/services/vehicleMasterService";
 import { partyService } from "@/services/partyService";
+import { VehicleService } from "@/services/vehicleService";
 
 const GatePage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -42,17 +43,21 @@ const GatePage: React.FC = () => {
   >("ALL");
   const [gateInSort, setGateInSort] = useState<"latest" | "oldest">("latest");
 
-  const defaultStartDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
-  const defaultEndDate = new Date().toISOString().split("T")[0];
-
-  const [dateRange, setDateRange] = useState({
-    start: defaultStartDate,
-    end: defaultEndDate,
+  // Local search input states
+  const [searchDateRange, setSearchDateRange] = useState({
+    start: "",
+    end: "",
   });
-  const [filterGateInNo, setFilterGateInNo] = useState<string>("");
-  const [filterVehicleNo, setFilterVehicleNo] = useState<string>("");
+  const [searchGateInNo, setSearchGateInNo] = useState<string>("");
+  const [searchVehicleNo, setSearchVehicleNo] = useState<string>("");
+
+  // Applied search states (actually sent to backend)
+  const [appliedDateRange, setAppliedDateRange] = useState({
+    start: "",
+    end: "",
+  });
+  const [appliedGateInNo, setAppliedGateInNo] = useState<string>("");
+  const [appliedVehicleNo, setAppliedVehicleNo] = useState<string>("");
   const [modal, setModal] = useState<
     "create" | "operation" | "detail" | "wbin" | "wbout" | "gateout" | "edit" | null
   >(null);
@@ -80,19 +85,49 @@ const GatePage: React.FC = () => {
     }
   };
 
-  // Fetch from server — only page + per_page (backend does not support date/status filtering)
+  const [uniqueGateInNos, setUniqueGateInNos] = useState<string[]>([]);
+
+  // Fetch from server with dynamic filters
   useEffect(() => {
     dispatch(
       fetchGateEntries({
         page: currentPage,
         per_page: perPage,
+        status: filter !== "ALL" ? filter : undefined,
+        start_date: appliedDateRange.start || undefined,
+        end_date: appliedDateRange.end || undefined,
+        gate_in_no: appliedGateInNo || undefined,
+        vehicle_no: appliedVehicleNo || undefined,
+        sort: gateInSort,
       }),
     );
-  }, [dispatch, currentPage, perPage]);
+  }, [
+    dispatch,
+    currentPage,
+    perPage,
+    filter,
+    appliedDateRange,
+    appliedGateInNo,
+    appliedVehicleNo,
+    gateInSort,
+  ]);
 
   useEffect(() => {
-    dispatch(fetchVessels());
+    dispatch(fetchVessels({ per_page: 1000 }));
   }, [dispatch]);
+
+  // Fetch unique gate-in numbers when entries list changes
+  useEffect(() => {
+    const fetchNos = async () => {
+      try {
+        const nos = await VehicleService.getGateInNumbers();
+        setUniqueGateInNos(nos);
+      } catch (err) {
+        console.error("Failed to fetch unique gate-in numbers", err);
+      }
+    };
+    fetchNos();
+  }, [entries]);
 
   useEffect(() => {
     if (modal === "create" || modal === "edit") {
@@ -121,49 +156,8 @@ const GatePage: React.FC = () => {
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
-  const filtered = useMemo(() => {
-    let base = entries.filter((entry) => {
-      if (filter === "ALL") return true;
-      if (filter === "LOADING/UNLOADING") {
-        const status = String(entry.status || "").toUpperCase();
-        return status === "LOADING" || status === "UNLOADING";
-      }
-      return entry.status === filter;
-    });
-
-    if (dateRange.start || dateRange.end) {
-      base = base.filter((entry) => {
-        const entryMs = getDateMs(entry.gate_in_datetime);
-        const startMs = dateRange.start
-          ? new Date(dateRange.start).getTime()
-          : 0;
-        const endMs = dateRange.end
-          ? new Date(dateRange.end).getTime() + 86400000
-          : Infinity;
-        return entryMs >= startMs && entryMs <= endMs;
-      });
-    }
-
-    if (filterGateInNo) {
-      base = base.filter((entry) => entry.gate_in_no === filterGateInNo);
-    }
-
-    if (filterVehicleNo) {
-      base = base.filter((entry) =>
-        entry.vehicle_no.toLowerCase().includes(filterVehicleNo.toLowerCase()),
-      );
-    }
-
-    return [...base].sort((a, b) => {
-      const diff =
-        getDateMs(a.gate_in_datetime) - getDateMs(b.gate_in_datetime);
-      return gateInSort === "latest" ? -diff : diff;
-    });
-  }, [entries, filter, gateInSort, dateRange, filterGateInNo, filterVehicleNo]);
-
-  const uniqueGateInNos = useMemo(() => {
-    return Array.from(new Set(entries.map((entry) => entry.gate_in_no)));
-  }, [entries]);
+  // Since sorting and filtering are performed server-side:
+  const filtered = entries;
   const mooredVessels = vessels.filter((v) =>
     ["PLANNED", "MOORED", "BERTHED"].includes(v.status),
   );
@@ -306,6 +300,7 @@ const GatePage: React.FC = () => {
       const res = await dispatch(createGateEntryThunk(payload)).unwrap();
 
       dispatch(fetchGateEntries({ page: currentPage, per_page: perPage }));
+
       closeModal();
       toast.success("Gate-In recorded successfully");
     } catch (err: any) {
@@ -368,6 +363,7 @@ const GatePage: React.FC = () => {
     try {
       await dispatch(updateGateEntryThunk({ id: selected.id, payload })).unwrap();
       dispatch(fetchGateEntries({ page: currentPage, per_page: perPage }));
+
       closeModal();
       toast.success("Gate entry updated successfully");
     } catch (err: any) {
@@ -666,7 +662,10 @@ const GatePage: React.FC = () => {
             <button
               key={s}
               className={`filter-tab ${filter === s ? "active" : ""}`}
-              onClick={() => setFilter(s as any)}
+              onClick={() => {
+                setFilter(s as any);
+                setCurrentPage(1);
+              }}
             >
               {s.replace(/_/g, " ")}
             </button>
@@ -689,20 +688,20 @@ const GatePage: React.FC = () => {
           <Input
             label="Start Date"
             type="date"
-            value={dateRange.start}
-            onChange={(e) =>
-              setDateRange((prev) => ({ ...prev, start: e.target.value }))
-            }
+            value={searchDateRange.start}
+            onChange={(e) => {
+              setSearchDateRange((prev) => ({ ...prev, start: e.target.value }));
+            }}
           />
         </div>
         <div style={{ flex: 1, minWidth: "150px", maxWidth: "200px" }}>
           <Input
             label="End Date"
             type="date"
-            value={dateRange.end}
-            onChange={(e) =>
-              setDateRange((prev) => ({ ...prev, end: e.target.value }))
-            }
+            value={searchDateRange.end}
+            onChange={(e) => {
+              setSearchDateRange((prev) => ({ ...prev, end: e.target.value }));
+            }}
           />
         </div>
         <div style={{ flex: 1, minWidth: "200px", maxWidth: "300px" }}>
@@ -713,25 +712,44 @@ const GatePage: React.FC = () => {
               { value: "", label: "All Gate-In Nos" },
               ...uniqueGateInNos.map((no) => ({ value: no, label: no })),
             ]}
-            value={filterGateInNo}
-            onChange={(val) => setFilterGateInNo(val)}
+            value={searchGateInNo}
+            onChange={(val) => {
+              setSearchGateInNo(val);
+            }}
           />
         </div>
         <div style={{ flex: 1, minWidth: "150px", maxWidth: "250px" }}>
           <Input
             label="Vehicle No"
             placeholder="Search Vehicle No"
-            value={filterVehicleNo}
-            onChange={(e) => setFilterVehicleNo(e.target.value)}
+            value={searchVehicleNo}
+            onChange={(e) => {
+              setSearchVehicleNo(e.target.value);
+            }}
           />
         </div>
-        <div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setAppliedDateRange(searchDateRange);
+              setAppliedGateInNo(searchGateInNo);
+              setAppliedVehicleNo(searchVehicleNo);
+              setCurrentPage(1);
+            }}
+          >
+            SEARCH
+          </Button>
           <Button
             variant="ghost"
             onClick={() => {
-              setDateRange({ start: defaultStartDate, end: defaultEndDate });
-              setFilterGateInNo("");
-              setFilterVehicleNo("");
+              setSearchDateRange({ start: "", end: "" });
+              setSearchGateInNo("");
+              setSearchVehicleNo("");
+              setAppliedDateRange({ start: "", end: "" });
+              setAppliedGateInNo("");
+              setAppliedVehicleNo("");
+              setCurrentPage(1);
             }}
           >
             CLEAR
@@ -752,11 +770,12 @@ const GatePage: React.FC = () => {
               <th>
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
                     setGateInSort((current) =>
-                      current === "latest" ? "oldest" : "latest",
-                    )
-                  }
+                      current === "latest" ? "oldest" : "latest"
+                    );
+                    setCurrentPage(1);
+                  }}
                   style={{
                     background: "transparent",
                     border: 0,

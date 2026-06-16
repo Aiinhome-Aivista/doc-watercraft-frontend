@@ -7,6 +7,7 @@ export const ENDPOINTS = {
   // Examples for the existing domains:
   VESSEL: {
     BASE: '/vessels',
+    NAMES: '/vessels/names',
     DETAIL: (id: string | number) => `/vessels/${id}`,
     BERTH: (id: string | number) => `/vessels/${id}/berth`,
     MOOR: (id: string | number) => `/vessels/${id}/moor`,
@@ -16,6 +17,7 @@ export const ENDPOINTS = {
   VEHICLE: {
     BASE: '/vehicles',
     GATE_ENTRIES: '/gate-entries',
+    GATE_ENTRY_NOS: '/gate-entries/nos',
     CARGO_OPS: '/cargo-operations',
     CARGO_OP_DETAIL: (id: string | number) => `/cargo-operations/${id}`,
   },

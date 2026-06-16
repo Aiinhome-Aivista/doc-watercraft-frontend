@@ -15,6 +15,11 @@ export interface GetGateEntriesResponse {
   pagination?: PaginationInfo;
 }
 
+export interface GetGateInNumbersResponse {
+  success: boolean;
+  data: string[];
+}
+
 export interface CreateGateEntryPayload {
   party_id: number;
   challan_invoice_no: string;
@@ -151,6 +156,14 @@ export const VehicleService = {
    */
   updateGateEntry: async (id: number | string, payload: any): Promise<GateEntry> => {
     const response = await apiClient.put<CreateGateEntryResponse>(`${ENDPOINTS.VEHICLE.GATE_ENTRIES}/${id}`, payload);
+    return response.data.data;
+  },
+
+  /**
+   * Fetch all unique gate-in numbers
+   */
+  getGateInNumbers: async (): Promise<string[]> => {
+    const response = await apiClient.get<GetGateInNumbersResponse>(ENDPOINTS.VEHICLE.GATE_ENTRY_NOS);
     return response.data.data;
   },
 };

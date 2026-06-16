@@ -15,6 +15,11 @@ export interface GetVesselsResponse {
   pagination: PaginationInfo;
 }
 
+export interface GetVesselNamesResponse {
+  success: boolean;
+  data: string[];
+}
+
 export interface VesselRate {
   activity: string;
   formula: string;
@@ -66,9 +71,25 @@ export const VesselService = {
   /**
    * Fetch all vessels
    */
-  getAllVessels: async (params?: { page?: number; per_page?: number }): Promise<{ data: Vessel[]; pagination: PaginationInfo }> => {
+  getAllVessels: async (params?: { 
+    page?: number; 
+    per_page?: number; 
+    status?: string; 
+    start_date?: string; 
+    end_date?: string; 
+    vessel_name?: string;
+    sort?: string;
+  }): Promise<{ data: Vessel[]; pagination: PaginationInfo }> => {
     const response = await apiClient.get<GetVesselsResponse>(ENDPOINTS.VESSEL.BASE, { params });
     return { data: response.data.data, pagination: response.data.pagination };
+  },
+
+  /**
+   * Fetch all unique vessel names
+   */
+  getVesselNames: async (): Promise<string[]> => {
+    const response = await apiClient.get<GetVesselNamesResponse>(ENDPOINTS.VESSEL.NAMES);
+    return response.data.data;
   },
 
   /**

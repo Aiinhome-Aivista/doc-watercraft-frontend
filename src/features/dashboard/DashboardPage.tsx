@@ -10,7 +10,7 @@ const DashboardPage: React.FC = () => {
   const loading = useAppSelector((state) => state.vessels.loading);
 
   useEffect(() => {
-    dispatch(fetchVessels());
+    dispatch(fetchVessels({ per_page: 1000 }));
   }, [dispatch]);
 
   const stats = {

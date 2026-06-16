@@ -18,7 +18,18 @@ const initialState: VesselState = {
 
 export const fetchVessels = createAsyncThunk(
   'vessels/fetchVessels',
-  async (params: { page?: number; per_page?: number } | undefined, { rejectWithValue }) => {
+  async (
+    params: { 
+      page?: number; 
+      per_page?: number; 
+      status?: string; 
+      start_date?: string; 
+      end_date?: string; 
+      vessel_name?: string;
+      sort?: string;
+    } | undefined, 
+    { rejectWithValue }
+  ) => {
     try {
       const data = await VesselService.getAllVessels(params);
       return data;
