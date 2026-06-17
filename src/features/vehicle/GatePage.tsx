@@ -810,6 +810,7 @@ const GatePage: React.FC = () => {
                   </span>
                 </button>
               </th>
+              <th>Net Weight</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -817,7 +818,7 @@ const GatePage: React.FC = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <div className="empty">
                     <div className="empty-icon">
                       <span
@@ -846,6 +847,9 @@ const GatePage: React.FC = () => {
                   <td style={{ fontSize: 12 }}>{e.transporter_name || "—"}</td>
                   <td className="font-mono" style={{ fontSize: 11 }}>
                     {fmt(e.gate_in_datetime)}
+                  </td>
+                  <td className="font-mono" style={{ fontSize: 11 }}>
+                    {e.net_weight != null ? `${e.net_weight} MT` : "—"}
                   </td>
                   <td>
                     <StatusBadge status={e.status} />
