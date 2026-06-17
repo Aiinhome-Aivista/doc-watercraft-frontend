@@ -70,11 +70,80 @@ const FinancePage: React.FC = () => {
   const [selectedPartyId, setSelectedPartyId] = useState<string>('');
   const [reportStartDate, setReportStartDate] = useState<string>(() => getCurrentISTDateValue());
   const [reportEndDate, setReportEndDate] = useState<string>(() => getCurrentISTDateValue());
+  const [exportingReport, setExportingReport] = useState(false);
 
   const filteredVesselsForDropdown = useMemo(() => {
     if (!selectedPartyId) return allVessels;
     return allVessels.filter((v: any) => v.party_id?.toString() === selectedPartyId);
   }, [allVessels, selectedPartyId]);
+
+  const groupedVehicleReport = useMemo(() => {
+    const groups: { [key: string]: {
+      vessel_name: string;
+      berthing_datetime?: string | null;
+      sailing_datetime?: string | null;
+      survey_quantity?: string | number | null;
+      rows: any[];
+    } } = {};
+
+    vehicleReport.forEach((item) => {
+      const vName = item.vessel_name || 'Unassociated';
+      if (!groups[vName]) {
+        groups[vName] = {
+          vessel_name: vName,
+          berthing_datetime: item.berthing_datetime,
+          sailing_datetime: item.sailing_datetime,
+          survey_quantity: item.survey_quantity,
+          rows: []
+        };
+      }
+      groups[vName].rows.push(item);
+    });
+
+    return Object.values(groups);
+  }, [vehicleReport]);
+
+  const formatDateString = (dtStr: string) => {
+    if (!dtStr) return '—';
+    try {
+      const parts = dtStr.split(' ');
+      if (parts[0]) {
+        const dateParts = parts[0].split('-');
+        if (dateParts.length === 3) {
+          return `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+        }
+      }
+    } catch (e) {}
+    return dtStr;
+  };
+
+  const vesselHeaderStyle: React.CSSProperties = {
+    background: 'rgba(76, 175, 80, 0.08)',
+    color: 'var(--text)',
+    fontWeight: 'bold',
+    border: '1px solid var(--border)',
+    padding: '8px 12px',
+    fontSize: '13px',
+  };
+
+  const vesselHeaderValueStyle: React.CSSProperties = {
+    background: 'rgba(76, 175, 80, 0.08)',
+    color: 'var(--accent)',
+    fontWeight: 'bold',
+    border: '1px solid var(--border)',
+    padding: '8px 12px',
+    fontSize: '13px',
+    textAlign: 'center' as const,
+  };
+
+  const tableHeaderSubStyle: React.CSSProperties = {
+    padding: '10px 8px',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    color: 'var(--text2)',
+    textTransform: 'uppercase',
+    borderBottom: '1px solid var(--border)',
+  };
 
   useEffect(() => {
     if (selectedPartyId && selectedVesselId) {
@@ -125,6 +194,58 @@ const FinancePage: React.FC = () => {
       setVehicleReport([]);
     } finally {
       setLoadingReport(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    setExportingReport(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedVesselId) params.append('vessel_id', selectedVesselId);
+      if (selectedPartyId) params.append('party_id', selectedPartyId);
+      if (reportStartDate) params.append('start_date', reportStartDate);
+      if (reportEndDate) params.append('end_date', reportEndDate);
+
+      const res = await apiClient.get(`/export/vehicle-movement?${params.toString()}`);
+      
+      if (res.data && res.data.success) {
+        if (res.data.download_url) {
+          let downloadUrlPath = res.data.download_url;
+          if (downloadUrlPath.startsWith('/api/v1')) {
+            downloadUrlPath = downloadUrlPath.substring(7);
+          }
+
+          const fileResponse = await apiClient.get(downloadUrlPath, {
+            responseType: 'blob',
+          });
+
+          if (!fileResponse.data) {
+            throw new Error('Failed to download generated report');
+          }
+
+          const fileBlob = fileResponse.data as Blob;
+          const downloadUrl = window.URL.createObjectURL(fileBlob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = downloadUrl;
+          
+          const fileName = res.data.download_url.split('/').pop() || 'Vehicle_Movement_Report.xlsx';
+          downloadLink.download = fileName;
+          
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          window.URL.revokeObjectURL(downloadUrl);
+        }
+
+        toast.success(res.data.message || 'Report exported successfully');
+      } else {
+        toast.error(res.data.message || 'Failed to export report');
+      }
+    } catch (err: any) {
+      console.error('Failed to export vehicle report', err);
+      toast.error(err?.response?.data?.message || 'Failed to export report');
+    } finally {
+      setExportingReport(false);
     }
   };
 
@@ -981,11 +1102,24 @@ const FinancePage: React.FC = () => {
 
           {/* Dynamic Vehicle Movement Report Table */}
           <div className="table-wrap">
-            <div className="table-header">
-              <span className="table-title">DAILY VEHICLE MOVEMENT REPORT</span>
-              <span className="tag">
-                {vehicleReport.length} VEHICLE{vehicleReport.length !== 1 ? 'S' : ''}
-              </span>
+            <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="table-title">DAILY VEHICLE MOVEMENT REPORT</span>
+                <span className="tag">
+                  {vehicleReport.length} VEHICLE{vehicleReport.length !== 1 ? 'S' : ''}
+                </span>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleDownloadExcel}
+                disabled={exportingReport || vehicleReport.length === 0}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  download
+                </span>
+                {exportingReport ? 'EXPORTING...' : 'DOWNLOAD EXCEL'}
+              </Button>
             </div>
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {loadingReport ? (
@@ -994,34 +1128,8 @@ const FinancePage: React.FC = () => {
                 </div>
               ) : (
                 <table style={{ minWidth: '2400px' }}>
-                <thead>
-                  <tr style={{ background: 'var(--bg3)' }}>
-                    <th style={{ minWidth: '60px' }}>SL. No.</th>
-                    <th style={{ minWidth: '220px' }}>Consignor - (Party Name)</th>
-                    <th style={{ minWidth: '160px' }}>(GATE) Entry Date & Time</th>
-                    <th style={{ minWidth: '150px' }}>CHALLAN & INV. NO</th>
-                    <th style={{ minWidth: '130px' }}>VEHICLE NO.</th>
-                    <th style={{ minWidth: '180px' }}>Transporter Name</th>
-                    <th style={{ minWidth: '140px' }}>Driver name</th>
-                    <th style={{ minWidth: '120px' }}>Driver number</th>
-                    <th style={{ minWidth: '140px' }}>Out Weighment Slip no</th>
-                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Out Gross Wt</th>
-                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Out Tare Wt</th>
-                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Out Nett Wt</th>
-                    <th style={{ minWidth: '160px' }}>IN Weighment DATE & Time</th>
-                    <th style={{ minWidth: '110px', textAlign: 'right' }}>Gross Weight</th>
-                    <th style={{ minWidth: '160px' }}>OUT Weighment DATE & Time</th>
-                    <th style={{ minWidth: '110px', textAlign: 'right' }}>Tare Weight</th>
-                    <th style={{ minWidth: '160px' }}>(GATE) Out Date & Time</th>
-                    <th style={{ minWidth: '120px', textAlign: 'right' }}>Net Material Qty</th>
-                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Waiting Hour 24</th>
-                    <th style={{ minWidth: '200px' }}>BULKER Unloading Start Date & Time Start to VESSEL</th>
-                    <th style={{ minWidth: '140px' }}>COMPRESSOR OR NO.</th>
-                    <th style={{ minWidth: '200px' }}>BULKER Unloading Complete Date & Time Start to VESSEL</th>
-                  </tr>
-                </thead>
                 <tbody>
-                  {vehicleReport.length === 0 ? (
+                  {groupedVehicleReport.length === 0 ? (
                     <tr>
                       <td colSpan={22}>
                         <div className="empty">
@@ -1035,58 +1143,127 @@ const FinancePage: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    <>
-                      {vehicleReport.map((item, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid var(--border2)' }}>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{idx + 1}</td>
-                          <td className="td-primary" style={{ fontWeight: 600 }}>{item.party_name || '—'}</td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.gate_in_datetime || '—'}</td>
-                          <td className="td-mono">{item.challan_invoice_no || '—'}</td>
-                          <td className="td-mono" style={{ fontWeight: 600, color: 'var(--accent)' }}>{item.vehicle_no || '—'}</td>
-                          <td>{item.transporter_name || '—'}</td>
-                          <td>{item.driver_name || '—'}</td>
-                          <td className="td-mono">{item.driver_mob_no || '—'}</td>
-                          <td className="td-mono">{item.outside_payment_slip || '—'}</td>
-                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-                            {item.outside_gross_weight != null ? Number(item.outside_gross_weight).toFixed(2) : '—'}
-                          </td>
-                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-                            {item.outside_tare_weight != null ? Number(item.outside_tare_weight).toFixed(2) : '—'}
-                          </td>
-                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                            {item.outside_net_weight != null ? Number(item.outside_net_weight).toFixed(2) : '—'}
-                          </td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.wbin_datetime || '—'}</td>
-                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-                            {item.gross_weight != null ? Number(item.gross_weight).toFixed(2) : '—'}
-                          </td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.wbout_datetime || '—'}</td>
-                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-                            {item.tare_weight != null ? Number(item.tare_weight).toFixed(2) : '—'}
-                          </td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.gate_out_datetime || '—'}</td>
-                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
-                            {item.net_weight != null ? Number(item.net_weight).toFixed(2) : '—'}
-                          </td>
-                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-                            {item.waiting_hours != null ? item.waiting_hours : '—'}
-                          </td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.cargo_start_datetime || '—'}</td>
-                          <td className="td-mono">{item.compressor_no || '—'}</td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.cargo_end_datetime || '—'}</td>
-                        </tr>
-                      ))}
-                      {/* Summary Row */}
-                      <tr style={{ background: 'var(--bg2)', borderTop: '2px solid var(--border)', fontWeight: 'bold' }}>
-                        <td colSpan={17} style={{ textTransform: 'uppercase', padding: '12px 10px', fontSize: '13px' }}>
-                          Total
-                        </td>
-                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--accent)', padding: '12px 10px' }}>
-                          {vehicleReport.reduce((sum, item) => sum + (item.net_weight != null ? Number(item.net_weight) : 0), 0).toFixed(2)}
-                        </td>
-                        <td colSpan={4}></td>
-                      </tr>
-                    </>
+                    groupedVehicleReport.map((group, gIdx) => {
+                      const totalNetWeight = group.rows.reduce(
+                        (sum, item) => sum + (item.net_weight != null ? Number(item.net_weight) : 0),
+                        0
+                      );
+
+                      return (
+                        <React.Fragment key={gIdx}>
+                          {/* Vessel Metadata Block */}
+                          <tr style={{ background: 'transparent' }}>
+                            <td style={{ ...vesselHeaderStyle, borderBottom: 'none' }}>Name of vessel</td>
+                            <td style={{ ...vesselHeaderValueStyle, borderBottom: 'none' }}>{group.vessel_name}</td>
+                            <td style={{ ...vesselHeaderStyle, borderBottom: 'none' }}>Vessel berthing date/time</td>
+                            <td style={{ ...vesselHeaderValueStyle, borderBottom: 'none' }}>
+                              {group.berthing_datetime ? formatDateString(group.berthing_datetime) : '—'}
+                            </td>
+                            <td colSpan={18} style={{ border: 'none', background: 'transparent' }}></td>
+                          </tr>
+                          <tr style={{ background: 'transparent' }}>
+                            <td style={vesselHeaderStyle}>Survey Qty</td>
+                            <td style={vesselHeaderValueStyle}>
+                              {group.survey_quantity != null ? Number(group.survey_quantity).toFixed(2) : '—'}
+                            </td>
+                            <td style={vesselHeaderStyle}>Vessel UNberthing date/time</td>
+                            <td style={vesselHeaderValueStyle}>
+                              {group.sailing_datetime ? formatDateString(group.sailing_datetime) : '—'}
+                            </td>
+                            <td colSpan={18} style={{ border: 'none', background: 'transparent' }}></td>
+                          </tr>
+
+                          {/* Blank spacer row */}
+                          <tr style={{ height: '12px', border: 'none', background: 'transparent' }}>
+                            <td colSpan={22} style={{ border: 'none', background: 'transparent', height: '12px' }}></td>
+                          </tr>
+
+                          {/* Table Section Headers */}
+                          <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '60px' }}>SL. No.</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '220px' }}>Consignor - (Party Name)</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '160px' }}>(GATE) Entry Date & Time</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '150px' }}>CHALLAN & INV. NO</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '130px' }}>VEHICLE NO.</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '180px' }}>Transporter Name</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '140px' }}>Driver name</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '120px' }}>Driver number</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '140px' }}>Out Weighment Slip no</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '100px', textAlign: 'right', minWidth: '100px' }}>Out Gross Wt</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '100px', textAlign: 'right', minWidth: '100px' }}>Out Tare Wt</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '100px', textAlign: 'right', minWidth: '100px' }}>Out Nett Wt</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '160px' }}>IN Weighment DATE & Time</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '110px', textAlign: 'right', minWidth: '110px' }}>Gross Weight</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '160px' }}>OUT Weighment DATE & Time</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '110px', textAlign: 'right', minWidth: '110px' }}>Tare Weight</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '160px' }}>(GATE) Out Date & Time</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '120px', textAlign: 'right', minWidth: '120px' }}>Net Material Qty</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '100px', textAlign: 'right', minWidth: '100px' }}>Waiting Hour 24</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '200px' }}>BULKER Unloading Start Date & Time Start to VESSEL</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '140px' }}>COMPRESSOR OR NO.</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '200px' }}>BULKER Unloading Complete Date & Time Start to VESSEL</td>
+                          </tr>
+
+                          {/* Data rows */}
+                          {group.rows.map((item, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid var(--border2)' }}>
+                              <td style={{ fontFamily: 'var(--font-mono)' }}>{idx + 1}</td>
+                              <td className="td-primary" style={{ fontWeight: 600 }}>{item.party_name || '—'}</td>
+                              <td style={{ fontFamily: 'var(--font-mono)' }}>{item.gate_in_datetime || '—'}</td>
+                              <td className="td-mono">{item.challan_invoice_no || '—'}</td>
+                              <td className="td-mono" style={{ fontWeight: 600, color: 'var(--accent)' }}>{item.vehicle_no || '—'}</td>
+                              <td>{item.transporter_name || '—'}</td>
+                              <td>{item.driver_name || '—'}</td>
+                              <td className="td-mono">{item.driver_mob_no || '—'}</td>
+                              <td className="td-mono">{item.outside_payment_slip || '—'}</td>
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                                {item.outside_gross_weight != null ? Number(item.outside_gross_weight).toFixed(2) : '—'}
+                              </td>
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                                {item.outside_tare_weight != null ? Number(item.outside_tare_weight).toFixed(2) : '—'}
+                              </td>
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                                {item.outside_net_weight != null ? Number(item.outside_net_weight).toFixed(2) : '—'}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)' }}>{item.wbin_datetime || '—'}</td>
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                                {item.gross_weight != null ? Number(item.gross_weight).toFixed(2) : '—'}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)' }}>{item.wbout_datetime || '—'}</td>
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                                {item.tare_weight != null ? Number(item.tare_weight).toFixed(2) : '—'}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)' }}>{item.gate_out_datetime || '—'}</td>
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
+                                {item.net_weight != null ? Number(item.net_weight).toFixed(2) : '—'}
+                              </td>
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                                {item.waiting_hours != null ? item.waiting_hours : '—'}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)' }}>{item.cargo_start_datetime || '—'}</td>
+                              <td className="td-mono">{item.compressor_no || '—'}</td>
+                              <td style={{ fontFamily: 'var(--font-mono)' }}>{item.cargo_end_datetime || '—'}</td>
+                            </tr>
+                          ))}
+
+                          {/* Vessel Total Row */}
+                          <tr style={{ background: 'var(--bg2)', borderTop: '2px solid var(--border)', fontWeight: 'bold' }}>
+                            <td colSpan={17} style={{ textTransform: 'uppercase', padding: '12px 10px', fontSize: '13px' }}>
+                              Total
+                            </td>
+                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--accent)', padding: '12px 10px' }}>
+                              {totalNetWeight.toFixed(2)}
+                            </td>
+                            <td colSpan={4}></td>
+                          </tr>
+
+                          {/* Section Separation Row */}
+                          <tr style={{ height: '36px', border: 'none', background: 'transparent' }}>
+                            <td colSpan={22} style={{ border: 'none', background: 'transparent', height: '36px' }}></td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
