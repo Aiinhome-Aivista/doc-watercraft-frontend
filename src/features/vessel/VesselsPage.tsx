@@ -250,6 +250,7 @@ const VesselsPage: React.FC = () => {
         expected_date: vessel.expected_date,
         status: vessel.status,
       });
+      setChargeLines(vessel.rates ? [...vessel.rates] : []);
     } else {
       setForm({ datetime: nowDt() });
     }
@@ -354,6 +355,15 @@ const VesselsPage: React.FC = () => {
       return;
     }
 
+    const rates = chargeLines.map((line: any) => ({
+      activity: line.activity,
+      formula: line.formula,
+      rate: parseFloat(line.rate) || 0,
+      gst_rate: parseFloat(line.gst_rate) || 0,
+      min_qty: parseFloat(line.min_qty) || 0,
+      max_qty: parseFloat(line.max_qty) || 0,
+    }));
+
     const payload = {
       vessel_name: form.vessel_name,
       party_id,
@@ -362,6 +372,7 @@ const VesselsPage: React.FC = () => {
       direction: form.direction || "IMPORT",
       expected_date: form.expected_date || getCurrentISTDateValue(),
       status: form.status || selected.status,
+      rates,
     };
 
     try {
@@ -1016,7 +1027,7 @@ const VesselsPage: React.FC = () => {
         <Modal
           title={`EDIT VESSEL — ${selected.vessel_auto_id}`}
           onClose={closeModal}
-          width="600px"
+          width="850px"
           footer={
             <>
               <Button variant="ghost" onClick={closeModal}>
@@ -1077,6 +1088,147 @@ const VesselsPage: React.FC = () => {
                 label: s,
               }))}
             />
+          </div>
+
+          <div style={{ marginTop: "24px" }}>
+            <div
+              className="table-wrap"
+              style={{ maxHeight: "250px", overflowY: "auto" }}
+            >
+              <table style={{ margin: 0, width: "100%" }}>
+                <thead
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1,
+                    backgroundColor: "var(--bg2)",
+                  }}
+                >
+                  <tr>
+                    <th>Activity</th>
+                    <th>Formula</th>
+                    <th>Rate</th>
+                    <th>GST %</th>
+                    <th>Min Qty</th>
+                    <th>Max Qty</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chargeLines.map((line: any, idx: number) => (
+                    <tr key={idx}>
+                      <td>{line.activity}</td>
+                      <td>{line.formula}</td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: "4px 8px", height: "32px" }}
+                          value={line.rate}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "rate",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: "4px 8px", height: "32px" }}
+                          value={line.gst_rate}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "gst_rate",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: "4px 8px", height: "32px" }}
+                          value={line.min_qty}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "min_qty",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ padding: "4px 8px", height: "32px" }}
+                          value={line.max_qty}
+                          onChange={(e) =>
+                            updateChargeLine(
+                              idx,
+                              "max_qty",
+                              e.target.value !== ""
+                                ? parseFloat(e.target.value)
+                                : "",
+                            )
+                          }
+                        />
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          type="button"
+                          onClick={() => confirmRemoveChargeLine(idx)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#e63946",
+                            padding: "4px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: "18px" }}
+                          >
+                            delete
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {chargeLines.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        style={{
+                          textAlign: "center",
+                          padding: "16px",
+                          color: "#666",
+                        }}
+                      >
+                        No charges available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </Modal>
       )}

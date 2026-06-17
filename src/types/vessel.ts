@@ -19,4 +19,5 @@ export interface Vessel {
   survey_datetime?: string | null;
   created_at?: string;
   updated_at?: string;
+  rates?: any[];
 }

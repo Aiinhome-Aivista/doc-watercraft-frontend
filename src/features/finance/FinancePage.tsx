@@ -3,7 +3,7 @@ import { apiClient } from '@/api/axios.client';
 import { useAppSelector } from '@/store/hooks';
 import { partyService } from '@/services/partyService';
 import { billingService, BillingVesselDTO } from '@/services/billingService';
-import { Button, SearchableSelect, Input } from '@/components/ui';
+import { Button, SearchableSelect, Input, ConfirmDialog } from '@/components/ui';
 import { getCurrentISTDateValue } from '@/utils/dateTime';
 import toast from 'react-hot-toast';
 
@@ -61,6 +61,10 @@ const FinancePage: React.FC = () => {
   const [searchBillQuery, setSearchBillQuery] = useState('');
   const [billDateRange, setBillDateRange] = useState({ start: '', end: '' });
   const [expandedBillId, setExpandedBillId] = useState<number | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    billId: number | null;
+  }>({ isOpen: false, billId: null });
 
   // Tab 3: Daily Vehicle Movement Report states
   const [vehicleReport, setVehicleReport] = useState<any[]>([]);
@@ -165,6 +169,31 @@ const FinancePage: React.FC = () => {
       console.error('Failed to fetch bills', err);
     } finally {
       setLoadingBills(false);
+    }
+  };
+
+  const openDeleteConfirm = (billId: number) => {
+    setDeleteDialog({ isOpen: true, billId });
+  };
+
+  const handleConfirmDeleteBill = async () => {
+    if (deleteDialog.billId === null) return;
+    const billId = deleteDialog.billId;
+
+    // Close dialog first
+    setDeleteDialog({ isOpen: false, billId: null });
+
+    try {
+      const res = await apiClient.delete(`/all_bills/${billId}`);
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || 'Bill deleted successfully');
+        fetchAllBills();
+      } else {
+        toast.error(res.data.message || 'Failed to delete bill');
+      }
+    } catch (err: any) {
+      console.error('Failed to delete bill', err);
+      toast.error(err?.response?.data?.message || 'Failed to delete bill');
     }
   };
 
@@ -931,16 +960,28 @@ const FinancePage: React.FC = () => {
                             {fmtNum(bill.total_bill_value)}
                           </td>
                           <td>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExpandedBillId(expandedBillId === bill.id ? null : bill.id)}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                                {expandedBillId === bill.id ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
-                              </span>
-                              {expandedBillId === bill.id ? 'HIDE' : 'VIEW DETAILS'}
-                            </Button>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedBillId(expandedBillId === bill.id ? null : bill.id)}
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                  {expandedBillId === bill.id ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
+                                </span>
+                                {expandedBillId === bill.id ? 'HIDE' : 'VIEW DETAILS'}
+                              </Button>
+                              <Button
+                                variant="red"
+                                size="sm"
+                                onClick={() => openDeleteConfirm(bill.id)}
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                  delete
+                                </span>
+                                DELETE
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                         {expandedBillId === bill.id && (
@@ -1272,6 +1313,16 @@ const FinancePage: React.FC = () => {
           </div>
         </>
       )}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        title="CONFIRM DELETE"
+        message="Do you want to Delete this bill? This action cannot be undone."
+        type="confirm"
+        confirmText="YES, DELETE"
+        cancelText="NO, CANCEL"
+        onConfirm={handleConfirmDeleteBill}
+        onCancel={() => setDeleteDialog({ isOpen: false, billId: null })}
+      />
     </>
   );
 };
