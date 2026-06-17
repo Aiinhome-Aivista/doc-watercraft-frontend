@@ -29,6 +29,10 @@ export interface GateEntry {
   outside_gross_weight?: number | string | null;
   outside_tare_weight?: number | string | null;
   outside_net_weight?: number | string | null;
+  wbin_gross_weight?: number | string | null;
+  wbin_tare_weight?: number | string | null;
+  wbout_gross_weight?: number | string | null;
+  wbout_tare_weight?: number | string | null;
   own_weighbridge: 0 | 1;
   status: GateStatus;
   gate_in_datetime: string;

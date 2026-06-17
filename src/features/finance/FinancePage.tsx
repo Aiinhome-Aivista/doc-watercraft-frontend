@@ -62,10 +62,28 @@ const FinancePage: React.FC = () => {
   const [billDateRange, setBillDateRange] = useState({ start: '', end: '' });
   const [expandedBillId, setExpandedBillId] = useState<number | null>(null);
 
-  // Tab 3: Vessel Report states
-  const [misReport, setMisReport] = useState<any[]>([]);
-  const [loadingMis, setLoadingMis] = useState(false);
-  const [searchMisQuery, setSearchMisQuery] = useState('');
+  // Tab 3: Daily Vehicle Movement Report states
+  const [vehicleReport, setVehicleReport] = useState<any[]>([]);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [allVessels, setAllVessels] = useState<any[]>([]);
+  const [selectedVesselId, setSelectedVesselId] = useState<string>('');
+  const [selectedPartyId, setSelectedPartyId] = useState<string>('');
+  const [reportStartDate, setReportStartDate] = useState<string>(() => getCurrentISTDateValue());
+  const [reportEndDate, setReportEndDate] = useState<string>(() => getCurrentISTDateValue());
+
+  const filteredVesselsForDropdown = useMemo(() => {
+    if (!selectedPartyId) return allVessels;
+    return allVessels.filter((v: any) => v.party_id?.toString() === selectedPartyId);
+  }, [allVessels, selectedPartyId]);
+
+  useEffect(() => {
+    if (selectedPartyId && selectedVesselId) {
+      const vessel = allVessels.find(v => v.id.toString() === selectedVesselId);
+      if (vessel && vessel.party_id?.toString() !== selectedPartyId) {
+        setSelectedVesselId('');
+      }
+    }
+  }, [selectedPartyId, selectedVesselId, allVessels]);
 
   const fetchAllBills = async () => {
     setLoadingBills(true);
@@ -81,17 +99,32 @@ const FinancePage: React.FC = () => {
     }
   };
 
-  const fetchMisReport = async () => {
-    setLoadingMis(true);
+  const fetchVehicleReport = async (vId?: string, pId?: string, sDate?: string, eDate?: string) => {
+    setLoadingReport(true);
     try {
-      const res = await apiClient.get('/mis/report');
+      const params: any = {};
+      const activeVesselId = vId !== undefined ? vId : selectedVesselId;
+      const activePartyId = pId !== undefined ? pId : selectedPartyId;
+      const activeStartDate = sDate !== undefined ? sDate : reportStartDate;
+      const activeEndDate = eDate !== undefined ? eDate : reportEndDate;
+
+      if (activeVesselId) params.vessel_id = activeVesselId;
+      if (activePartyId) params.party_id = activePartyId;
+      if (activeStartDate) params.start_date = activeStartDate;
+      if (activeEndDate) params.end_date = activeEndDate;
+
+      const res = await apiClient.get('/reports/vehicle-movement', { params });
       if (res.data && res.data.success) {
-        setMisReport(res.data.data || []);
+        setVehicleReport(res.data.data || []);
+      } else {
+        setVehicleReport([]);
       }
-    } catch (err) {
-      console.error('Failed to fetch MIS report', err);
+    } catch (err: any) {
+      console.error('Failed to fetch vehicle movement report', err);
+      toast.error(err?.response?.data?.message || 'Failed to fetch report');
+      setVehicleReport([]);
     } finally {
-      setLoadingMis(false);
+      setLoadingReport(false);
     }
   };
 
@@ -110,20 +143,16 @@ const FinancePage: React.FC = () => {
     });
   }, [allBills, searchBillQuery, billDateRange]);
 
-  const filteredMisReport = useMemo(() => {
-    if (!searchMisQuery.trim()) return misReport;
-    const q = searchMisQuery.toLowerCase();
-    return misReport.filter((r) => 
-      (r.vessel_name && r.vessel_name.toLowerCase().includes(q)) || 
-      (r.party_name && r.party_name.toLowerCase().includes(q)) ||
-      (r.vessel_auto_id && r.vessel_auto_id.toLowerCase().includes(q))
-    );
-  }, [misReport, searchMisQuery]);
-
   useEffect(() => {
     partyService.getPartyMasters().then((res) => {
       const list = Array.isArray(res) ? res : res.data || [];
       setParties(list);
+    }).catch(() => {});
+
+    apiClient.get('/vessels', { params: { per_page: 9999 } }).then((res) => {
+      if (res.data && res.data.success) {
+        setAllVessels(res.data.data || []);
+      }
     }).catch(() => {});
   }, []);
 
@@ -343,7 +372,7 @@ const FinancePage: React.FC = () => {
           className={`filter-tab ${activeTab === 'vessel' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('vessel');
-            fetchMisReport();
+            fetchVehicleReport();
           }}
         >
           Vessel Report
@@ -862,7 +891,7 @@ const FinancePage: React.FC = () => {
       {/* ── Tab 3: Vessel Report ── */}
       {activeTab === 'vessel' && (
         <>
-          {/* Search filter for vessel report */}
+          {/* Search filter for vehicle movement report */}
           <div
             style={{
               display: 'flex',
@@ -872,103 +901,197 @@ const FinancePage: React.FC = () => {
               background: 'var(--bg2)',
               padding: '16px',
               border: '1px solid var(--border)',
+              flexWrap: 'wrap',
             }}
           >
-            <div style={{ flex: 1, maxWidth: '300px' }}>
-              <Input
-                label="Search Report"
-                placeholder="Vessel Name, Party, Auto ID..."
-                value={searchMisQuery}
-                onChange={(e) => setSearchMisQuery(e.target.value)}
+            <div style={{ flex: 1, minWidth: '200px', maxWidth: '280px' }}>
+              <SearchableSelect
+                label="Filter by Exporter (Party)"
+                placeholder="All Exporters"
+                value={selectedPartyId ? parties.find(p => p.id.toString() === selectedPartyId)?.party_name || '' : ''}
+                onChange={(name) => {
+                  const party = parties.find(p => p.party_name === name);
+                  setSelectedPartyId(party ? party.id.toString() : '');
+                }}
+                options={[
+                  { value: '', label: 'All Exporters' },
+                  ...parties.map((p) => ({
+                    value: p.party_name,
+                    label: p.party_name,
+                  }))
+                ]}
               />
             </div>
-            <div>
-              <Button variant="ghost" onClick={() => setSearchMisQuery('')}>
+            <div style={{ flex: 1, minWidth: '200px', maxWidth: '280px' }}>
+              <SearchableSelect
+                label="Filter by Vessel"
+                placeholder="All Vessels"
+                value={allVessels.find(v => v.id.toString() === selectedVesselId)?.vessel_name || ''}
+                onChange={(name) => {
+                  const vessel = allVessels.find(v => v.vessel_name === name);
+                  setSelectedVesselId(vessel ? vessel.id.toString() : '');
+                }}
+                options={[
+                  { value: '', label: 'All Vessels' },
+                  ...filteredVesselsForDropdown.map((v) => ({
+                    value: v.vessel_name,
+                    label: v.vessel_name,
+                  }))
+                ]}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: '150px', maxWidth: '180px' }}>
+              <Input
+                label="Date From"
+                type="date"
+                value={reportStartDate}
+                onChange={(e) => setReportStartDate(e.target.value)}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: '150px', maxWidth: '180px' }}>
+              <Input
+                label="Date To"
+                type="date"
+                value={reportEndDate}
+                onChange={(e) => setReportEndDate(e.target.value)}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button variant="primary" onClick={() => fetchVehicleReport()} disabled={loadingReport}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  search
+                </span>
+                SEARCH
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSelectedVesselId('');
+                  setSelectedPartyId('');
+                  const today = getCurrentISTDateValue();
+                  setReportStartDate(today);
+                  setReportEndDate(today);
+                  fetchVehicleReport('', '', today, today);
+                }}
+              >
                 CLEAR
               </Button>
             </div>
           </div>
 
-          {/* Vessel Billing Summary Table */}
+          {/* Dynamic Vehicle Movement Report Table */}
           <div className="table-wrap">
             <div className="table-header">
-              <span className="table-title">VESSEL BILLING REPORT</span>
+              <span className="table-title">DAILY VEHICLE MOVEMENT REPORT</span>
               <span className="tag">
-                {filteredMisReport.length} VESSEL{filteredMisReport.length !== 1 ? 'S' : ''}
+                {vehicleReport.length} VEHICLE{vehicleReport.length !== 1 ? 'S' : ''}
               </span>
             </div>
-            {loadingMis ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>
-                LOADING VESSEL REPORT...
-              </div>
-            ) : (
-              <table>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              {loadingReport ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>
+                  LOADING VEHICLE REPORT...
+                </div>
+              ) : (
+                <table style={{ minWidth: '2400px' }}>
                 <thead>
-                  <tr>
-                    <th>Vessel Auto ID</th>
-                    <th>Vessel Name</th>
-                    <th>Party Name</th>
-                    <th>Cargo details</th>
-                    <th style={{ textAlign: 'right' }}>Expected Qty (MT)</th>
-                    <th style={{ textAlign: 'right' }}>Survey Qty (MT)</th>
-                    <th>Billing Status</th>
-                    <th style={{ textAlign: 'right' }}>Base Billed</th>
-                    <th style={{ textAlign: 'right' }}>GST Billed</th>
-                    <th style={{ textAlign: 'right' }}>Total Billed</th>
+                  <tr style={{ background: 'var(--bg3)' }}>
+                    <th style={{ minWidth: '60px' }}>SL. No.</th>
+                    <th style={{ minWidth: '220px' }}>Consignor - (Party Name)</th>
+                    <th style={{ minWidth: '160px' }}>(GATE) Entry Date & Time</th>
+                    <th style={{ minWidth: '150px' }}>CHALLAN & INV. NO</th>
+                    <th style={{ minWidth: '130px' }}>VEHICLE NO.</th>
+                    <th style={{ minWidth: '180px' }}>Transporter Name</th>
+                    <th style={{ minWidth: '140px' }}>Driver name</th>
+                    <th style={{ minWidth: '120px' }}>Driver number</th>
+                    <th style={{ minWidth: '140px' }}>Out Weighment Slip no</th>
+                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Out Gross Wt</th>
+                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Out Tare Wt</th>
+                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Out Nett Wt</th>
+                    <th style={{ minWidth: '160px' }}>IN Weighment DATE & Time</th>
+                    <th style={{ minWidth: '110px', textAlign: 'right' }}>Gross Weight</th>
+                    <th style={{ minWidth: '160px' }}>OUT Weighment DATE & Time</th>
+                    <th style={{ minWidth: '110px', textAlign: 'right' }}>Tare Weight</th>
+                    <th style={{ minWidth: '160px' }}>(GATE) Out Date & Time</th>
+                    <th style={{ minWidth: '120px', textAlign: 'right' }}>Net Material Qty</th>
+                    <th style={{ minWidth: '100px', textAlign: 'right' }}>Waiting Hour 24</th>
+                    <th style={{ minWidth: '200px' }}>BULKER Unloading Start Date & Time Start to VESSEL</th>
+                    <th style={{ minWidth: '140px' }}>COMPRESSOR OR NO.</th>
+                    <th style={{ minWidth: '200px' }}>BULKER Unloading Complete Date & Time Start to VESSEL</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMisReport.length === 0 ? (
+                  {vehicleReport.length === 0 ? (
                     <tr>
-                      <td colSpan={10}>
+                      <td colSpan={22}>
                         <div className="empty">
                           <div className="empty-icon">
                             <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>
-                              anchor
+                              local_shipping
                             </span>
                           </div>
-                          <div className="empty-text">No vessels found</div>
+                          <div className="empty-text">No vehicle movements found</div>
                         </div>
                       </td>
                     </tr>
                   ) : (
-                    filteredMisReport.map((item) => (
-                      <tr key={item.vessel_id} style={{ borderBottom: '1px solid var(--border2)' }}>
-                        <td className="td-mono">{item.vessel_auto_id}</td>
-                        <td className="td-primary">{item.vessel_name}</td>
-                        <td>{item.party_name || '—'}</td>
-                        <td>
-                          <span className="tag">{item.cargo_type}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text3)', marginLeft: '8px' }}>
-                            {item.direction}
-                          </span>
+                    <>
+                      {vehicleReport.map((item, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border2)' }}>
+                          <td style={{ fontFamily: 'var(--font-mono)' }}>{idx + 1}</td>
+                          <td className="td-primary" style={{ fontWeight: 600 }}>{item.party_name || '—'}</td>
+                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.gate_in_datetime || '—'}</td>
+                          <td className="td-mono">{item.challan_invoice_no || '—'}</td>
+                          <td className="td-mono" style={{ fontWeight: 600, color: 'var(--accent)' }}>{item.vehicle_no || '—'}</td>
+                          <td>{item.transporter_name || '—'}</td>
+                          <td>{item.driver_name || '—'}</td>
+                          <td className="td-mono">{item.driver_mob_no || '—'}</td>
+                          <td className="td-mono">{item.outside_payment_slip || '—'}</td>
+                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                            {item.outside_gross_weight != null ? Number(item.outside_gross_weight).toFixed(2) : '—'}
+                          </td>
+                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                            {item.outside_tare_weight != null ? Number(item.outside_tare_weight).toFixed(2) : '—'}
+                          </td>
+                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                            {item.outside_net_weight != null ? Number(item.outside_net_weight).toFixed(2) : '—'}
+                          </td>
+                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.wbin_datetime || '—'}</td>
+                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                            {item.gross_weight != null ? Number(item.gross_weight).toFixed(2) : '—'}
+                          </td>
+                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.wbout_datetime || '—'}</td>
+                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                            {item.tare_weight != null ? Number(item.tare_weight).toFixed(2) : '—'}
+                          </td>
+                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.gate_out_datetime || '—'}</td>
+                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
+                            {item.net_weight != null ? Number(item.net_weight).toFixed(2) : '—'}
+                          </td>
+                          <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                            {item.waiting_hours != null ? item.waiting_hours : '—'}
+                          </td>
+                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.cargo_start_datetime || '—'}</td>
+                          <td className="td-mono">{item.compressor_no || '—'}</td>
+                          <td style={{ fontFamily: 'var(--font-mono)' }}>{item.cargo_end_datetime || '—'}</td>
+                        </tr>
+                      ))}
+                      {/* Summary Row */}
+                      <tr style={{ background: 'var(--bg2)', borderTop: '2px solid var(--border)', fontWeight: 'bold' }}>
+                        <td colSpan={17} style={{ textTransform: 'uppercase', padding: '12px 10px', fontSize: '13px' }}>
+                          Total
                         </td>
-                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{fmtNum(item.quantity)}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{fmtNum(item.survey_quantity)}</td>
-                        <td>
-                          <span
-                            className={`tag ${item.billing_status === 'BILLED' ? 'text-green' : 'text-amber'}`}
-                            style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              background: item.billing_status === 'BILLED' ? 'rgba(0, 224, 158, 0.08)' : 'rgba(255, 176, 32, 0.08)',
-                              border: item.billing_status === 'BILLED' ? '1px solid rgba(0, 224, 158, 0.2)' : '1px solid rgba(255, 176, 32, 0.2)'
-                            }}
-                          >
-                            {item.billing_status}
-                          </span>
+                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--accent)', padding: '12px 10px' }}>
+                          {vehicleReport.reduce((sum, item) => sum + (item.net_weight != null ? Number(item.net_weight) : 0), 0).toFixed(2)}
                         </td>
-                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{fmtNum(item.total_base_amount)}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{fmtNum(item.total_gst_amount)}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: item.billing_status === 'BILLED' ? 'var(--accent)' : 'var(--text3)' }}>
-                          {fmtNum(item.grand_total_amount)}
-                        </td>
+                        <td colSpan={4}></td>
                       </tr>
-                    ))
+                    </>
                   )}
                 </tbody>
               </table>
             )}
+            </div>
           </div>
         </>
       )}
