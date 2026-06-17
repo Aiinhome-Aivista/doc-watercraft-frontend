@@ -3,6 +3,8 @@ import { Button, Input } from "@/components/ui";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { authService } from "@/services/authService";
+import logo from "@/assets/logo.jpeg";
+
 
 const AuthPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +17,11 @@ const AuthPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const savedTheme = (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
 
 
 
@@ -62,10 +69,39 @@ const AuthPage: React.FC = () => {
         }
         .auth-submit-btn:hover {
           color: var(--accent) !important;
-         
         }
         .auth-forgot-link:hover {
           color: var(--accent) !important;
+        }
+        .auth-logo-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 24px;
+        }
+        .auth-logo-img {
+          height: 72px;
+          width: auto;
+          object-fit: contain;
+          transition: all 0.2s ease-in-out;
+        }
+        
+        /* Light Theme: Make the white logo background completely transparent and blend in */
+        html[data-theme="light"] .auth-logo-img,
+        [data-theme="light"] .auth-logo-img {
+          mix-blend-mode: multiply;
+          background-color: transparent;
+          padding: 0;
+          border-radius: 0;
+          box-shadow: none;
+        }
+
+        /* Dark Theme: Render as a neat, clean card/badge */
+        html:not([data-theme="light"]) .auth-logo-img,
+        :not([data-theme="light"]) .auth-logo-img {
+          background-color: #ffffff;
+          padding: 8px;
+          border-radius: 8px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
       `}</style>
       <div style={{ width: "100%", maxWidth: "480px", backgroundColor: "var(--bg2)", borderRadius: "16px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)", border: "1px solid var(--border)", overflow: "hidden" }}>
@@ -74,6 +110,13 @@ const AuthPage: React.FC = () => {
 
         <div style={{ padding: "32px" }}>
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
+            <div className="auth-logo-container">
+              <img 
+                src={logo} 
+                alt="IRC Group Logo" 
+                className="auth-logo-img"
+              />
+            </div>
             <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "var(--text-primary)", letterSpacing: "0.025em", fontFamily: "monospace", margin: 0 }}>
               WELCOME
             </h2>
