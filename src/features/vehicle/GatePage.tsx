@@ -635,9 +635,11 @@ const GatePage: React.FC = () => {
               : "ENTRIES"}
           </span>
         </div>
-        <Button variant="light" onClick={() => openModal("create")}>
-          + GATE IN
-        </Button>
+        {canGateOp("GATE_IN") && (
+          <Button variant="light" onClick={() => openModal("create")}>
+            + GATE IN
+          </Button>
+        )}
       </div>
 
       <div

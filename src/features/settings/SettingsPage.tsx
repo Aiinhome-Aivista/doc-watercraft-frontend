@@ -385,10 +385,11 @@ const SettingsPage: React.FC = () => {
               {userPermissions.modules.includes("VEHICLE_LOGISTICS") && (
                 <div style={{ paddingLeft: "32px", paddingBottom: "8px", display: "flex", flexDirection: "column", gap: "2px" }}>
                   {[
-                    { value: "PENDING_WBIN", label: "PENDING WBIN", icon: "schedule" },
-                    { value: "WBIN_DONE", label: "WBIN DONE", icon: "scale" },
-                    { value: "UNLOADING", label: "LOADING / UNLOADING", icon: "construction" },
-                    { value: "PENDING_WBOUT", label: "PENDING WBOUT", icon: "pending" },
+                    { value: "GATE_IN", label: "GATE IN", icon: "login" },
+                    { value: "PENDING_WBIN", label: "WBIN", icon: "schedule" },
+                    { value: "WBIN_DONE", label: "RECORD OP", icon: "scale" },
+                    { value: "UNLOADING", label: "UPDATE OP", icon: "construction" },
+                    { value: "PENDING_WBOUT", label: "WBOUT", icon: "pending" },
                     { value: "GATE_OUT", label: "GATE OUT", icon: "logout" },
                     { value: "COMPLETED", label: "COMPLETED", icon: "check_circle" },
                   ].map((sub) => (
