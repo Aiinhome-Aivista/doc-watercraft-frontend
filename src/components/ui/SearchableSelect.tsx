@@ -24,6 +24,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,6 +35,10 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       setSearch(value);
     }
   }, [value, options]);
+
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [search, isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -56,6 +61,54 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
            option.value.toLowerCase().includes(search.toLowerCase());
   });
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        setIsOpen(true);
+        e.preventDefault();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const next = prev + 1;
+          return next >= filteredOptions.length ? 0 : next;
+        });
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const next = prev - 1;
+          return next < 0 ? filteredOptions.length - 1 : next;
+        });
+        break;
+      case 'Enter':
+        if (focusedIndex >= 0 && focusedIndex < filteredOptions.length) {
+          e.preventDefault();
+          e.stopPropagation();
+          const opt = filteredOptions[focusedIndex];
+          setSearch(opt.label);
+          onChange(opt.value);
+          setIsOpen(false);
+        } else {
+          setIsOpen(false);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        break;
+      case 'Tab':
+        setIsOpen(false);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div className="form-group" ref={dropdownRef} style={{ position: 'relative' }}>
       {label && <label className="form-label">{label}</label>}
@@ -73,6 +126,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             setIsOpen(true);
             e.target.select();
           }}
+          onKeyDown={handleKeyDown}
           style={{ width: '100%', paddingRight: '36px' }}
         />
         <div style={{ 
@@ -115,10 +169,10 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                   transition: 'background-color 0.15s ease',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '2px'
+                  gap: '2px',
+                  backgroundColor: idx === focusedIndex ? 'var(--hover)' : 'transparent',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                onMouseEnter={() => setFocusedIndex(idx)}
                 onClick={() => {
                   setSearch(opt.label);
                   onChange(opt.value);

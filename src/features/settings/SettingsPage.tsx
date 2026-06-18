@@ -43,6 +43,7 @@ const SettingsPage: React.FC = () => {
   const [dialogState, setDialogState] = useState<{isOpen: boolean; title: string; message: string; type: "info"|"confirm"|"error"}>({
     isOpen: false, title: "", message: "", type: "info"
   });
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
   const handleRegChange = (field: string, value: string) => {
     setRegForm((prev) => ({ ...prev, [field]: value }));
@@ -108,6 +109,36 @@ const SettingsPage: React.FC = () => {
       console.error("Failed to fetch access rights", err);
       setUserPermissions({ modules: [], vessel_statuses: [], gate_operations: [] });
       setSelectedUser(user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUserConfirm = async () => {
+    if (!userToDelete) return;
+    try {
+      setLoading(true);
+      await authService.deleteUser(userToDelete.id);
+      setUserToDelete(null);
+      setDialogState({
+        isOpen: true,
+        title: "SUCCESS",
+        message: "User deleted successfully.",
+        type: "info"
+      });
+      
+      const updatedRes = await authService.getAllUsers();
+      const userList = Array.isArray(updatedRes) ? updatedRes : updatedRes.data || [];
+      setUsers(userList);
+    } catch (err: any) {
+      console.error("Failed to delete user:", err);
+      setUserToDelete(null);
+      setDialogState({
+        isOpen: true,
+        title: "ERROR",
+        message: err.response?.data?.message || "Failed to delete user. Please try again.",
+        type: "error"
+      });
     } finally {
       setLoading(false);
     }
@@ -220,13 +251,22 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </td>
                   <td>
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => handleEditUser(user)}
-                    >
-                      EDIT
-                    </Button>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <Button
+                        variant="light"
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        EDIT
+                      </Button>
+                      <Button
+                        variant="red"
+                        size="sm"
+                        onClick={() => setUserToDelete(user)}
+                      >
+                        DELETE
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -442,6 +482,31 @@ const SettingsPage: React.FC = () => {
             <Input label="Email Address *" placeholder="name@domain.com" type="email" value={regForm.email} onChange={(e) => handleRegChange("email", e.target.value)} error={regErrors.email} />
             <Input label="Create Password *" placeholder="••••••••" type="password" value={regForm.password} onChange={(e) => handleRegChange("password", e.target.value)} error={regErrors.password} />
             <Input label="Confirm Password *" placeholder="••••••••" type="password" value={regForm.confirmPassword} onChange={(e) => handleRegChange("confirmPassword", e.target.value)} error={regErrors.confirmPassword} />
+          </div>
+        </Modal>
+      )}
+
+      {userToDelete && (
+        <Modal
+          title="CONFIRM DELETE"
+          onClose={() => setUserToDelete(null)}
+          width={400}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setUserToDelete(null)}>
+                CANCEL
+              </Button>
+              <Button
+                variant="red"
+                onClick={handleDeleteUserConfirm}
+              >
+                DELETE
+              </Button>
+            </>
+          }
+        >
+          <div style={{ padding: "16px 0", fontSize: "14px", lineHeight: "1.5", color: "var(--text)", textAlign: "center" }}>
+            Are you sure you want to delete user <strong>{userToDelete.full_name || userToDelete.username}</strong>? This action cannot be undone.
           </div>
         </Modal>
       )}

@@ -48,5 +48,13 @@ export const authService = {
   updateAccessRights: async (userId: string | number, payload: any) => {
     const response = await apiClient.post(ENDPOINTS.AUTH.ACCESS_RIGHTS(userId), payload);
     return response.data;
+  },
+
+  /**
+   * Delete a user by ID
+   */
+  deleteUser: async (userId: string | number) => {
+    const response = await apiClient.delete(ENDPOINTS.AUTH.USER_DETAIL(userId));
+    return response.data;
   }
 };

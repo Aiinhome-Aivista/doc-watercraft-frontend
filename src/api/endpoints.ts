@@ -33,6 +33,7 @@ export const ENDPOINTS = {
     LOGIN: '/login',
     USERS: '/users',
     ACCESS_RIGHTS: (id: string | number) => `/access-rights/${id}`,
+    USER_DETAIL: (id: string | number) => `/users/${id}`,
   },
   BILLING: {
     VESSELS: '/billing/vessels',
