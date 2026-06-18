@@ -59,12 +59,16 @@ const FinancePage: React.FC = () => {
   const [allBills, setAllBills] = useState<any[]>([]);
   const [loadingBills, setLoadingBills] = useState(false);
   const [searchBillQuery, setSearchBillQuery] = useState('');
-  const [billDateRange, setBillDateRange] = useState({ start: '', end: '' });
+  const [billDateRange, setBillDateRange] = useState(() => {
+    const today = getCurrentISTDateValue();
+    return { start: today, end: today };
+  });
   const [expandedBillId, setExpandedBillId] = useState<number | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     billId: number | null;
   }>({ isOpen: false, billId: null });
+  const [exportingBills, setExportingBills] = useState(false);
 
   // Tab 3: Daily Vehicle Movement Report states
   const [vehicleReport, setVehicleReport] = useState<any[]>([]);
@@ -158,10 +162,19 @@ const FinancePage: React.FC = () => {
     }
   }, [selectedPartyId, selectedVesselId, allVessels]);
 
-  const fetchAllBills = async () => {
+  const fetchAllBills = async (queryVal?: string, startDate?: string, endDate?: string) => {
     setLoadingBills(true);
     try {
-      const res = await apiClient.get('/all_bills');
+      const params: any = {};
+      const activeQuery = queryVal !== undefined ? queryVal : searchBillQuery;
+      const activeStart = startDate !== undefined ? startDate : billDateRange.start;
+      const activeEnd = endDate !== undefined ? endDate : billDateRange.end;
+
+      if (activeQuery) params.query = activeQuery;
+      if (activeStart) params.start_date = activeStart;
+      if (activeEnd) params.end_date = activeEnd;
+
+      const res = await apiClient.get('/all_bills', { params });
       if (res.data && res.data.success) {
         setAllBills(res.data.data || []);
       }
@@ -278,20 +291,60 @@ const FinancePage: React.FC = () => {
     }
   };
 
+  const handleDownloadBillsExcel = async () => {
+    setExportingBills(true);
+    try {
+      const params = new URLSearchParams();
+      if (searchBillQuery) params.append('query', searchBillQuery);
+      if (billDateRange.start) params.append('start_date', billDateRange.start);
+      if (billDateRange.end) params.append('end_date', billDateRange.end);
+
+      const res = await apiClient.get(`/export/bills?${params.toString()}`);
+      
+      if (res.data && res.data.success) {
+        if (res.data.download_url) {
+          let downloadUrlPath = res.data.download_url;
+          if (downloadUrlPath.startsWith('/api/v1')) {
+            downloadUrlPath = downloadUrlPath.substring(7);
+          }
+
+          const fileResponse = await apiClient.get(downloadUrlPath, {
+            responseType: 'blob',
+          });
+
+          if (!fileResponse.data) {
+            throw new Error('Failed to download generated report');
+          }
+
+          const fileBlob = fileResponse.data as Blob;
+          const downloadUrl = window.URL.createObjectURL(fileBlob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = downloadUrl;
+          
+          const fileName = res.data.download_url.split('/').pop() || 'Bills_Report.xlsx';
+          downloadLink.download = fileName;
+          
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          window.URL.revokeObjectURL(downloadUrl);
+        }
+
+        toast.success(res.data.message || 'Bills report exported successfully');
+      } else {
+        toast.error(res.data.message || 'Failed to export report');
+      }
+    } catch (err: any) {
+      console.error('Failed to export bills report', err);
+      toast.error(err?.response?.data?.message || 'Failed to export report');
+    } finally {
+      setExportingBills(false);
+    }
+  };
+
   const filteredBills = useMemo(() => {
-    return allBills.filter((b) => {
-      const q = searchBillQuery.toLowerCase();
-      const matchesQuery = !q || 
-        (b.voucher_number && b.voucher_number.toLowerCase().includes(q)) || 
-        (b.party_name && b.party_name.toLowerCase().includes(q)) ||
-        (b.narration && b.narration.toLowerCase().includes(q));
-
-      const matchesDate = (!billDateRange.start || b.bill_date >= billDateRange.start) &&
-                          (!billDateRange.end || b.bill_date <= billDateRange.end);
-
-      return matchesQuery && matchesDate;
-    });
-  }, [allBills, searchBillQuery, billDateRange]);
+    return allBills;
+  }, [allBills]);
 
   useEffect(() => {
     partyService.getPartyMasters().then((res) => {
@@ -886,12 +939,20 @@ const FinancePage: React.FC = () => {
                 onChange={(e) => setBillDateRange(prev => ({ ...prev, end: e.target.value }))}
               />
             </div>
-            <div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button variant="primary" onClick={() => fetchAllBills()} disabled={loadingBills}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  search
+                </span>
+                SEARCH
+              </Button>
               <Button
                 variant="ghost"
                 onClick={() => {
                   setSearchBillQuery('');
-                  setBillDateRange({ start: '', end: '' });
+                  const today = getCurrentISTDateValue();
+                  setBillDateRange({ start: today, end: today });
+                  fetchAllBills('', today, today);
                 }}
               >
                 CLEAR
@@ -901,11 +962,24 @@ const FinancePage: React.FC = () => {
 
           {/* Bills List Table */}
           <div className="table-wrap">
-            <div className="table-header">
-              <span className="table-title">ALL GENERATED BILLS</span>
-              <span className="tag">
-                {filteredBills.length} BILL{filteredBills.length !== 1 ? 'S' : ''}
-              </span>
+            <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="table-title">ALL GENERATED BILLS</span>
+                <span className="tag">
+                  {filteredBills.length} BILL{filteredBills.length !== 1 ? 'S' : ''}
+                </span>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleDownloadBillsExcel}
+                disabled={exportingBills || filteredBills.length === 0}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  download
+                </span>
+                {exportingBills ? 'EXPORTING...' : 'DOWNLOAD EXCEL'}
+              </Button>
             </div>
             {loadingBills ? (
               <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>
