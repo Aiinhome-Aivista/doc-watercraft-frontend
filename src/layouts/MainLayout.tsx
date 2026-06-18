@@ -15,6 +15,8 @@ import {
   Users,
   LogOut
 } from 'lucide-react';
+import logo from '../assets/logo.jpeg';
+
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -110,8 +112,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="logo-mark">DOCK SYS</div>
-          <div className="logo-sub">Vessel & Logistics</div>
+          <img src={logo} alt="IRC Group" className="sidebar-logo-img" />
+          <div>
+            <div className="logo-mark">DOCK SYS</div>
+            <div className="logo-sub">Vessel & Logistics</div>
+          </div>
         </div>
         
         <nav className="sidebar-nav">

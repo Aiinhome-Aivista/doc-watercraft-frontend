@@ -76,8 +76,19 @@ body {
   padding: 0;
 }
 .sidebar-logo {
-  padding: 20px 20px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sidebar-logo-img {
+  height: 38px;
+  width: auto;
+  border-radius: 6px;
+  background-color: #ffffff;
+  padding: 2px;
+  object-fit: contain;
 }
 .sidebar-logo .logo-mark {
   font-family: var(--font-head);
