@@ -1210,7 +1210,7 @@ const GatePage: React.FC = () => {
               onChange={(e) => handleChange("own_weighbridge", e.target.value)}
               options={[
                 { value: "0", label: "No — Needs WBIN" },
-                { value: "1", label: "Yes — Skip to WBOUT" },
+                { value: "1", label: "Yes — Skip to Gate Out" },
               ]}
             />
           </div>
