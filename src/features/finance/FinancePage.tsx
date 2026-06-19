@@ -69,6 +69,7 @@ const FinancePage: React.FC = () => {
     billId: number | null;
   }>({ isOpen: false, billId: null });
   const [exportingBills, setExportingBills] = useState(false);
+  const [downloadingBillId, setDownloadingBillId] = useState<{ id: number; type: 'excel' | 'pdf' } | null>(null);
 
   // Tab 3: Daily Vehicle Movement Report states
   const [vehicleReport, setVehicleReport] = useState<any[]>([]);
@@ -339,6 +340,56 @@ const FinancePage: React.FC = () => {
       toast.error(err?.response?.data?.message || 'Failed to export report');
     } finally {
       setExportingBills(false);
+    }
+  };
+
+  const handleDownloadSingleBill = async (billId: number, type: 'excel' | 'pdf', voucherNumber: string) => {
+    setDownloadingBillId({ id: billId, type });
+    try {
+      const endpoint = type === 'excel' 
+        ? `/export/bills?bill_id=${billId}`
+        : `/all_bills/${billId}/pdf`;
+
+      const res = await apiClient.get(endpoint);
+      
+      if (res.data && res.data.success) {
+        if (res.data.download_url) {
+          let downloadUrlPath = res.data.download_url;
+          if (downloadUrlPath.startsWith('/api/v1')) {
+            downloadUrlPath = downloadUrlPath.substring(7);
+          }
+
+          const fileResponse = await apiClient.get(downloadUrlPath, {
+            responseType: 'blob',
+          });
+
+          if (!fileResponse.data) {
+            throw new Error('Failed to download file');
+          }
+
+          const fileBlob = fileResponse.data as Blob;
+          const downloadUrl = window.URL.createObjectURL(fileBlob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = downloadUrl;
+          
+          const safeVch = voucherNumber.replace(/[^a-zA-Z0-9-_]/g, '_');
+          const fileName = type === 'excel' ? `BILL_${safeVch}.xlsx` : `${safeVch}.pdf`;
+          downloadLink.download = fileName;
+          
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          window.URL.revokeObjectURL(downloadUrl);
+        }
+        toast.success(res.data.message || `${type.toUpperCase()} downloaded successfully`);
+      } else {
+        toast.error(res.data.message || `Failed to download ${type}`);
+      }
+    } catch (err: any) {
+      console.error(`Failed to download single bill ${type}`, err);
+      toast.error(err?.response?.data?.message || `Failed to download ${type}`);
+    } finally {
+      setDownloadingBillId(null);
     }
   };
 
@@ -1046,9 +1097,21 @@ const FinancePage: React.FC = () => {
                                 {expandedBillId === bill.id ? 'HIDE' : 'VIEW DETAILS'}
                               </Button>
                               <Button
+                                variant="light"
+                                size="sm"
+                                onClick={() => handleDownloadSingleBill(bill.id, 'pdf', bill.voucher_number)}
+                                disabled={downloadingBillId !== null}
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                  picture_as_pdf
+                                </span>
+                                {downloadingBillId?.id === bill.id && downloadingBillId?.type === 'pdf' ? 'PDF...' : 'PDF'}
+                              </Button>
+                              <Button
                                 variant="red"
                                 size="sm"
                                 onClick={() => openDeleteConfirm(bill.id)}
+                                disabled={downloadingBillId !== null}
                               >
                                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                                   delete
