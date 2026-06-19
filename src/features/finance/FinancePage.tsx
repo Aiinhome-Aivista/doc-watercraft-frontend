@@ -6,6 +6,9 @@ import { billingService, BillingVesselDTO } from '@/services/billingService';
 import { Button, SearchableSelect, Input, ConfirmDialog } from '@/components/ui';
 import { getCurrentISTDateValue } from '@/utils/dateTime';
 import toast from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import logo from '@/assets/logo.jpeg';
 
 const generateVchNo = () => {
   const now = new Date();
@@ -69,6 +72,7 @@ const FinancePage: React.FC = () => {
     billId: number | null;
   }>({ isOpen: false, billId: null });
   const [exportingBills, setExportingBills] = useState(false);
+  const [downloadingPdfId, setDownloadingPdfId] = useState<number | null>(null);
 
   // Tab 3: Daily Vehicle Movement Report states
   const [vehicleReport, setVehicleReport] = useState<any[]>([]);
@@ -339,6 +343,305 @@ const FinancePage: React.FC = () => {
       toast.error(err?.response?.data?.message || 'Failed to export report');
     } finally {
       setExportingBills(false);
+    }
+  };
+
+  const formatToDDMMYYYY = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+    } catch (e) {}
+    return dateStr;
+  };
+
+  const fmtAmt = (val: number | string) => {
+    const n = typeof val === 'string' ? parseFloat(val) : val;
+    if (n === null || n === undefined || isNaN(n)) return '0.00';
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(n);
+  };
+
+  const fmtQtyRate = (val: number | string) => {
+    const n = typeof val === 'string' ? parseFloat(val) : val;
+    if (n === null || n === undefined || isNaN(n)) return '0';
+    if (Number.isInteger(n)) {
+      return new Intl.NumberFormat('en-IN').format(n);
+    }
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(n);
+  };
+
+  const getLogoImage = (src: string): Promise<HTMLImageElement | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+    });
+  };
+
+  const handleDownloadSingleBillPdf = async (bill: any) => {
+    if (!bill) return;
+    setDownloadingPdfId(bill.id);
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Draw Top navy banner (Hex #0D2137 = RGB 13, 33, 55)
+      doc.setFillColor(13, 33, 55);
+      doc.rect(0, 0, 210, 48, 'F');
+
+      // Draw diagonal accent stripe in navy banner (Hex #0A1B2E = RGB 10, 27, 46)
+      doc.setFillColor(10, 27, 46);
+      doc.triangle(120, 0, 160, 0, 120, 48, 'F');
+
+      // Try drawing the logo image
+      const logoImg = await getLogoImage(logo);
+      if (logoImg) {
+        // Position logo on the left of navy banner (x = 15, y = 12, w = 22, h = 22)
+        doc.addImage(logoImg, 'JPEG', 15, 12, 22, 22);
+      }
+
+      // Title & Address details next to logo
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text('Irc Multimodal Haldia Private Limited', 42, 14);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(175, 195, 220); // Hex #AFC3DC
+      doc.text('IRC House, 1 St, 1 Sunyat Sen Street', 42, 19);
+      doc.text('Kolkata, Poddar Court', 42, 23);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(200, 149, 42); // Gold
+      doc.text('GSTIN/UIN: 19AAGCI5670M1ZY', 42, 28);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(175, 195, 220);
+      doc.text('PAN/IT No: AAGC15670M  |  State: West Bengal (Code: 19)', 42, 33);
+
+      // INVOICE label (right side)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(139, 174, 212);
+      doc.text('TAX INVOICE', 195, 20, { align: 'right' });
+
+      // Gold accent line under banner
+      doc.setFillColor(200, 149, 42);
+      doc.rect(0, 48, 210, 1.5, 'F');
+
+      // Billing Metadata Section
+      const metaY = 58;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(138, 155, 176); // Hex #8A9BB0
+      doc.text('BILL TO:', 15, metaY);
+      doc.text('INVOICE DATE:', 120, metaY);
+      doc.text('INVOICE NO:', 120, metaY + 6);
+
+      // Party Name
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(28, 43, 58); // Hex #1C2B3A
+      doc.text(bill.party_name || '', 15, metaY + 6);
+
+      // Invoice Date Value
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(28, 43, 58);
+      doc.text(formatToDDMMYYYY(bill.bill_date), 195, metaY, { align: 'right' });
+
+      // Bill Number Value
+      doc.text(bill.voucher_number || '', 195, metaY + 6, { align: 'right' });
+
+      // Party Address
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(61, 79, 99); // Dark grey
+      doc.text(bill.address || '', 15, metaY + 11);
+
+      // Party GSTIN
+      if (bill.gst_number) {
+        doc.text(`GSTIN/UIN: ${bill.gst_number}`, 15, metaY + 16);
+      }
+
+      // Party PAN & State
+      let panStateText = '';
+      if (bill.pan_number) panStateText += `PAN/IT No: ${bill.pan_number}`;
+      if (bill.state) {
+        if (panStateText) panStateText += '  |  ';
+        // Capitalize state name for nice layout
+        const stateName = bill.state.replace(/\b\w/g, (c: string) => c.toUpperCase());
+        panStateText += `State: ${stateName}`;
+      }
+      if (panStateText) {
+        doc.text(panStateText, 15, metaY + 21);
+      }
+
+      // Divider line
+      doc.setDrawColor(232, 236, 240); // Hex #E8ECF0
+      doc.setLineWidth(0.5);
+      doc.line(15, metaY + 25, 195, metaY + 25);
+
+      // Itemized Table
+      autoTable(doc, {
+        startY: metaY + 29,
+        margin: { left: 15, right: 15 },
+        theme: 'striped',
+        head: [[
+          'Vessel Name',
+          'Activity',
+          'Qty',
+          'Rate',
+          'Base Amount',
+          'GST Rate (%)',
+          'GST Amount',
+          'Total'
+        ]],
+        body: (bill.details || []).map((det: any) => [
+          det.vessel_name || `Vessel ID: ${det.vessel_id}`,
+          det.activity || '',
+          fmtQtyRate(det.qty),
+          fmtAmt(det.rate),
+          fmtAmt(det.amount),
+          `${det.gst_rate}%`,
+          fmtAmt(det.gst_amount),
+          fmtAmt((det.amount || 0) + (det.gst_amount || 0))
+        ]),
+        headStyles: {
+          fillColor: [13, 33, 55],
+          textColor: [255, 255, 255],
+          fontSize: 8,
+          fontStyle: 'bold',
+          halign: 'left',
+          valign: 'middle',
+        },
+        columnStyles: {
+          0: { halign: 'left', cellWidth: 32 },
+          1: { halign: 'left', cellWidth: 32 },
+          2: { halign: 'right', cellWidth: 12 },
+          3: { halign: 'right', cellWidth: 18 },
+          4: { halign: 'right', cellWidth: 24 },
+          5: { halign: 'right', cellWidth: 16 },
+          6: { halign: 'right', cellWidth: 22 },
+          7: { halign: 'right', cellWidth: 24 },
+        },
+        styles: {
+          fontSize: 7.5,
+          cellPadding: { top: 3.5, bottom: 3.5, left: 2, right: 2 },
+          font: 'helvetica',
+        },
+        didParseCell: (data) => {
+          if (data.section === 'head' && data.column.index >= 2) {
+            data.cell.styles.halign = 'right';
+          }
+        }
+      });
+
+      const finalY = (doc as any).lastAutoTable.finalY + 8;
+
+      // Draw Narration on the Left
+      if (bill.narration) {
+        const narrX = 15;
+        const narrWidth = 100;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(13, 33, 55);
+        doc.text('Narration / Remarks:', narrX, finalY);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(61, 79, 99);
+        const splitNarr = doc.splitTextToSize(bill.narration, narrWidth);
+        doc.text(splitNarr, narrX, finalY + 4.5);
+      }
+
+      // Draw Summary Box on the Right
+      const boxX = 125;
+      const boxWidth = 70;
+      const rowHeight = 6.5;
+      let currentY = finalY;
+
+      const drawSummaryRow = (label: string, value: string, isTotal: boolean = false) => {
+        doc.setFont('helvetica', isTotal ? 'bold' : 'normal');
+        doc.setFontSize(isTotal ? 9.5 : 8.5);
+        doc.setTextColor(isTotal ? 13 : 61, isTotal ? 33 : 79, isTotal ? 55 : 99);
+        doc.text(label, boxX, currentY);
+        doc.text(value, boxX + boxWidth, currentY, { align: 'right' });
+        currentY += rowHeight;
+      };
+
+      drawSummaryRow('Base Value:', fmtAmt(bill.bill_base_value));
+      drawSummaryRow('CGST:', fmtAmt(bill.cgst));
+      drawSummaryRow('SGST:', fmtAmt(bill.sgst));
+      drawSummaryRow('Round Off:', fmtAmt(bill.round_off));
+
+      // Gold line separator before Total
+      doc.setDrawColor(200, 149, 42);
+      doc.setLineWidth(0.5);
+      doc.line(boxX, currentY - 1.5, boxX + boxWidth, currentY - 1.5);
+
+      // Spacing for total row to not overlap the divider line
+      currentY += 2.5;
+
+      drawSummaryRow('Grand Total (INR):', fmtAmt(bill.total_bill_value), true);
+
+      // Signature Block
+      const sigY = 250;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(13, 33, 55);
+      doc.text('________________________', 195, sigY, { align: 'right' });
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('Authorized Signatory', 195, sigY + 6, { align: 'right' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(61, 79, 99);
+      doc.text('Irc Multimodal Haldia Private Limited', 195, sigY + 11, { align: 'right' });
+
+      // Footer
+      const footerY = 282;
+      doc.setDrawColor(232, 236, 240);
+      doc.setLineWidth(0.5);
+      doc.line(15, footerY - 5, 195, footerY - 5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(138, 155, 176);
+      doc.text('IRC GROUP  |  Maritime Services & Logistics', 15, footerY);
+      doc.text('This is a computer-generated invoice.', 195, footerY, { align: 'right' });
+
+      // Trigger download
+      doc.save(`${bill.voucher_number || 'bill'}.pdf`);
+      toast.success('PDF generated and downloaded successfully');
+    } catch (err: any) {
+      console.error('Failed to generate single bill PDF', err);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setDownloadingPdfId(null);
     }
   };
 
@@ -969,7 +1272,7 @@ const FinancePage: React.FC = () => {
                   {filteredBills.length} BILL{filteredBills.length !== 1 ? 'S' : ''}
                 </span>
               </div>
-              <Button
+              {/* <Button
                 variant="primary"
                 size="sm"
                 onClick={handleDownloadBillsExcel}
@@ -979,7 +1282,7 @@ const FinancePage: React.FC = () => {
                   download
                 </span>
                 {exportingBills ? 'EXPORTING...' : 'DOWNLOAD EXCEL'}
-              </Button>
+              </Button> */}
             </div>
             {loadingBills ? (
               <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>
@@ -1044,6 +1347,17 @@ const FinancePage: React.FC = () => {
                                   {expandedBillId === bill.id ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
                                 </span>
                                 {expandedBillId === bill.id ? 'HIDE' : 'VIEW DETAILS'}
+                              </Button>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleDownloadSingleBillPdf(bill)}
+                                disabled={downloadingPdfId !== null}
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                  {downloadingPdfId === bill.id ? 'sync' : 'download'}
+                                </span>
+                                {downloadingPdfId === bill.id ? 'GENERATING...' : 'PDF'}
                               </Button>
                               <Button
                                 variant="red"
