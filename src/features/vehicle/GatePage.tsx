@@ -201,6 +201,7 @@ const GatePage: React.FC = () => {
         compressor_no: entry.compressor_no || "",
         driver_name: entry.driver_name || "",
         driver_mob_no: entry.driver_mob_no || "",
+        supplier_name: entry.supplier_name || "",
       });
     } else if (
       (type === "operation" ||
@@ -236,6 +237,7 @@ const GatePage: React.FC = () => {
         own_weighbridge: "0",
         driver_name: "",
         driver_mob_no: "",
+        supplier_name: "",
       });
     }
     setModal(type);
@@ -305,6 +307,7 @@ const GatePage: React.FC = () => {
       direction: form.direction,
       driver_name: form.driver_name || null,
       driver_mob_no: form.driver_mob_no || null,
+      supplier_name: form.supplier_name || null,
     };
 
     try {
@@ -371,6 +374,7 @@ const GatePage: React.FC = () => {
       compressor_no: form.compressor_no || null,
       driver_name: form.driver_name || null,
       driver_mob_no: form.driver_mob_no || null,
+      supplier_name: form.supplier_name || null,
     };
 
     try {
@@ -780,6 +784,7 @@ const GatePage: React.FC = () => {
               <th>Vehicle</th>
               <th>Vessel</th>
               <th>Party</th>
+              <th>Supplier</th>
               <th>Challan</th>
               <th>Transporter</th>
               <th>
@@ -820,7 +825,7 @@ const GatePage: React.FC = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10}>
+                <td colSpan={11}>
                   <div className="empty">
                     <div className="empty-icon">
                       <span
@@ -836,13 +841,17 @@ const GatePage: React.FC = () => {
               </tr>
             ) : (
               filtered.map((e) => (
-                <tr key={e.id}>
+                <tr 
+                  key={e.id}
+                  className={e.own_weighbridge === 1 ? "row-own-weighbridge" : "row-external-weighbridge"}
+                >
                   <td className="td-mono">{e.gate_in_no}</td>
                   <td className="td-primary">{e.vehicle_no}</td>
                   <td style={{ fontSize: 12 }}>{e.vessel_name || "—"}</td>
                   <td style={{ fontSize: 12 }}>
                     {e.party_name || e.consignor_name || "—"}
                   </td>
+                  <td style={{ fontSize: 12 }}>{e.supplier_name || "—"}</td>
                   <td className="font-mono" style={{ fontSize: 12 }}>
                     {e.challan_invoice_no}
                   </td>
@@ -1148,6 +1157,11 @@ const GatePage: React.FC = () => {
               ]}
             />
             <Input
+              label="Supplier Name"
+              value={form.supplier_name || ""}
+              onChange={(e) => handleChange("supplier_name", e.target.value)}
+            />
+            <Input
               label="Challan / Invoice No"
               value={form.challan_invoice_no || ""}
               onChange={(e) =>
@@ -1354,6 +1368,7 @@ const GatePage: React.FC = () => {
               ["Vessel", selected.vessel_name || "—"],
               ["Direction", selected.direction],
               ["Party", selected.party_name || selected.consignor_name || "—"],
+              ["Supplier Name", selected.supplier_name || "—"],
               ["Challan / Invoice", selected.challan_invoice_no, true],
               ["Transporter", selected.transporter_name || "—"],
               ["Driver Name", selected.driver_name || "—"],
@@ -1611,6 +1626,11 @@ const GatePage: React.FC = () => {
                   label: p.party_name,
                 })),
               ]}
+            />
+            <Input
+              label="Supplier Name"
+              value={form.supplier_name || ""}
+              onChange={(e) => handleChange("supplier_name", e.target.value)}
             />
 
             <Select

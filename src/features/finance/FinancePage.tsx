@@ -1556,11 +1556,11 @@ const FinancePage: React.FC = () => {
                   LOADING VEHICLE REPORT...
                 </div>
               ) : (
-                <table style={{ minWidth: '2400px' }}>
+                <table style={{ minWidth: '2580px' }}>
                 <tbody>
                   {groupedVehicleReport.length === 0 ? (
                     <tr>
-                      <td colSpan={22}>
+                      <td colSpan={23}>
                         <div className="empty">
                           <div className="empty-icon">
                             <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>
@@ -1588,7 +1588,7 @@ const FinancePage: React.FC = () => {
                             <td style={{ ...vesselHeaderValueStyle, borderBottom: 'none' }}>
                               {group.berthing_datetime ? formatDateString(group.berthing_datetime) : '—'}
                             </td>
-                            <td colSpan={18} style={{ border: 'none', background: 'transparent' }}></td>
+                            <td colSpan={19} style={{ border: 'none', background: 'transparent' }}></td>
                           </tr>
                           <tr style={{ background: 'transparent' }}>
                             <td style={vesselHeaderStyle}>Survey Qty</td>
@@ -1599,18 +1599,19 @@ const FinancePage: React.FC = () => {
                             <td style={vesselHeaderValueStyle}>
                               {group.sailing_datetime ? formatDateString(group.sailing_datetime) : '—'}
                             </td>
-                            <td colSpan={18} style={{ border: 'none', background: 'transparent' }}></td>
+                            <td colSpan={19} style={{ border: 'none', background: 'transparent' }}></td>
                           </tr>
 
                           {/* Blank spacer row */}
                           <tr style={{ height: '12px', border: 'none', background: 'transparent' }}>
-                            <td colSpan={22} style={{ border: 'none', background: 'transparent', height: '12px' }}></td>
+                            <td colSpan={23} style={{ border: 'none', background: 'transparent', height: '12px' }}></td>
                           </tr>
 
                           {/* Table Section Headers */}
                           <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
                             <td style={{ ...tableHeaderSubStyle, minWidth: '60px' }}>SL. No.</td>
                             <td style={{ ...tableHeaderSubStyle, minWidth: '220px' }}>Consignor - (Party Name)</td>
+                            <td style={{ ...tableHeaderSubStyle, minWidth: '180px' }}>Supplier Name</td>
                             <td style={{ ...tableHeaderSubStyle, minWidth: '160px' }}>(GATE) Entry Date & Time</td>
                             <td style={{ ...tableHeaderSubStyle, minWidth: '150px' }}>CHALLAN & INV. NO</td>
                             <td style={{ ...tableHeaderSubStyle, minWidth: '130px' }}>VEHICLE NO.</td>
@@ -1638,6 +1639,7 @@ const FinancePage: React.FC = () => {
                             <tr key={idx} style={{ borderBottom: '1px solid var(--border2)' }}>
                               <td style={{ fontFamily: 'var(--font-mono)' }}>{idx + 1}</td>
                               <td className="td-primary" style={{ fontWeight: 600 }}>{item.party_name || '—'}</td>
+                              <td>{item.supplier_name || '—'}</td>
                               <td style={{ fontFamily: 'var(--font-mono)' }}>{item.gate_in_datetime || '—'}</td>
                               <td className="td-mono">{item.challan_invoice_no || '—'}</td>
                               <td className="td-mono" style={{ fontWeight: 600, color: 'var(--accent)' }}>{item.vehicle_no || '—'}</td>
@@ -1677,7 +1679,7 @@ const FinancePage: React.FC = () => {
 
                           {/* Vessel Total Row */}
                           <tr style={{ background: 'var(--bg2)', borderTop: '2px solid var(--border)', fontWeight: 'bold' }}>
-                            <td colSpan={17} style={{ textTransform: 'uppercase', padding: '12px 10px', fontSize: '13px' }}>
+                            <td colSpan={18} style={{ textTransform: 'uppercase', padding: '12px 10px', fontSize: '13px' }}>
                               Total
                             </td>
                             <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--accent)', padding: '12px 10px' }}>
@@ -1688,7 +1690,7 @@ const FinancePage: React.FC = () => {
 
                           {/* Section Separation Row */}
                           <tr style={{ height: '36px', border: 'none', background: 'transparent' }}>
-                            <td colSpan={22} style={{ border: 'none', background: 'transparent', height: '36px' }}></td>
+                            <td colSpan={23} style={{ border: 'none', background: 'transparent', height: '36px' }}></td>
                           </tr>
                         </React.Fragment>
                       );
