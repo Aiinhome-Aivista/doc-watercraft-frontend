@@ -122,7 +122,9 @@ const FinancePage: React.FC = () => {
       if (parts[0]) {
         const dateParts = parts[0].split('-');
         if (dateParts.length === 3) {
-          return `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+          const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+          const timePart = parts[1] ? ` ${parts[1]}` : '';
+          return `${formattedDate}${timePart}`;
         }
       }
     } catch (e) {}
