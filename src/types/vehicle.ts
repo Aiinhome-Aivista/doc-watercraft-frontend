@@ -12,6 +12,8 @@ export type GateStatus =
 export interface GateEntry {
   id: number;
   cargo_operation_id?: number | null;
+  cargo_start_datetime?: string | null;
+  cargo_end_datetime?: string | null;
   supplier_name?: string | null;
   gate_in_no: string;
   vessel_id?: number | null;

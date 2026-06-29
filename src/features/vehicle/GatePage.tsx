@@ -196,6 +196,8 @@ const GatePage: React.FC = () => {
         direction: entry.direction || "IMPORT",
         gate_in_datetime: entry.gate_in_datetime ? entry.gate_in_datetime.replace(" ", "T") : "",
         gate_out_datetime: entry.gate_out_datetime ? entry.gate_out_datetime.replace(" ", "T") : "",
+        cargo_start_datetime: entry.cargo_start_datetime ? entry.cargo_start_datetime.replace(" ", "T") : "",
+        cargo_end_datetime: entry.cargo_end_datetime ? entry.cargo_end_datetime.replace(" ", "T") : "",
         status: entry.status || "PENDING_WBIN",
         vessel_id: entry.vessel_id ? String(entry.vessel_id) : "",
         compressor_no: entry.compressor_no || "",
@@ -362,6 +364,8 @@ const GatePage: React.FC = () => {
       vehicle_id: vehicleId,
       gate_in_datetime: formatDt(form.gate_in_datetime),
       gate_out_datetime: formatDt(form.gate_out_datetime),
+      cargo_start_datetime: formatDt(form.cargo_start_datetime),
+      cargo_end_datetime: formatDt(form.cargo_end_datetime),
       weighment_slip_no: form.weighment_slip_no || null,
       outside_payment_slip: form.outside_payment_slip || null,
       outside_gross_weight: outsideGross,
@@ -1377,6 +1381,8 @@ const GatePage: React.FC = () => {
               ["Compressor No", selected.compressor_no || "—"],
               ["Gate-In Time", fmt(selected.gate_in_datetime), true],
               ["Gate-Out Time", fmt(selected.gate_out_datetime), true],
+              [selected.direction === "IMPORT" ? "Loading Start Time" : "Unloading Start Time", fmt(selected.cargo_start_datetime), true],
+              [selected.direction === "IMPORT" ? "Loading Complete Time" : "Unloading Complete Time", fmt(selected.cargo_end_datetime), true],
               ["Current Status", null, false, selected.status],
             ].map(([k, v, mono, status]: any) => (
               <div className="detail-cell" key={k}>
@@ -1690,6 +1696,20 @@ const GatePage: React.FC = () => {
               type="datetime-local"
               value={form.gate_out_datetime || ""}
               onChange={(e) => handleChange("gate_out_datetime", e.target.value)}
+            />
+
+            <Input
+              label={form.direction === "IMPORT" ? "Loading Start Time" : "Unloading Start Time"}
+              type="datetime-local"
+              value={form.cargo_start_datetime || ""}
+              onChange={(e) => handleChange("cargo_start_datetime", e.target.value)}
+            />
+
+            <Input
+              label={form.direction === "IMPORT" ? "Loading Complete Time" : "Unloading Complete Time"}
+              type="datetime-local"
+              value={form.cargo_end_datetime || ""}
+              onChange={(e) => handleChange("cargo_end_datetime", e.target.value)}
             />
 
             <Select
