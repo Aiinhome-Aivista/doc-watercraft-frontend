@@ -14,7 +14,7 @@ const WeighbridgeTerminalPage: React.FC = () => {
   const { canGateOp } = useAccessRights();
 
   useEffect(() => {
-    dispatch(fetchGateEntries({ per_page: 1000 }));
+    dispatch(fetchGateEntries({ per_page: 100 }));
   }, [dispatch]);
 
   const [modal, setModal] = useState<'wbin' | 'wbout' | null>(null);

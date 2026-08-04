@@ -118,10 +118,10 @@ const GatePage: React.FC = () => {
   ]);
 
   useEffect(() => {
-    dispatch(fetchVessels({ per_page: 1000 }));
+    dispatch(fetchVessels({ per_page: 200 }));
   }, [dispatch]);
 
-  // Fetch unique gate-in numbers when entries list changes
+  // Fetch unique gate-in numbers once on mount
   useEffect(() => {
     const fetchNos = async () => {
       try {
@@ -132,7 +132,7 @@ const GatePage: React.FC = () => {
       }
     };
     fetchNos();
-  }, [entries]);
+  }, []);
 
   useEffect(() => {
     if (modal === "create" || modal === "edit") {
