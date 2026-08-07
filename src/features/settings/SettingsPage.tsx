@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { authService } from "@/services/authService";
 import { GlobalLoader, Button, Modal, Input, ConfirmDialog } from "@/components/ui";
+import { toast } from "react-hot-toast";
 
 interface UserProfile {
   id: number;
@@ -75,6 +76,7 @@ const SettingsPage: React.FC = () => {
         email: regForm.email
       };
       const res = await authService.registerUser(payload);
+      toast.success(res.message || "User registered successfully!");
       setDialogState({ isOpen: true, title: "SUCCESS", message: res.message || "User registered successfully", type: "info" });
       setIsAddUserModalOpen(false);
       setRegForm({ name: "", phone: "", email: "", password: "", confirmPassword: "" });
@@ -84,7 +86,9 @@ const SettingsPage: React.FC = () => {
       setUsers(userList);
     } catch (err: any) {
       console.error("Registration failed:", err);
-      setRegGlobalError(err.response?.data?.message || "An error occurred during registration");
+      const errMsg = err.response?.data?.message || "An error occurred during registration";
+      setRegGlobalError(errMsg);
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -119,6 +123,7 @@ const SettingsPage: React.FC = () => {
     try {
       setLoading(true);
       await authService.deleteUser(userToDelete.id);
+      toast.success("User deleted successfully.");
       setUserToDelete(null);
       setDialogState({
         isOpen: true,
@@ -133,10 +138,12 @@ const SettingsPage: React.FC = () => {
     } catch (err: any) {
       console.error("Failed to delete user:", err);
       setUserToDelete(null);
+      const errMsg = err.response?.data?.message || "Failed to delete user. Please try again.";
+      toast.error(errMsg);
       setDialogState({
         isOpen: true,
         title: "ERROR",
-        message: err.response?.data?.message || "Failed to delete user. Please try again.",
+        message: errMsg,
         type: "error"
       });
     } finally {
@@ -306,10 +313,13 @@ const SettingsPage: React.FC = () => {
                   try {
                     setLoading(true);
                     await authService.updateAccessRights(selectedUser.id, userPermissions);
+                    toast.success(`Access rights updated for @${selectedUser.username}`);
                     setSelectedUser(null);
-                  } catch (err) {
+                  } catch (err: any) {
                     console.error("Failed to save permissions", err);
-                    setDialogState({ isOpen: true, title: "ERROR", message: "Failed to save changes. Please try again.", type: "error" });
+                    const errMsg = err.response?.data?.message || "Failed to save changes. Please try again.";
+                    toast.error(errMsg);
+                    setDialogState({ isOpen: true, title: "ERROR", message: errMsg, type: "error" });
                   } finally {
                     setLoading(false);
                   }

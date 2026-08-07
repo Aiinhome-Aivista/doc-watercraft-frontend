@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { authService } from "@/services/authService";
 import logo from "@/assets/logo.jpeg";
+import { toast } from "react-hot-toast";
 
 
 const AuthPage: React.FC = () => {
@@ -52,11 +53,14 @@ const AuthPage: React.FC = () => {
 
       console.log("Login sequence executed:", res);
       dispatch({ type: 'auth/login/fulfilled' });
+      toast.success(`Welcome back, ${res.data?.full_name || res.data?.username || 'User'}!`);
       navigate("/dashboard");
     } catch (error: any) {
       dispatch({ type: 'auth/login/rejected' });
       console.error("Authentication rejected:", error);
-      setGlobalError(error.response?.data?.message || "Invalid credentials provided");
+      const msg = error.response?.data?.message || "Invalid credentials provided";
+      setGlobalError(msg);
+      toast.error(msg);
     }
   };
 
