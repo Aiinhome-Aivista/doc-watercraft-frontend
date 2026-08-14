@@ -37,6 +37,7 @@ export interface GateEntry {
   wbout_gross_weight?: number | string | null;
   wbout_tare_weight?: number | string | null;
   own_weighbridge: 0 | 1;
+  billing_calculation_required?: number | string | null;
   status: GateStatus;
   gate_in_datetime: string;
   wbin_datetime?: string | null;

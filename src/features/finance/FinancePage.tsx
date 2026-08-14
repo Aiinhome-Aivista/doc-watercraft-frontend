@@ -1579,6 +1579,10 @@ const FinancePage: React.FC = () => {
                         (sum, item) => sum + (item.net_weight != null ? Number(item.net_weight) : 0),
                         0
                       );
+                      const totalOutsideNetWeight = group.rows.reduce(
+                        (sum, item) => sum + (item.outside_net_weight != null ? Number(item.outside_net_weight) : 0),
+                        0
+                      );
 
                       return (
                         <React.Fragment key={gIdx}>
@@ -1681,9 +1685,13 @@ const FinancePage: React.FC = () => {
 
                           {/* Vessel Total Row */}
                           <tr style={{ background: 'var(--bg2)', borderTop: '2px solid var(--border)', fontWeight: 'bold' }}>
-                            <td colSpan={18} style={{ textTransform: 'uppercase', padding: '12px 10px', fontSize: '13px' }}>
+                            <td colSpan={12} style={{ textTransform: 'uppercase', padding: '12px 10px', fontSize: '13px' }}>
                               Total
                             </td>
+                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--accent)', padding: '12px 10px' }}>
+                              {totalOutsideNetWeight.toFixed(2)}
+                            </td>
+                            <td colSpan={5}></td>
                             <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--accent)', padding: '12px 10px' }}>
                               {totalNetWeight.toFixed(2)}
                             </td>

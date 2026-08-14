@@ -198,6 +198,11 @@ const GatePage: React.FC = () => {
         gate_out_datetime: entry.gate_out_datetime ? entry.gate_out_datetime.replace(" ", "T") : "",
         cargo_start_datetime: entry.cargo_start_datetime ? entry.cargo_start_datetime.replace(" ", "T") : "",
         cargo_end_datetime: entry.cargo_end_datetime ? entry.cargo_end_datetime.replace(" ", "T") : "",
+        billing_calculation_required: String(
+          entry.billing_calculation_required !== undefined && entry.billing_calculation_required !== null
+            ? entry.billing_calculation_required
+            : "1"
+        ),
         status: entry.status || "PENDING_WBIN",
         vessel_id: entry.vessel_id ? String(entry.vessel_id) : "",
         compressor_no: entry.compressor_no || "",
@@ -237,6 +242,7 @@ const GatePage: React.FC = () => {
         gate_in_datetime: nowDt(),
         direction: "IMPORT",
         own_weighbridge: "0",
+        billing_calculation_required: "1",
         driver_name: "",
         driver_mob_no: "",
         supplier_name: "",
@@ -372,6 +378,7 @@ const GatePage: React.FC = () => {
       outside_tare_weight: outsideTare,
       outside_net_weight: outsideNet,
       own_weighbridge: parseInt(form.own_weighbridge || "0"),
+      billing_calculation_required: parseInt(form.billing_calculation_required || "1"),
       direction: form.direction,
       status: form.status,
       vessel_id: form.vessel_id ? Number(form.vessel_id) : null,
@@ -596,9 +603,13 @@ const GatePage: React.FC = () => {
       {
         key: "LOADING/UNLOADING",
         label: "Cargo Operation",
-        time: entry.compressor_no
-          ? `Compressor: ${entry.compressor_no}`
-          : "Pending",
+        time: ["PENDING_WBOUT", "GATE_OUT", "COMPLETED"].includes(String(entry.status))
+          ? "Completed"
+          : ["LOADING", "UNLOADING"].includes(String(entry.status))
+            ? "In Progress"
+            : entry.compressor_no
+              ? `Compressor: ${entry.compressor_no}`
+              : "Pending",
         icon: "construction",
       },
       {
@@ -845,7 +856,7 @@ const GatePage: React.FC = () => {
               </tr>
             ) : (
               filtered.map((e) => (
-                <tr 
+                <tr
                   key={e.id}
                   className={e.own_weighbridge === 1 ? "row-own-weighbridge" : "row-external-weighbridge"}
                 >
@@ -1059,7 +1070,7 @@ const GatePage: React.FC = () => {
                 size="sm"
                 disabled={pagination.page >= pagination.total_pages}
                 onClick={() => handlePageChange(pagination.page + 1)}
-                
+
               >
                 NEXT
               </Button>
@@ -1229,6 +1240,16 @@ const GatePage: React.FC = () => {
               options={[
                 { value: "0", label: "No — Needs WBIN" },
                 { value: "1", label: "Yes — Skip to Gate Out" },
+              ]}
+            />
+
+            <Select
+              label="Billing Calculation Required"
+              value={form.billing_calculation_required || "1"}
+              onChange={(e) => handleChange("billing_calculation_required", e.target.value)}
+              options={[
+                { value: "1", label: "Yes" },
+                { value: "0", label: "No" },
               ]}
             />
           </div>
@@ -1404,13 +1425,12 @@ const GatePage: React.FC = () => {
               {getWorkflowSteps(selected).map((step) => (
                 <div className="timeline-step" key={step.key}>
                   <div
-                    className={`timeline-dot ${
-                      step.done
+                    className={`timeline-dot ${step.done
                         ? "dot-done"
                         : step.active
                           ? "dot-active"
                           : "dot-pending"
-                    }`}
+                      }`}
                   >
                     <span
                       className="material-symbols-outlined"
@@ -1462,29 +1482,29 @@ const GatePage: React.FC = () => {
             {String(
               form.direction || selected.direction || "",
             ).toUpperCase() === "IMPORT" && (
-              <Input
-                label="Tare Wt *"
-                type="number"
-                min={0}
-                value={form.tare_weight || ""}
-                onChange={(e) =>
-                  setForm({ ...form, tare_weight: e.target.value })
-                }
-              />
-            )}
+                <Input
+                  label="Tare Wt *"
+                  type="number"
+                  min={0}
+                  value={form.tare_weight || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, tare_weight: e.target.value })
+                  }
+                />
+              )}
             {String(
               form.direction || selected.direction || "",
             ).toUpperCase() === "EXPORT" && (
-              <Input
-                label="Gross Wt *"
-                type="number"
-                min={0}
-                value={form.gross_weight || ""}
-                onChange={(e) =>
-                  setForm({ ...form, gross_weight: e.target.value })
-                }
-              />
-            )}
+                <Input
+                  label="Gross Wt *"
+                  type="number"
+                  min={0}
+                  value={form.gross_weight || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, gross_weight: e.target.value })
+                  }
+                />
+              )}
           </div>
         </Modal>
       )}
@@ -1521,29 +1541,29 @@ const GatePage: React.FC = () => {
             {String(
               form.direction || selected.direction || "",
             ).toUpperCase() === "IMPORT" && (
-              <Input
-                label="Gross Wt *"
-                type="number"
-                min={0}
-                value={form.wbout_gross_weight || ""}
-                onChange={(e) =>
-                  setForm({ ...form, wbout_gross_weight: e.target.value })
-                }
-              />
-            )}
+                <Input
+                  label="Gross Wt *"
+                  type="number"
+                  min={0}
+                  value={form.wbout_gross_weight || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, wbout_gross_weight: e.target.value })
+                  }
+                />
+              )}
             {String(
               form.direction || selected.direction || "",
             ).toUpperCase() === "EXPORT" && (
-              <Input
-                label="Tare Wt *"
-                type="number"
-                min={0}
-                value={form.wbout_tare_weight || ""}
-                onChange={(e) =>
-                  setForm({ ...form, wbout_tare_weight: e.target.value })
-                }
-              />
-            )}
+                <Input
+                  label="Tare Wt *"
+                  type="number"
+                  min={0}
+                  value={form.wbout_tare_weight || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, wbout_tare_weight: e.target.value })
+                  }
+                />
+              )}
           </div>
         </Modal>
       )}
@@ -1780,6 +1800,18 @@ const GatePage: React.FC = () => {
               options={[
                 { value: "0", label: "No — Needs WBIN" },
                 { value: "1", label: "Yes — Skip to WBOUT" },
+              ]}
+            />
+
+            <Select
+              label="Billing Calculation Required"
+              value={form.billing_calculation_required || "1"}
+              onChange={(e) =>
+                handleChange("billing_calculation_required", e.target.value)
+              }
+              options={[
+                { value: "1", label: "Yes" },
+                { value: "0", label: "No" },
               ]}
             />
           </div>
