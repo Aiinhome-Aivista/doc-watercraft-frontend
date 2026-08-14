@@ -312,6 +312,7 @@ const GatePage: React.FC = () => {
       outside_net_weight: outsideNet,
       outside_payment_slip: form.outside_payment_slip || null,
       own_weighbridge: ownWb,
+      billing_calculation_required: parseInt(form.billing_calculation_required || "1"),
       direction: form.direction,
       driver_name: form.driver_name || null,
       driver_mob_no: form.driver_mob_no || null,
