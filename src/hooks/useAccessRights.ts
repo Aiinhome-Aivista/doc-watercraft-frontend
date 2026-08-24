@@ -10,9 +10,13 @@ export interface UserAccessRights {
   modules: string[];
   vesselStatuses: string[];
   gateOperations: string[];
+  vesselStatusesEdit: string[];
+  gateOperationsEdit: string[];
   canGateOp: (status: string) => boolean;
   canVesselStatus: (status: string) => boolean;
   canModule: (module: string) => boolean;
+  canGateOpEdit: (status: string) => boolean;
+  canVesselStatusEdit: (status: string) => boolean;
 }
 
 export function useAccessRights(): UserAccessRights {
@@ -20,6 +24,8 @@ export function useAccessRights(): UserAccessRights {
   let modules: string[] = [];
   let vesselStatuses: string[] = [];
   let gateOperations: string[] = [];
+  let vesselStatusesEdit: string[] = [];
+  let gateOperationsEdit: string[] = [];
 
   try {
     const raw = localStorage.getItem('user_data');
@@ -30,6 +36,8 @@ export function useAccessRights(): UserAccessRights {
       modules = rights.modules || [];
       vesselStatuses = rights.vessel_statuses || [];
       gateOperations = rights.gate_operations || [];
+      vesselStatusesEdit = rights.vessel_statuses_edit || [];
+      gateOperationsEdit = rights.gate_operations_edit || [];
     }
   } catch (e) {
     console.error('useAccessRights: failed to parse user_data', e);
@@ -43,8 +51,12 @@ export function useAccessRights(): UserAccessRights {
     modules,
     vesselStatuses,
     gateOperations,
+    vesselStatusesEdit,
+    gateOperationsEdit,
     canGateOp: (status: string) => gateOperations.includes(status),
     canVesselStatus: (status: string) => vesselStatuses.includes(status),
     canModule: (module: string) => modules.includes(module),
+    canGateOpEdit: (status: string) => gateOperationsEdit.includes(status),
+    canVesselStatusEdit: (status: string) => vesselStatusesEdit.includes(status),
   };
 }

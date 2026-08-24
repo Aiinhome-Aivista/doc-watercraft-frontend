@@ -36,7 +36,7 @@ const GatePage: React.FC = () => {
   const entries = useAppSelector((state) => state.vehicles.entries);
   const pagination = useAppSelector((state) => state.vehicles.pagination);
   const vessels = useAppSelector((state) => state.vessels.items);
-  const { canGateOp, gateOperations } = useAccessRights();
+  const { canGateOp, canGateOpEdit, gateOperations } = useAccessRights();
 
   const [filter, setFilter] = useState<
     GateStatus | "ALL" | "LOADING/UNLOADING"
@@ -890,13 +890,15 @@ const GatePage: React.FC = () => {
                       >
                         VIEW
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openModal("edit", e)}
-                      >
-                        EDIT
-                      </Button>
+                      {canGateOpEdit("GATE_IN") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openModal("edit", e)}
+                        >
+                          EDIT
+                        </Button>
+                      )}
                       {e.status === "WBIN_DONE" && canGateOp("WBIN_DONE") && (
                         <Button
                           variant="primary"

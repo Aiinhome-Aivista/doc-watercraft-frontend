@@ -17,6 +17,8 @@ interface AccessRights {
   modules: string[];
   vessel_statuses: string[];
   gate_operations: string[];
+  vessel_statuses_edit: string[];
+  gate_operations_edit: string[];
 }
 
 const SettingsPage: React.FC = () => {
@@ -27,7 +29,9 @@ const SettingsPage: React.FC = () => {
   const [userPermissions, setUserPermissions] = useState<AccessRights>({
     modules: [],
     vessel_statuses: [],
-    gate_operations: []
+    gate_operations: [],
+    vessel_statuses_edit: [],
+    gate_operations_edit: []
   });
 
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -103,15 +107,17 @@ const SettingsPage: React.FC = () => {
         setUserPermissions({
           modules: rights.modules || [],
           vessel_statuses: rights.vessel_statuses || [],
-          gate_operations: rights.gate_operations || []
+          gate_operations: rights.gate_operations || [],
+          vessel_statuses_edit: rights.vessel_statuses_edit || [],
+          gate_operations_edit: rights.gate_operations_edit || []
         });
       } else {
-        setUserPermissions({ modules: [], vessel_statuses: [], gate_operations: [] });
+        setUserPermissions({ modules: [], vessel_statuses: [], gate_operations: [], vessel_statuses_edit: [], gate_operations_edit: [] });
       }
       setSelectedUser(user);
     } catch (err) {
       console.error("Failed to fetch access rights", err);
-      setUserPermissions({ modules: [], vessel_statuses: [], gate_operations: [] });
+      setUserPermissions({ modules: [], vessel_statuses: [], gate_operations: [], vessel_statuses_edit: [], gate_operations_edit: [] });
       setSelectedUser(user);
     } finally {
       setLoading(false);
@@ -375,7 +381,7 @@ const SettingsPage: React.FC = () => {
                       setUserPermissions((p) => ({ ...p, modules: [...p.modules, "VESSEL_OPS"] }));
                     } else {
                       // Uncheck module and clear all vessel_statuses
-                      setUserPermissions((p) => ({ ...p, modules: p.modules.filter((x) => x !== "VESSEL_OPS"), vessel_statuses: [] }));
+                      setUserPermissions((p) => ({ ...p, modules: p.modules.filter((x) => x !== "VESSEL_OPS"), vessel_statuses: [], vessel_statuses_edit: [] }));
                     }
                   }}
                   style={{ width: 15, height: 15, accentColor: "var(--accent)", cursor: "pointer" }}
@@ -422,7 +428,7 @@ const SettingsPage: React.FC = () => {
                       setUserPermissions((p) => ({ ...p, modules: [...p.modules, "VEHICLE_LOGISTICS"] }));
                     } else {
                       // Uncheck module and clear all gate_operations
-                      setUserPermissions((p) => ({ ...p, modules: p.modules.filter((x) => x !== "VEHICLE_LOGISTICS"), gate_operations: [] }));
+                      setUserPermissions((p) => ({ ...p, modules: p.modules.filter((x) => x !== "VEHICLE_LOGISTICS"), gate_operations: [], gate_operations_edit: [] }));
                     }
                   }}
                   style={{ width: 15, height: 15, accentColor: "var(--amber)", cursor: "pointer" }}
@@ -443,19 +449,54 @@ const SettingsPage: React.FC = () => {
                     { value: "GATE_OUT", label: "GATE OUT", icon: "logout" },
                     { value: "COMPLETED", label: "COMPLETED", icon: "check_circle" },
                   ].map((sub) => (
-                    <label key={sub.value} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "5px 8px", fontSize: "12px", color: "var(--text2)", borderRadius: "4px", background: userPermissions.gate_operations.includes(sub.value) ? "rgba(255,176,32,0.04)" : "transparent" }}>
-                      <input
-                        type="checkbox"
-                        checked={userPermissions.gate_operations.includes(sub.value)}
-                        onChange={(e) => {
-                          if (e.target.checked) setUserPermissions((p) => ({ ...p, gate_operations: [...p.gate_operations, sub.value] }));
-                          else setUserPermissions((p) => ({ ...p, gate_operations: p.gate_operations.filter((x) => x !== sub.value) }));
-                        }}
-                        style={{ width: 13, height: 13, accentColor: "var(--amber)", cursor: "pointer" }}
-                      />
-                      <span className="material-symbols-outlined" style={{ fontSize: 13, color: userPermissions.gate_operations.includes(sub.value) ? "var(--green)" : "var(--text3)" }}>{sub.icon}</span>
-                      {sub.label}
-                    </label>
+                    sub.value === "GATE_IN" || sub.value === "PENDING_WBIN" ? (
+                      <div key={sub.value} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", fontSize: "12px", color: "var(--text2)", borderRadius: "4px", background: userPermissions.gate_operations.includes(sub.value) ? "rgba(255,176,32,0.04)" : "transparent" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 13, color: userPermissions.gate_operations.includes(sub.value) ? "var(--green)" : "var(--text3)" }}>{sub.icon}</span>
+                          {sub.label}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontSize: "11px" }}>
+                            <input
+                              type="checkbox"
+                              checked={userPermissions.gate_operations.includes(sub.value)}
+                              onChange={(e) => {
+                                if (e.target.checked) setUserPermissions((p) => ({ ...p, gate_operations: [...p.gate_operations, sub.value] }));
+                                else setUserPermissions((p) => ({ ...p, gate_operations: p.gate_operations.filter((x) => x !== sub.value), gate_operations_edit: p.gate_operations_edit.filter((x) => x !== sub.value) }));
+                              }}
+                              style={{ width: 13, height: 13, accentColor: "var(--amber)", cursor: "pointer" }}
+                            />
+                            New Entry
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontSize: "11px" }}>
+                            <input
+                              type="checkbox"
+                              checked={userPermissions.gate_operations_edit.includes(sub.value)}
+                              onChange={(e) => {
+                                if (e.target.checked) setUserPermissions((p) => ({ ...p, gate_operations_edit: [...p.gate_operations_edit, sub.value] }));
+                                else setUserPermissions((p) => ({ ...p, gate_operations_edit: p.gate_operations_edit.filter((x) => x !== sub.value) }));
+                              }}
+                              style={{ width: 13, height: 13, accentColor: "var(--amber)", cursor: "pointer" }}
+                            />
+                            Edit
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <label key={sub.value} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "5px 8px", fontSize: "12px", color: "var(--text2)", borderRadius: "4px", background: userPermissions.gate_operations.includes(sub.value) ? "rgba(255,176,32,0.04)" : "transparent" }}>
+                        <input
+                          type="checkbox"
+                          checked={userPermissions.gate_operations.includes(sub.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) setUserPermissions((p) => ({ ...p, gate_operations: [...p.gate_operations, sub.value] }));
+                            else setUserPermissions((p) => ({ ...p, gate_operations: p.gate_operations.filter((x) => x !== sub.value) }));
+                          }}
+                          style={{ width: 13, height: 13, accentColor: "var(--amber)", cursor: "pointer" }}
+                        />
+                        <span className="material-symbols-outlined" style={{ fontSize: 13, color: userPermissions.gate_operations.includes(sub.value) ? "var(--green)" : "var(--text3)" }}>{sub.icon}</span>
+                        {sub.label}
+                      </label>
+                    )
                   ))}
                 </div>
               )}
