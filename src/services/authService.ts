@@ -56,5 +56,21 @@ export const authService = {
   deleteUser: async (userId: string | number) => {
     const response = await apiClient.delete(ENDPOINTS.AUTH.USER_DETAIL(userId));
     return response.data;
+  },
+
+  /**
+   * Admin changes a user's password
+   */
+  adminChangePassword: async (userId: string | number, payload: any) => {
+    const response = await apiClient.post(ENDPOINTS.AUTH.ADMIN_CHANGE_PASSWORD(userId), payload);
+    return response.data;
+  },
+
+  /**
+   * User changes their own password
+   */
+  changePassword: async (payload: any) => {
+    const response = await apiClient.post(ENDPOINTS.AUTH.CHANGE_PASSWORD, payload);
+    return response.data;
   }
 };

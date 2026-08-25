@@ -13,9 +13,13 @@ import {
   Sun,
   Moon,
   Users,
-  LogOut
+  LogOut,
+  Key
 } from 'lucide-react';
 import logo from '../assets/logo.jpeg';
+import { Modal, Input, Button, GlobalLoader } from '@/components/ui';
+import { authService } from '@/services/authService';
+import { toast } from 'react-hot-toast';
 
 
 interface MainLayoutProps {
@@ -31,6 +35,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ newPassword: "", confirmPassword: "" });
+  const [changePasswordErrors, setChangePasswordErrors] = useState<Record<string, string>>({});
+  const [changePasswordGlobalError, setChangePasswordGlobalError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Read user data and access rights from localStorage
   let userRole = '';
@@ -85,6 +95,45 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     navigate('/');
   };
 
+  const handleChangePasswordChange = (field: string, value: string) => {
+    setChangePasswordForm((prev) => ({ ...prev, [field]: value }));
+    if (changePasswordErrors[field]) {
+      setChangePasswordErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+    setChangePasswordGlobalError(null);
+  };
+
+  const handleChangePasswordSubmit = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!changePasswordForm.newPassword) {
+      newErrors.newPassword = "New password is required";
+    } else if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setChangePasswordErrors(newErrors);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await authService.changePassword({
+        new_password: changePasswordForm.newPassword
+      });
+      
+      toast.success("Password updated successfully");
+      setIsChangePasswordModalOpen(false);
+      setChangePasswordForm({ newPassword: "", confirmPassword: "" });
+    } catch (err: any) {
+      console.error("Failed to change password:", err);
+      const errMsg = err.response?.data?.message || "Failed to update password. Please try again.";
+      setChangePasswordGlobalError(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Map from module key -> { label, icon, path }
   const allNavItems = [
     { module: 'DASHBOARD', label: 'DASHBOARD', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
@@ -108,6 +157,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div className="app">
+      {loading && <GlobalLoader />}
       {sidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar} />}
 
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
@@ -195,6 +245,35 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                        display: 'flex',
                        alignItems: 'center',
                        gap: '12px',
+                       color: 'var(--text)',
+                       fontSize: '14px',
+                       fontWeight: 500,
+                       cursor: 'pointer',
+                       transition: 'background-color 0.2s',
+                       textAlign: 'left'
+                     }}
+                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--hover)')}
+                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                     onClick={() => {
+                       setProfileOpen(false);
+                       setIsChangePasswordModalOpen(true);
+                       setChangePasswordForm({ newPassword: "", confirmPassword: "" });
+                       setChangePasswordErrors({});
+                       setChangePasswordGlobalError(null);
+                     }}
+                   >
+                     <Key size={16} />
+                     Change Password
+                   </button>
+                   <button
+                     style={{
+                       width: '100%',
+                       background: 'transparent',
+                       border: 'none',
+                       padding: '12px 16px',
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: '12px',
                        color: '#e63946',
                        fontSize: '14px',
                        fontWeight: 500,
@@ -222,6 +301,34 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           {children}
         </section>
       </main>
+
+      {isChangePasswordModalOpen && (
+        <Modal
+          title="CHANGE MY PASSWORD"
+          onClose={() => setIsChangePasswordModalOpen(false)}
+          width={400}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setIsChangePasswordModalOpen(false)}>
+                CANCEL
+              </Button>
+              <Button variant="primary" onClick={handleChangePasswordSubmit}>
+                UPDATE PASSWORD
+              </Button>
+            </>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "8px 0" }}>
+            {changePasswordGlobalError && (
+              <div style={{ padding: "12px", backgroundColor: "rgba(230, 57, 70, 0.1)", border: "1px solid #e63946", borderRadius: "8px", color: "#e63946", fontSize: "14px", textAlign: "center", fontWeight: "bold" }}>
+                {changePasswordGlobalError}
+              </div>
+            )}
+            <Input label="New Password *" placeholder="••••••••" type="password" value={changePasswordForm.newPassword} onChange={(e) => handleChangePasswordChange("newPassword", e.target.value)} error={changePasswordErrors.newPassword} />
+            <Input label="Confirm New Password *" placeholder="••••••••" type="password" value={changePasswordForm.confirmPassword} onChange={(e) => handleChangePasswordChange("confirmPassword", e.target.value)} error={changePasswordErrors.confirmPassword} />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

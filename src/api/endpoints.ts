@@ -34,6 +34,8 @@ export const ENDPOINTS = {
     USERS: '/users',
     ACCESS_RIGHTS: (id: string | number) => `/access-rights/${id}`,
     USER_DETAIL: (id: string | number) => `/users/${id}`,
+    CHANGE_PASSWORD: '/change-password',
+    ADMIN_CHANGE_PASSWORD: (id: string | number) => `/change-password/${id}`,
   },
   BILLING: {
     VESSELS: '/billing/vessels',

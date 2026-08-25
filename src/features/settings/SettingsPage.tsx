@@ -50,6 +50,12 @@ const SettingsPage: React.FC = () => {
   });
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ password: "", confirmPassword: "" });
+  const [changePasswordErrors, setChangePasswordErrors] = useState<Record<string, string>>({});
+  const [changePasswordGlobalError, setChangePasswordGlobalError] = useState<string | null>(null);
+  const [userToChangePassword, setUserToChangePassword] = useState<UserProfile | null>(null);
+
   const handleRegChange = (field: string, value: string) => {
     setRegForm((prev) => ({ ...prev, [field]: value }));
     if (regErrors[field]) setRegErrors(prev => ({ ...prev, [field]: "" }));
@@ -152,6 +158,48 @@ const SettingsPage: React.FC = () => {
         message: errMsg,
         type: "error"
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePasswordChange = (field: string, value: string) => {
+    setChangePasswordForm((prev) => ({ ...prev, [field]: value }));
+    if (changePasswordErrors[field]) {
+      setChangePasswordErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+    setChangePasswordGlobalError(null);
+  };
+
+  const handleChangePasswordSubmit = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!changePasswordForm.password) {
+      newErrors.password = "Password is required";
+    } else if (changePasswordForm.password !== changePasswordForm.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setChangePasswordErrors(newErrors);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      if (!userToChangePassword) return;
+
+      await authService.adminChangePassword(userToChangePassword.id, {
+        new_password: changePasswordForm.password
+      });
+      
+      toast.success(`Password updated for @${userToChangePassword.username}`);
+      setIsChangePasswordModalOpen(false);
+      setUserToChangePassword(null);
+    } catch (err: any) {
+      console.error("Failed to change password:", err);
+      const errMsg = err.response?.data?.message || "Failed to update password. Please try again.";
+      setChangePasswordGlobalError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -271,6 +319,21 @@ const SettingsPage: React.FC = () => {
                         onClick={() => handleEditUser(user)}
                       >
                         EDIT
+                      </Button>
+                      <Button
+                        variant="light"
+                        size="sm"
+                        style={{ padding: "0 8px" }}
+                        title="Change Password"
+                        onClick={() => {
+                          setUserToChangePassword(user);
+                          setIsChangePasswordModalOpen(true);
+                          setChangePasswordForm({ password: "", confirmPassword: "" });
+                          setChangePasswordErrors({});
+                          setChangePasswordGlobalError(null);
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>key</span>
                       </Button>
                       <Button
                         variant="red"
@@ -558,6 +621,40 @@ const SettingsPage: React.FC = () => {
         >
           <div style={{ padding: "16px 0", fontSize: "14px", lineHeight: "1.5", color: "var(--text)", textAlign: "center" }}>
             Are you sure you want to delete user <strong>{userToDelete.full_name || userToDelete.username}</strong>? This action cannot be undone.
+          </div>
+        </Modal>
+      )}
+
+      {isChangePasswordModalOpen && userToChangePassword && (
+        <Modal
+          title={`CHANGE PASSWORD — @${userToChangePassword.username}`}
+          onClose={() => {
+            setIsChangePasswordModalOpen(false);
+            setUserToChangePassword(null);
+          }}
+          width={400}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => {
+                setIsChangePasswordModalOpen(false);
+                setUserToChangePassword(null);
+              }}>
+                CANCEL
+              </Button>
+              <Button variant="primary" onClick={handleChangePasswordSubmit}>
+                CHANGE PASSWORD
+              </Button>
+            </>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "8px 0" }}>
+            {changePasswordGlobalError && (
+              <div style={{ padding: "12px", backgroundColor: "rgba(230, 57, 70, 0.1)", border: "1px solid #e63946", borderRadius: "8px", color: "#e63946", fontSize: "14px", textAlign: "center", fontWeight: "bold" }}>
+                {changePasswordGlobalError}
+              </div>
+            )}
+            <Input label="New Password *" placeholder="••••••••" type="password" value={changePasswordForm.password} onChange={(e) => handleChangePasswordChange("password", e.target.value)} error={changePasswordErrors.password} />
+            <Input label="Confirm New Password *" placeholder="••••••••" type="password" value={changePasswordForm.confirmPassword} onChange={(e) => handleChangePasswordChange("confirmPassword", e.target.value)} error={changePasswordErrors.confirmPassword} />
           </div>
         </Modal>
       )}
