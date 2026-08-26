@@ -169,16 +169,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   });
 
   const getPageTitle = () => {
-    let titleItem = navItems.find(i => i.path === location.pathname);
-    if (!titleItem) {
+    let titleLabel = '';
+    const item = navItems.find(i => i.path === location.pathname);
+    if (item) {
+      titleLabel = item.label;
+    } else {
       navItems.forEach(i => {
         if (i.children) {
           const child = i.children.find(c => c.path === location.pathname);
-          if (child) titleItem = child;
+          if (child) titleLabel = child.label;
         }
       });
     }
-    if (titleItem) return titleItem.label;
+    if (titleLabel) return titleLabel;
     if (location.pathname === '/settings' && isAdmin) return 'SETTINGS';
     return 'DOCK SYSTEM';
   };
