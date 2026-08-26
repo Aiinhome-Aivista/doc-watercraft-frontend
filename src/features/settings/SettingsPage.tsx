@@ -412,7 +412,6 @@ const SettingsPage: React.FC = () => {
               { value: "DASHBOARD", label: "DASHBOARD" },
               { value: "PARTY_MASTER", label: "PARTY MASTER" },
               { value: "VEHICLE_MASTER", label: "VEHICLE MASTER" },
-              { value: "REPORTS_BILLING", label: "REPORTS & BILLING" },
               { value: "WEIGHBRIDGE_TERMINAL", label: "WEIGHBRIDGE TERMINAL" },
               { value: "SETTINGS", label: "SETTINGS" },
             ].map((mod) => (
@@ -427,11 +426,42 @@ const SettingsPage: React.FC = () => {
                   style={{ width: 15, height: 15, accentColor: "var(--accent)", cursor: "pointer" }}
                 />
                 <span className="material-symbols-outlined" style={{ fontSize: 15, color: userPermissions.modules.includes(mod.value) ? "var(--accent)" : "var(--text3)" }}>
-                  {mod.value === "DASHBOARD" ? "dashboard" : mod.value === "PARTY_MASTER" ? "groups" : mod.value === "VEHICLE_MASTER" ? "local_shipping" : mod.value === "REPORTS_BILLING" ? "receipt_long" : mod.value === "WEIGHBRIDGE_TERMINAL" ? "scale" : "settings"}
+                  {mod.value === "DASHBOARD" ? "dashboard" : mod.value === "PARTY_MASTER" ? "groups" : mod.value === "VEHICLE_MASTER" ? "local_shipping" : mod.value === "WEIGHBRIDGE_TERMINAL" ? "scale" : "settings"}
                 </span>
                 {mod.label}
               </label>
             ))}
+
+            {/* ── REPORTS & BILLING sub-tree ── */}
+            <div style={{ borderLeft: "2px solid var(--accent)", borderRadius: "0 6px 6px 0", marginTop: "4px", marginBottom: "4px", transition: "border-color 0.2s" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", fontSize: "13px", fontWeight: 600, background: "rgba(0,194,255,0.06)", borderRadius: "0 4px 4px 0" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 15, color: "var(--accent)" }}>receipt_long</span>
+                REPORTS & BILLING
+              </div>
+
+              {/* Sub-items: finance modules */}
+              <div style={{ paddingLeft: "32px", paddingBottom: "8px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                {[
+                  { value: "FINANCE_GENERATE_BILL", label: "GENERATE BILL", icon: "add_box" },
+                  { value: "FINANCE_ALL_BILLS", label: "ALL BILLS", icon: "list_alt" },
+                  { value: "FINANCE_VESSEL_REPORT", label: "VESSEL REPORT", icon: "assessment" },
+                ].map((sub) => (
+                  <label key={sub.value} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "5px 8px", fontSize: "12px", color: "var(--text2)", borderRadius: "4px", background: userPermissions.modules.includes(sub.value) ? "rgba(0,194,255,0.04)" : "transparent" }}>
+                    <input
+                      type="checkbox"
+                      checked={userPermissions.modules.includes(sub.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) setUserPermissions((p) => ({ ...p, modules: [...p.modules, sub.value] }));
+                        else setUserPermissions((p) => ({ ...p, modules: p.modules.filter((x) => x !== sub.value) }));
+                      }}
+                      style={{ width: 13, height: 13, accentColor: "var(--accent)", cursor: "pointer" }}
+                    />
+                    <span className="material-symbols-outlined" style={{ fontSize: 13, color: userPermissions.modules.includes(sub.value) ? "var(--green)" : "var(--text3)" }}>{sub.icon}</span>
+                    {sub.label}
+                  </label>
+                ))}
+              </div>
+            </div>
 
             {/* ── VESSEL OPS with vessel_statuses sub-tree ── */}
             <div style={{ borderLeft: userPermissions.modules.includes("VESSEL_OPS") ? "2px solid var(--accent)" : "2px solid var(--border)", borderRadius: "0 6px 6px 0", marginTop: "4px", marginBottom: "4px", transition: "border-color 0.2s" }}>

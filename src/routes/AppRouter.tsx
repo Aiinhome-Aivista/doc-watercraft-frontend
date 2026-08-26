@@ -5,7 +5,9 @@ import DashboardPage from '@/features/dashboard/DashboardPage';
 import VesselsPage from '@/features/vessel/VesselsPage';
 import GatePage from '@/features/vehicle/GatePage';
 import WeighbridgeTerminalPage from '@/features/weighbridge/WeighbridgeTerminalPage';
-import FinancePage from '@/features/finance/FinancePage';
+import GenerateBillPage from '@/features/finance/GenerateBillPage';
+import AllBillsPage from '@/features/finance/AllBillsPage';
+import VesselReportPage from '@/features/finance/VesselReportPage';
 import PartyMasterPage from '@/features/party/PartyMasterPage';
 import VehicleMasterPage from '@/features/vehicle/VehicleMasterPage';
 import AuthPage from '@/features/auth/AuthPage';
@@ -26,7 +28,9 @@ const AppRouter: React.FC = () => {
               <Route path="/vessels" element={<VesselsPage />} />
               <Route path="/vehicles" element={<GatePage />} />
               <Route path="/weighbridge" element={<WeighbridgeTerminalPage />} />
-              <Route path="/finance" element={<FinancePage />} />
+              <Route path="/finance/generate-bill" element={<GenerateBillPage />} />
+              <Route path="/finance/all-bills" element={<AllBillsPage />} />
+              <Route path="/finance/vessel-report" element={<VesselReportPage />} />
               <Route path="/party-master" element={<PartyMasterPage />} />
               <Route path="/vehicle-master" element={<VehicleMasterPage />} />
               <Route path="/settings" element={<SettingsPage />} />

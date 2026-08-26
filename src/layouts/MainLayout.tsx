@@ -41,6 +41,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [changePasswordErrors, setChangePasswordErrors] = useState<Record<string, string>>({});
   const [changePasswordGlobalError, setChangePasswordGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
   // Read user data and access rights from localStorage
   let userRole = '';
@@ -87,6 +88,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const closeSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  const toggleSubMenu = (module: string) => {
+    setExpandedMenu((prev) => (prev === module ? null : module));
   };
 
   const handleLogout = () => {
@@ -142,15 +147,38 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     { module: 'VESSEL_OPS', label: 'VESSEL OPS', icon: <Anchor size={18} />, path: '/vessels' },
     { module: 'VEHICLE_LOGISTICS', label: 'VEHICLE LOGISTICS', icon: <Truck size={18} />, path: '/vehicles' },
     { module: 'WEIGHBRIDGE_TERMINAL', label: 'WEIGHBRIDGE TERMINAL', icon: <Scale size={18} />, path: '/weighbridge' },
-    { module: 'REPORTS_BILLING', label: 'REPORTS & BILLING', icon: <FileText size={18} />, path: '/finance' },
+    { 
+      module: 'REPORTS_BILLING', 
+      label: 'REPORTS & BILLING', 
+      icon: <FileText size={18} />, 
+      path: '#', // Parent items don't have a direct route
+      children: [
+        { module: 'FINANCE_GENERATE_BILL', label: 'GENERATE BILL', path: '/finance/generate-bill' },
+        { module: 'FINANCE_ALL_BILLS', label: 'ALL BILLS', path: '/finance/all-bills' },
+        { module: 'FINANCE_VESSEL_REPORT', label: 'VESSEL REPORT', path: '/finance/vessel-report' },
+      ]
+    },
   ];
 
   // Filter nav items based on the user's allowed modules
-  const navItems = allNavItems.filter(item => allowedModules.includes(item.module));
+  const navItems = allNavItems.filter((item) => {
+    if (item.children) {
+      return item.children.some((child) => allowedModules.includes(child.module));
+    }
+    return allowedModules.includes(item.module);
+  });
 
   const getPageTitle = () => {
-    const item = navItems.find(i => i.path === location.pathname);
-    if (item) return item.label;
+    let titleItem = navItems.find(i => i.path === location.pathname);
+    if (!titleItem) {
+      navItems.forEach(i => {
+        if (i.children) {
+          const child = i.children.find(c => c.path === location.pathname);
+          if (child) titleItem = child;
+        }
+      });
+    }
+    if (titleItem) return titleItem.label;
     if (location.pathname === '/settings' && isAdmin) return 'SETTINGS';
     return 'DOCK SYSTEM';
   };
@@ -171,17 +199,57 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         
         <nav className="sidebar-nav">
           <div className="nav-section-label">Main Navigation</div>
-          {navItems.map((item) => (
-            <Link 
-              key={item.path} 
-              to={item.path} 
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={closeSidebar}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            if (item.children) {
+              const hasActiveChild = item.children.some((c) => location.pathname.startsWith(c.path));
+              const isExpanded = expandedMenu === item.module || hasActiveChild;
+              
+              return (
+                <div key={item.module} className="nav-item-group">
+                  <div 
+                    className={`nav-item ${hasActiveChild ? 'active' : ''}`}
+                    onClick={() => toggleSubMenu(item.module)}
+                    style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span className="nav-icon">{item.icon}</span>
+                      {item.label}
+                    </div>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                      {isExpanded ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </div>
+                  {isExpanded && (
+                    <div className="sub-nav" style={{ paddingLeft: '28px', display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px', marginBottom: '8px' }}>
+                      {item.children.filter((child) => allowedModules.includes(child.module)).map((child) => (
+                        <Link 
+                          key={child.path} 
+                          to={child.path} 
+                          className={`nav-item ${location.pathname === child.path ? 'active' : ''}`}
+                          onClick={closeSidebar}
+                          style={{ fontSize: '13px', padding: '8px 12px', minHeight: 'auto', background: 'transparent' }}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+                onClick={closeSidebar}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
           
           
           {isAdmin && (

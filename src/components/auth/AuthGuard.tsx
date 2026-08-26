@@ -11,7 +11,9 @@ const MODULE_ROUTE_MAP: Record<string, string> = {
   VESSEL_OPS: '/vessels',
   VEHICLE_LOGISTICS: '/vehicles',
   WEIGHBRIDGE_TERMINAL: '/weighbridge',
-  REPORTS_BILLING: '/finance',
+  FINANCE_GENERATE_BILL: '/finance/generate-bill',
+  FINANCE_ALL_BILLS: '/finance/all-bills',
+  FINANCE_VESSEL_REPORT: '/finance/vessel-report',
   SETTINGS: '/settings',
 };
 
