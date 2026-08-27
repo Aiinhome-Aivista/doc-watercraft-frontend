@@ -12,6 +12,7 @@ interface SearchableSelectProps {
   onChange: (value: string) => void;
   options: Option[];
   error?: string;
+  disabled?: boolean;
 }
 
 const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -20,7 +21,8 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   value,
   onChange,
   options,
-  error
+  error,
+  disabled
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -114,9 +116,10 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       {label && <label className="form-label">{label}</label>}
       <div style={{ position: 'relative' }}>
         <input
-          className={`form-input w-full ${error ? 'input-error' : ''}`}
+          className={`form-input w-full ${error ? 'input-error' : ''} ${disabled ? 'disabled-input' : ''}`}
           placeholder={placeholder}
           value={search}
+          disabled={disabled}
           onChange={(e) => {
             setSearch(e.target.value);
             onChange(e.target.value);

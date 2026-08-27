@@ -97,6 +97,7 @@ const VesselReportPage: React.FC = () => {
     const groups: { [key: string]: {
       vessel_name: string;
       berthing_datetime?: string | null;
+      mooring_datetime?: string | null;
       sailing_datetime?: string | null;
       survey_quantity?: string | number | null;
       rows: any[];
@@ -108,6 +109,7 @@ const VesselReportPage: React.FC = () => {
         groups[vName] = {
           vessel_name: vName,
           berthing_datetime: item.berthing_datetime,
+          mooring_datetime: item.mooring_datetime,
           sailing_datetime: item.sailing_datetime,
           survey_quantity: item.survey_quantity,
           rows: []
@@ -1572,7 +1574,11 @@ const VesselReportPage: React.FC = () => {
                             <td style={{ ...vesselHeaderValueStyle, borderBottom: 'none' }}>
                               {group.berthing_datetime ? formatDateString(group.berthing_datetime) : '—'}
                             </td>
-                            <td colSpan={19} style={{ border: 'none', background: 'transparent' }}></td>
+                            <td style={{ ...vesselHeaderStyle, borderBottom: 'none' }}>Vessel mooring date/time</td>
+                            <td style={{ ...vesselHeaderValueStyle, borderBottom: 'none' }}>
+                              {group.mooring_datetime ? formatDateString(group.mooring_datetime) : '—'}
+                            </td>
+                            <td colSpan={17} style={{ border: 'none', background: 'transparent' }}></td>
                           </tr>
                           <tr style={{ background: 'transparent' }}>
                             <td style={vesselHeaderStyle}>Survey Qty</td>

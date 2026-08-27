@@ -1306,6 +1306,7 @@ const GatePage: React.FC = () => {
                   })),
               ]}
               placeholder="Select Vessel"
+              disabled={operationMode === "update"}
             />
             <Input
               label="Direction"
@@ -1348,6 +1349,7 @@ const GatePage: React.FC = () => {
               onChange={(e) =>
                 setForm({ ...form, compressor_no: e.target.value })
               }
+              disabled={operationMode === "update"}
             />
             <Input
               label="Remarks (Optional)"
