@@ -113,7 +113,12 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   return (
     <div className="form-group" ref={dropdownRef} style={{ position: 'relative' }}>
-      {label && <label className="form-label">{label}</label>}
+      {label && (
+        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-start' }}>
+          {label.replace(/\s*\*\s*$/, '')}
+          {label.trim().endsWith('*') && <span>*</span>}
+        </label>
+      )}
       <div style={{ position: 'relative' }}>
         <input
           className={`form-input w-full ${error ? 'input-error' : ''} ${disabled ? 'disabled-input' : ''}`}

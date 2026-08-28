@@ -13,7 +13,12 @@ const Input: React.FC<InputProps> = ({ label, error, className, type, ...props }
 
   return (
     <div className="form-group">
-      {label && <label className="form-label">{label}</label>}
+      {label && (
+        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-start' }}>
+          {label.replace(/\s*\*\s*$/, '')}
+          {label.trim().endsWith('*') && <span>*</span>}
+        </label>
+      )}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
         <input 
           type={currentType}
